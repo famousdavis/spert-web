@@ -1,0 +1,36 @@
+'use client'
+
+import type { Sprint } from '@/shared/types'
+import { calculateVelocityStats } from '@/features/forecast/lib/statistics'
+
+interface VelocityStatsProps {
+  sprints: Sprint[]
+  unitOfMeasure: string
+}
+
+export function VelocityStats({ sprints, unitOfMeasure }: VelocityStatsProps) {
+  const stats = calculateVelocityStats(sprints)
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-3">
+      <div className="rounded-lg border border-border p-4">
+        <p className="text-sm text-muted-foreground">Included Sprints</p>
+        <p className="text-2xl font-semibold">{stats.count}</p>
+      </div>
+      <div className="rounded-lg border border-border p-4">
+        <p className="text-sm text-muted-foreground">
+          Velocity ({unitOfMeasure}/sprint)
+        </p>
+        <p className="text-2xl font-semibold">
+          {stats.count > 0 ? stats.mean.toFixed(1) : '—'}
+        </p>
+      </div>
+      <div className="rounded-lg border border-border p-4">
+        <p className="text-sm text-muted-foreground">Standard Deviation</p>
+        <p className="text-2xl font-semibold">
+          {stats.count > 1 ? stats.standardDeviation.toFixed(1) : '—'}
+        </p>
+      </div>
+    </div>
+  )
+}
