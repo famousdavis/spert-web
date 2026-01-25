@@ -1,33 +1,77 @@
 'use client'
 
-import type { ForecastResult } from '@/shared/types'
 import type { PercentileResults } from '../lib/monte-carlo'
 
 /**
- * Format a date with full month name (e.g., "January 15, 2026")
+ * Format a date with abbreviated month (e.g., "Jan 15, 2026")
  */
-function formatDateLong(dateStr: string): string {
+function formatDateShort(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00')
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   })
 }
 
 interface ForecastResultsProps {
-  normalResults: PercentileResults
+  truncatedNormalResults: PercentileResults
   lognormalResults: PercentileResults
+  gammaResults: PercentileResults
+  bootstrapResults: PercentileResults | null
   onExport?: () => void
 }
 
-export function ForecastResults({ normalResults, lognormalResults, onExport }: ForecastResultsProps) {
+export function ForecastResults({
+  truncatedNormalResults,
+  lognormalResults,
+  gammaResults,
+  bootstrapResults,
+  onExport,
+}: ForecastResultsProps) {
+  const hasBootstrap = bootstrapResults !== null
+
   const percentiles = [
-    { key: 'p50', label: 'P50', normal: normalResults.p50, lognormal: lognormalResults.p50 },
-    { key: 'p60', label: 'P60', normal: normalResults.p60, lognormal: lognormalResults.p60 },
-    { key: 'p70', label: 'P70', normal: normalResults.p70, lognormal: lognormalResults.p70 },
-    { key: 'p80', label: 'P80', normal: normalResults.p80, lognormal: lognormalResults.p80 },
-    { key: 'p90', label: 'P90', normal: normalResults.p90, lognormal: lognormalResults.p90 },
+    {
+      key: 'p50',
+      label: 'P50',
+      truncatedNormal: truncatedNormalResults.p50,
+      lognormal: lognormalResults.p50,
+      gamma: gammaResults.p50,
+      bootstrap: bootstrapResults?.p50 ?? null,
+    },
+    {
+      key: 'p60',
+      label: 'P60',
+      truncatedNormal: truncatedNormalResults.p60,
+      lognormal: lognormalResults.p60,
+      gamma: gammaResults.p60,
+      bootstrap: bootstrapResults?.p60 ?? null,
+    },
+    {
+      key: 'p70',
+      label: 'P70',
+      truncatedNormal: truncatedNormalResults.p70,
+      lognormal: lognormalResults.p70,
+      gamma: gammaResults.p70,
+      bootstrap: bootstrapResults?.p70 ?? null,
+    },
+    {
+      key: 'p80',
+      label: 'P80',
+      truncatedNormal: truncatedNormalResults.p80,
+      lognormal: lognormalResults.p80,
+      gamma: gammaResults.p80,
+      bootstrap: bootstrapResults?.p80 ?? null,
+    },
+    {
+      key: 'p90',
+      label: 'P90',
+      truncatedNormal: truncatedNormalResults.p90,
+      lognormal: lognormalResults.p90,
+      gamma: gammaResults.p90,
+      bootstrap: bootstrapResults?.p90 ?? null,
+    },
   ]
 
   return (
@@ -39,66 +83,145 @@ export function ForecastResults({ normalResults, lognormalResults, onExport }: F
             <tr className="border-b border-border">
               <th
                 rowSpan={2}
-                className="px-4 py-3 text-left text-sm font-medium text-muted-foreground align-bottom"
+                className="px-2 py-3 text-left text-sm font-medium text-muted-foreground align-bottom"
               >
-                Confidence
+                Conf.
               </th>
               <th
                 colSpan={2}
-                className="px-4 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
+                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
               >
-                Normal Distribution
+                T-Normal
               </th>
               <th
                 colSpan={2}
-                className="px-4 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
+                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
               >
-                Lognormal Distribution
+                Lognorm
               </th>
+              <th
+                colSpan={2}
+                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
+              >
+                Gamma
+              </th>
+              {hasBootstrap && (
+                <th
+                  colSpan={2}
+                  className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
+                >
+                  Bootstrap
+                </th>
+              )}
             </tr>
             <tr className="border-b border-border">
-              <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
-                Finish Date
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                Date
               </th>
-              <th className="px-4 py-2 text-right text-sm font-medium text-muted-foreground">
-                Sprints
+              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                Spr
               </th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
-                Finish Date
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                Date
               </th>
-              <th className="px-4 py-2 text-right text-sm font-medium text-muted-foreground">
-                Sprints
+              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                Spr
               </th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                Date
+              </th>
+              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                Spr
+              </th>
+              {hasBootstrap && (
+                <>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                    Date
+                  </th>
+                  <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Spr
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
-            {percentiles.map(({ key, label, normal, lognormal }) => {
-              const sameSprints = normal.sprintsRequired === lognormal.sprintsRequired
-              const sameDate = normal.finishDate === lognormal.finishDate
+            {percentiles.map(({ key, label, truncatedNormal, lognormal, gamma, bootstrap }) => {
+              // Check if lognormal differs from truncatedNormal
+              const lognormalDiffSprints = truncatedNormal.sprintsRequired !== lognormal.sprintsRequired
+              const lognormalDiffDate = truncatedNormal.finishDate !== lognormal.finishDate
+
+              // Check if gamma differs from truncatedNormal
+              const gammaDiffSprints = truncatedNormal.sprintsRequired !== gamma.sprintsRequired
+              const gammaDiffDate = truncatedNormal.finishDate !== gamma.finishDate
+
+              // Check if bootstrap differs from truncatedNormal
+              const bootstrapDiffSprints = bootstrap && truncatedNormal.sprintsRequired !== bootstrap.sprintsRequired
+              const bootstrapDiffDate = bootstrap && truncatedNormal.finishDate !== bootstrap.finishDate
 
               return (
                 <tr key={key} className="border-b border-border">
-                  <td className="px-4 py-3 text-sm font-medium">{label}</td>
-                  <td className="px-4 py-3 text-sm">{formatDateLong(normal.finishDate)}</td>
-                  <td className="px-4 py-3 text-right text-sm">{normal.sprintsRequired}</td>
+                  <td className="px-2 py-3 text-sm font-medium">{label}</td>
+                  <td className="px-2 py-3 text-sm">{formatDateShort(truncatedNormal.finishDate)}</td>
+                  <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired}</td>
                   <td
-                    className="px-4 py-3 text-sm"
+                    className="px-2 py-3 text-sm"
                     style={{
-                      color: sameDate ? 'inherit' : '#0070f3',
-                      fontWeight: sameDate ? 'normal' : 500,
+                      color: lognormalDiffDate ? '#0070f3' : 'inherit',
+                      fontWeight: lognormalDiffDate ? 500 : 'normal',
                     }}
                   >
-                    {formatDateLong(lognormal.finishDate)}
+                    {formatDateShort(lognormal.finishDate)}
                   </td>
                   <td
-                    className="px-4 py-3 text-right text-sm"
+                    className="px-2 py-3 text-right text-sm"
                     style={{
-                      color: sameSprints ? 'inherit' : '#0070f3',
-                      fontWeight: sameSprints ? 'normal' : 500,
+                      color: lognormalDiffSprints ? '#0070f3' : 'inherit',
+                      fontWeight: lognormalDiffSprints ? 500 : 'normal',
                     }}
                   >
                     {lognormal.sprintsRequired}
                   </td>
+                  <td
+                    className="px-2 py-3 text-sm"
+                    style={{
+                      color: gammaDiffDate ? '#0070f3' : 'inherit',
+                      fontWeight: gammaDiffDate ? 500 : 'normal',
+                    }}
+                  >
+                    {formatDateShort(gamma.finishDate)}
+                  </td>
+                  <td
+                    className="px-2 py-3 text-right text-sm"
+                    style={{
+                      color: gammaDiffSprints ? '#0070f3' : 'inherit',
+                      fontWeight: gammaDiffSprints ? 500 : 'normal',
+                    }}
+                  >
+                    {gamma.sprintsRequired}
+                  </td>
+                  {hasBootstrap && bootstrap && (
+                    <>
+                      <td
+                        className="px-2 py-3 text-sm"
+                        style={{
+                          color: bootstrapDiffDate ? '#0070f3' : 'inherit',
+                          fontWeight: bootstrapDiffDate ? 500 : 'normal',
+                        }}
+                      >
+                        {formatDateShort(bootstrap.finishDate)}
+                      </td>
+                      <td
+                        className="px-2 py-3 text-right text-sm"
+                        style={{
+                          color: bootstrapDiffSprints ? '#0070f3' : 'inherit',
+                          fontWeight: bootstrapDiffSprints ? 500 : 'normal',
+                        }}
+                      >
+                        {bootstrap.sprintsRequired}
+                      </td>
+                    </>
+                  )}
                 </tr>
               )
             })}
@@ -112,8 +235,14 @@ export function ForecastResults({ normalResults, lognormalResults, onExport }: F
             percentiles are more conservative.
           </p>
           <p>
-            <strong>Normal</strong> assumes symmetric velocity variation. <strong>Lognormal</strong> assumes
-            right-skewed variation (always positive, occasional high-velocity sprints possible).
+            <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+            <strong>Lognorm</strong>: right-skewed.{' '}
+            <strong>Gamma</strong>: flexible shape.
+            {hasBootstrap && (
+              <>
+                {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+              </>
+            )}
           </p>
         </div>
         {onExport && (

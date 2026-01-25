@@ -4,31 +4,36 @@ import type { ForecastResult } from '@/shared/types'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
 
 /**
- * Format a date with full month name (e.g., "January 15, 2026")
+ * Format a date with abbreviated month (e.g., "Jan 15, 2026")
  */
-function formatDateLong(dateStr: string): string {
+function formatDateShort(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00')
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   })
 }
 
 interface PercentileSelectorProps {
   percentile: number
-  normalResult: ForecastResult | null
+  truncatedNormalResult: ForecastResult | null
   lognormalResult: ForecastResult | null
+  gammaResult: ForecastResult | null
+  bootstrapResult: ForecastResult | null
   onPercentileChange: (percentile: number) => void
 }
 
 export function PercentileSelector({
   percentile,
-  normalResult,
+  truncatedNormalResult,
   lognormalResult,
+  gammaResult,
+  bootstrapResult,
   onPercentileChange,
 }: PercentileSelectorProps) {
-  const hasResults = normalResult && lognormalResult
+  const hasResults = truncatedNormalResult && lognormalResult && gammaResult
+  const hasBootstrap = bootstrapResult !== null
 
   return (
     <div className="space-y-4 rounded-lg border border-border p-4">
@@ -55,17 +60,17 @@ export function PercentileSelector({
       </div>
 
       {hasResults && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* Normal Distribution Results */}
+        <div className={`grid gap-4 ${hasBootstrap ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+          {/* Truncated Normal Distribution Results */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Normal Distribution
+              T-Normal
             </p>
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-sm text-muted-foreground">Finish Date</p>
-              <p className="text-lg font-semibold">{formatDateLong(normalResult.finishDate)}</p>
+              <p className="text-base font-semibold">{formatDateShort(truncatedNormalResult.finishDate)}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {normalResult.sprintsRequired} sprints
+                {truncatedNormalResult.sprintsRequired} sprints
               </p>
             </div>
           </div>
@@ -73,32 +78,94 @@ export function PercentileSelector({
           {/* Lognormal Distribution Results */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Lognormal Distribution
+              Lognorm
             </p>
             <div
               className="rounded-lg bg-muted/50 p-3"
               style={{
                 borderLeft:
-                  normalResult.finishDate !== lognormalResult.finishDate
+                  truncatedNormalResult.finishDate !== lognormalResult.finishDate
                     ? '3px solid #0070f3'
                     : undefined,
               }}
             >
               <p className="text-sm text-muted-foreground">Finish Date</p>
               <p
-                className="text-lg font-semibold"
+                className="text-base font-semibold"
                 style={{
                   color:
-                    normalResult.finishDate !== lognormalResult.finishDate ? '#0070f3' : 'inherit',
+                    truncatedNormalResult.finishDate !== lognormalResult.finishDate ? '#0070f3' : 'inherit',
                 }}
               >
-                {formatDateLong(lognormalResult.finishDate)}
+                {formatDateShort(lognormalResult.finishDate)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {lognormalResult.sprintsRequired} sprints
               </p>
             </div>
           </div>
+
+          {/* Gamma Distribution Results */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Gamma
+            </p>
+            <div
+              className="rounded-lg bg-muted/50 p-3"
+              style={{
+                borderLeft:
+                  truncatedNormalResult.finishDate !== gammaResult.finishDate
+                    ? '3px solid #0070f3'
+                    : undefined,
+              }}
+            >
+              <p className="text-sm text-muted-foreground">Finish Date</p>
+              <p
+                className="text-base font-semibold"
+                style={{
+                  color:
+                    truncatedNormalResult.finishDate !== gammaResult.finishDate ? '#0070f3' : 'inherit',
+                }}
+              >
+                {formatDateShort(gammaResult.finishDate)}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {gammaResult.sprintsRequired} sprints
+              </p>
+            </div>
+          </div>
+
+          {/* Bootstrap Distribution Results */}
+          {hasBootstrap && bootstrapResult && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Bootstrap
+              </p>
+              <div
+                className="rounded-lg bg-muted/50 p-3"
+                style={{
+                  borderLeft:
+                    truncatedNormalResult.finishDate !== bootstrapResult.finishDate
+                      ? '3px solid #0070f3'
+                      : undefined,
+                }}
+              >
+                <p className="text-sm text-muted-foreground">Finish Date</p>
+                <p
+                  className="text-base font-semibold"
+                  style={{
+                    color:
+                      truncatedNormalResult.finishDate !== bootstrapResult.finishDate ? '#0070f3' : 'inherit',
+                  }}
+                >
+                  {formatDateShort(bootstrapResult.finishDate)}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {bootstrapResult.sprintsRequired} sprints
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

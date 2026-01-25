@@ -1,12 +1,13 @@
 import {
-  randomNormal,
+  randomTruncatedNormal,
   randomLognormalFromMeanStdDev,
+  randomGammaFromMeanStdDev,
   percentileFromSorted,
 } from '@/shared/lib/math'
 import { addWeeks } from '@/shared/lib/dates'
 import type { ForecastConfig, ForecastResult } from '@/shared/types'
 
-export type DistributionType = 'normal' | 'lognormal'
+export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
 
 export interface SimulationInput {
   remainingBacklog: number
@@ -37,11 +38,27 @@ export interface DualForecastResults {
   lognormal: PercentileResults
 }
 
+export interface TripleForecastResults {
+  truncatedNormal: PercentileResults
+  lognormal: PercentileResults
+  gamma: PercentileResults
+}
+
+export interface QuadrupleForecastResults {
+  truncatedNormal: PercentileResults
+  lognormal: PercentileResults
+  gamma: PercentileResults
+  bootstrap: PercentileResults
+}
+
 /**
- * Run a single Monte Carlo trial using normal distribution
+ * Run a single Monte Carlo trial using truncated normal distribution
  * Returns the number of sprints required to complete the backlog
+ *
+ * Truncated normal is bounded at 0, properly handling the impossibility
+ * of negative velocity without artificial clamping.
  */
-export function runSingleTrialNormal(
+export function runSingleTrialTruncatedNormal(
   remainingBacklog: number,
   velocityMean: number,
   velocityStdDev: number
@@ -51,9 +68,9 @@ export function runSingleTrialNormal(
   const maxSprints = 1000 // Safety limit
 
   while (remaining > 0 && sprints < maxSprints) {
-    // Generate velocity for this sprint from normal distribution
-    // Ensure velocity is at least 0.1 to prevent infinite loops
-    const velocity = Math.max(0.1, randomNormal(velocityMean, velocityStdDev))
+    // Generate velocity from truncated normal (bounded at 0)
+    // Apply minimum of 0.1 as safety fallback for edge cases
+    const velocity = Math.max(0.1, randomTruncatedNormal(velocityMean, velocityStdDev, 0))
     remaining -= velocity
     sprints++
   }
@@ -86,6 +103,63 @@ export function runSingleTrialLognormal(
 }
 
 /**
+ * Run a single Monte Carlo trial using gamma distribution
+ * Returns the number of sprints required to complete the backlog
+ *
+ * Gamma distribution is always positive and commonly used for
+ * modeling throughput and waiting times.
+ */
+export function runSingleTrialGamma(
+  remainingBacklog: number,
+  velocityMean: number,
+  velocityStdDev: number
+): number {
+  let remaining = remainingBacklog
+  let sprints = 0
+  const maxSprints = 1000 // Safety limit
+
+  while (remaining > 0 && sprints < maxSprints) {
+    // Generate velocity for this sprint from gamma distribution
+    // Gamma is always positive, but we still apply a minimum for safety
+    const velocity = Math.max(0.1, randomGammaFromMeanStdDev(velocityMean, velocityStdDev))
+    remaining -= velocity
+    sprints++
+  }
+
+  return sprints
+}
+
+/**
+ * Run a single Monte Carlo trial using bootstrap (sampling with replacement)
+ * Returns the number of sprints required to complete the backlog
+ *
+ * Bootstrap (#NoEstimates) samples from actual historical sprint velocities
+ * with replacement, making no assumptions about the underlying distribution.
+ */
+export function runSingleTrialBootstrap(
+  remainingBacklog: number,
+  historicalVelocities: number[]
+): number {
+  if (historicalVelocities.length === 0) {
+    throw new Error('Bootstrap requires historical velocity data')
+  }
+
+  let remaining = remainingBacklog
+  let sprints = 0
+  const maxSprints = 1000 // Safety limit
+
+  while (remaining > 0 && sprints < maxSprints) {
+    // Sample with replacement from historical velocities
+    const randomIndex = Math.floor(Math.random() * historicalVelocities.length)
+    const velocity = Math.max(0.1, historicalVelocities[randomIndex])
+    remaining -= velocity
+    sprints++
+  }
+
+  return sprints
+}
+
+/**
  * Run a Monte Carlo simulation
  * Returns the distribution of sprint counts across all trials
  */
@@ -95,11 +169,22 @@ export function runSimulation(input: SimulationInput): SimulationOutput {
     velocityMean,
     velocityStdDev,
     trialCount,
-    distributionType = 'normal',
+    distributionType = 'truncatedNormal',
   } = input
 
-  const trialFn =
-    distributionType === 'lognormal' ? runSingleTrialLognormal : runSingleTrialNormal
+  let trialFn: (backlog: number, mean: number, stdDev: number) => number
+  switch (distributionType) {
+    case 'lognormal':
+      trialFn = runSingleTrialLognormal
+      break
+    case 'gamma':
+      trialFn = runSingleTrialGamma
+      break
+    case 'truncatedNormal':
+    default:
+      trialFn = runSingleTrialTruncatedNormal
+      break
+  }
 
   // Run all trials
   const sprintsRequired: number[] = []
@@ -157,7 +242,7 @@ function extractPercentileResults(
 
 /**
  * Run a full forecast simulation and return results for standard percentiles
- * (backward compatible - uses normal distribution only)
+ * (backward compatible - uses truncated normal distribution)
  */
 export function runForecast(config: ForecastConfig & { sprintCadenceWeeks: number }): PercentileResults {
   const simulation = runSimulation({
@@ -167,7 +252,7 @@ export function runForecast(config: ForecastConfig & { sprintCadenceWeeks: numbe
     startDate: config.startDate,
     sprintCadenceWeeks: config.sprintCadenceWeeks,
     trialCount: config.trialCount,
-    distributionType: 'normal',
+    distributionType: 'truncatedNormal',
   })
 
   return extractPercentileResults(simulation.sprintsRequired, config.startDate, config.sprintCadenceWeeks)
@@ -176,6 +261,7 @@ export function runForecast(config: ForecastConfig & { sprintCadenceWeeks: numbe
 /**
  * Run dual forecasts using both normal and lognormal distributions
  * Returns results from both simulations for comparison
+ * @deprecated Use runTripleForecast instead
  */
 export function runDualForecast(
   config: ForecastConfig & { sprintCadenceWeeks: number }
@@ -192,8 +278,8 @@ export function runDualForecast(
     trialCount: config.trialCount,
   }
 
-  // Run normal distribution simulation
-  const normalSimulation = runSimulation({ ...baseInput, distributionType: 'normal' })
+  // Run truncated normal distribution simulation (renamed from 'normal')
+  const normalSimulation = runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
   const normalResults = extractPercentileResults(
     normalSimulation.sprintsRequired,
     config.startDate,
@@ -215,6 +301,57 @@ export function runDualForecast(
 }
 
 /**
+ * Run triple forecasts using truncated normal, lognormal, and gamma distributions
+ * Returns results from all three simulations for comparison
+ */
+export function runTripleForecast(
+  config: ForecastConfig & { sprintCadenceWeeks: number }
+): {
+  truncatedNormal: { results: PercentileResults; sprintsRequired: number[] }
+  lognormal: { results: PercentileResults; sprintsRequired: number[] }
+  gamma: { results: PercentileResults; sprintsRequired: number[] }
+} {
+  const baseInput = {
+    remainingBacklog: config.remainingBacklog,
+    velocityMean: config.velocityMean,
+    velocityStdDev: config.velocityStdDev,
+    startDate: config.startDate,
+    sprintCadenceWeeks: config.sprintCadenceWeeks,
+    trialCount: config.trialCount,
+  }
+
+  // Run truncated normal distribution simulation
+  const truncatedNormalSimulation = runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
+  const truncatedNormalResults = extractPercentileResults(
+    truncatedNormalSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  // Run lognormal distribution simulation
+  const lognormalSimulation = runSimulation({ ...baseInput, distributionType: 'lognormal' })
+  const lognormalResults = extractPercentileResults(
+    lognormalSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  // Run gamma distribution simulation
+  const gammaSimulation = runSimulation({ ...baseInput, distributionType: 'gamma' })
+  const gammaResults = extractPercentileResults(
+    gammaSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  return {
+    truncatedNormal: { results: truncatedNormalResults, sprintsRequired: truncatedNormalSimulation.sprintsRequired },
+    lognormal: { results: lognormalResults, sprintsRequired: lognormalSimulation.sprintsRequired },
+    gamma: { results: gammaResults, sprintsRequired: gammaSimulation.sprintsRequired },
+  }
+}
+
+/**
  * Calculate a custom percentile result from existing simulation data
  */
 export function calculateCustomPercentile(
@@ -229,4 +366,96 @@ export function calculateCustomPercentile(
     startDate,
     sprintCadenceWeeks
   )
+}
+
+/**
+ * Run bootstrap simulation using historical sprint velocities
+ * Returns the distribution of sprint counts across all trials
+ */
+export function runBootstrapSimulation(
+  remainingBacklog: number,
+  historicalVelocities: number[],
+  trialCount: number
+): number[] {
+  const sprintsRequired: number[] = []
+
+  for (let i = 0; i < trialCount; i++) {
+    sprintsRequired.push(runSingleTrialBootstrap(remainingBacklog, historicalVelocities))
+  }
+
+  // Sort for percentile calculation
+  sprintsRequired.sort((a, b) => a - b)
+
+  return sprintsRequired
+}
+
+/**
+ * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions
+ * Bootstrap is only included if historical velocities are provided
+ * Returns results from all simulations for comparison
+ */
+export function runQuadrupleForecast(
+  config: ForecastConfig & { sprintCadenceWeeks: number },
+  historicalVelocities?: number[]
+): {
+  truncatedNormal: { results: PercentileResults; sprintsRequired: number[] }
+  lognormal: { results: PercentileResults; sprintsRequired: number[] }
+  gamma: { results: PercentileResults; sprintsRequired: number[] }
+  bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null
+} {
+  const baseInput = {
+    remainingBacklog: config.remainingBacklog,
+    velocityMean: config.velocityMean,
+    velocityStdDev: config.velocityStdDev,
+    startDate: config.startDate,
+    sprintCadenceWeeks: config.sprintCadenceWeeks,
+    trialCount: config.trialCount,
+  }
+
+  // Run truncated normal distribution simulation
+  const truncatedNormalSimulation = runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
+  const truncatedNormalResults = extractPercentileResults(
+    truncatedNormalSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  // Run lognormal distribution simulation
+  const lognormalSimulation = runSimulation({ ...baseInput, distributionType: 'lognormal' })
+  const lognormalResults = extractPercentileResults(
+    lognormalSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  // Run gamma distribution simulation
+  const gammaSimulation = runSimulation({ ...baseInput, distributionType: 'gamma' })
+  const gammaResults = extractPercentileResults(
+    gammaSimulation.sprintsRequired,
+    config.startDate,
+    config.sprintCadenceWeeks
+  )
+
+  // Run bootstrap simulation only if historical velocities are provided
+  let bootstrapData: { results: PercentileResults; sprintsRequired: number[] } | null = null
+  if (historicalVelocities && historicalVelocities.length > 0) {
+    const bootstrapSprintsRequired = runBootstrapSimulation(
+      config.remainingBacklog,
+      historicalVelocities,
+      config.trialCount
+    )
+    const bootstrapResults = extractPercentileResults(
+      bootstrapSprintsRequired,
+      config.startDate,
+      config.sprintCadenceWeeks
+    )
+    bootstrapData = { results: bootstrapResults, sprintsRequired: bootstrapSprintsRequired }
+  }
+
+  return {
+    truncatedNormal: { results: truncatedNormalResults, sprintsRequired: truncatedNormalSimulation.sprintsRequired },
+    lognormal: { results: lognormalResults, sprintsRequired: lognormalSimulation.sprintsRequired },
+    gamma: { results: gammaResults, sprintsRequired: gammaSimulation.sprintsRequired },
+    bootstrap: bootstrapData,
+  }
 }

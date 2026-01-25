@@ -7,23 +7,27 @@ import {
 } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { calculateVelocityStats } from '../lib/statistics'
-import { runDualForecast, calculateCustomPercentile, type PercentileResults } from '../lib/monte-carlo'
+import { runQuadrupleForecast, calculateCustomPercentile, type PercentileResults } from '../lib/monte-carlo'
 import { ForecastForm } from './ForecastForm'
 import { ForecastResults } from './ForecastResults'
 import { PercentileSelector } from './PercentileSelector'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
-import { TRIAL_COUNT } from '../constants'
+import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import type { ForecastResult } from '@/shared/types'
 
-interface DualResults {
-  normal: PercentileResults
+interface QuadResults {
+  truncatedNormal: PercentileResults
   lognormal: PercentileResults
+  gamma: PercentileResults
+  bootstrap: PercentileResults | null
 }
 
-interface DualSimulationData {
-  normal: number[]
+interface QuadSimulationData {
+  truncatedNormal: number[]
   lognormal: number[]
+  gamma: number[]
+  bootstrap: number[] | null
 }
 
 export function ForecastTab() {
@@ -76,13 +80,22 @@ export function ForecastTab() {
     )
   }, [selectedProject, projectSprints])
 
+  // Check if we have enough sprints for bootstrap
+  const canUseBootstrap = includedSprints.length >= MIN_SPRINTS_FOR_BOOTSTRAP
+
+  // Get historical velocities for bootstrap
+  const historicalVelocities = useMemo(
+    () => includedSprints.map((s) => s.doneValue),
+    [includedSprints]
+  )
+
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectId = e.target.value
     setSelectedProjectId(newProjectId)
     // Clear results when switching projects
     setResults(null)
     setSimulationData(null)
-    setCustomResults({ normal: null, lognormal: null })
+    setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
   }
 
   // Form state
@@ -90,14 +103,16 @@ export function ForecastTab() {
   const [velocityMean, setVelocityMean] = useState('')
   const [velocityStdDev, setVelocityStdDev] = useState('')
 
-  // Results state - now holds both normal and lognormal results
-  const [results, setResults] = useState<DualResults | null>(null)
-  const [simulationData, setSimulationData] = useState<DualSimulationData | null>(null)
+  // Results state - now holds truncated normal, lognormal, gamma, and bootstrap results
+  const [results, setResults] = useState<QuadResults | null>(null)
+  const [simulationData, setSimulationData] = useState<QuadSimulationData | null>(null)
   const [customPercentile, setCustomPercentile] = useState(85)
   const [customResults, setCustomResults] = useState<{
-    normal: ForecastResult | null
+    truncatedNormal: ForecastResult | null
     lognormal: ForecastResult | null
-  }>({ normal: null, lognormal: null })
+    gamma: ForecastResult | null
+    bootstrap: ForecastResult | null
+  }>({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
 
   // Use calculated stats or overrides
   const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
@@ -115,43 +130,67 @@ export function ForecastTab() {
       sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
     }
 
-    // Run both simulations
-    const dualResults = runDualForecast(config)
+    // Run all simulations (bootstrap only if we have enough sprints)
+    const quadResults = runQuadrupleForecast(
+      config,
+      canUseBootstrap ? historicalVelocities : undefined
+    )
 
     setSimulationData({
-      normal: dualResults.normal.sprintsRequired,
-      lognormal: dualResults.lognormal.sprintsRequired,
+      truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+      lognormal: quadResults.lognormal.sprintsRequired,
+      gamma: quadResults.gamma.sprintsRequired,
+      bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
     })
 
     setResults({
-      normal: dualResults.normal.results,
-      lognormal: dualResults.lognormal.results,
+      truncatedNormal: quadResults.truncatedNormal.results,
+      lognormal: quadResults.lognormal.results,
+      gamma: quadResults.gamma.results,
+      bootstrap: quadResults.bootstrap?.results ?? null,
     })
 
     // Calculate custom percentile results for the default value
-    const normalCustom = calculateCustomPercentile(
-      dualResults.normal.sprintsRequired,
+    const truncatedNormalCustom = calculateCustomPercentile(
+      quadResults.truncatedNormal.sprintsRequired,
       customPercentile,
       forecastStartDate,
       selectedProject.sprintCadenceWeeks
     )
     const lognormalCustom = calculateCustomPercentile(
-      dualResults.lognormal.sprintsRequired,
+      quadResults.lognormal.sprintsRequired,
       customPercentile,
       forecastStartDate,
       selectedProject.sprintCadenceWeeks
     )
+    const gammaCustom = calculateCustomPercentile(
+      quadResults.gamma.sprintsRequired,
+      customPercentile,
+      forecastStartDate,
+      selectedProject.sprintCadenceWeeks
+    )
+    let bootstrapCustom: ForecastResult | null = null
+    if (quadResults.bootstrap) {
+      bootstrapCustom = calculateCustomPercentile(
+        quadResults.bootstrap.sprintsRequired,
+        customPercentile,
+        forecastStartDate,
+        selectedProject.sprintCadenceWeeks
+      )
+    }
     setCustomResults({
-      normal: normalCustom,
+      truncatedNormal: truncatedNormalCustom,
       lognormal: lognormalCustom,
+      gamma: gammaCustom,
+      bootstrap: bootstrapCustom,
     })
   }
 
   const handleCustomPercentileChange = (percentile: number) => {
     setCustomPercentile(percentile)
     if (simulationData && selectedProject) {
-      const normalResult = calculateCustomPercentile(
-        simulationData.normal,
+      const truncatedNormalResult = calculateCustomPercentile(
+        simulationData.truncatedNormal,
         percentile,
         forecastStartDate,
         selectedProject.sprintCadenceWeeks
@@ -162,9 +201,26 @@ export function ForecastTab() {
         forecastStartDate,
         selectedProject.sprintCadenceWeeks
       )
+      const gammaResult = calculateCustomPercentile(
+        simulationData.gamma,
+        percentile,
+        forecastStartDate,
+        selectedProject.sprintCadenceWeeks
+      )
+      let bootstrapResult: ForecastResult | null = null
+      if (simulationData.bootstrap) {
+        bootstrapResult = calculateCustomPercentile(
+          simulationData.bootstrap,
+          percentile,
+          forecastStartDate,
+          selectedProject.sprintCadenceWeeks
+        )
+      }
       setCustomResults({
-        normal: normalResult,
+        truncatedNormal: truncatedNormalResult,
         lognormal: lognormalResult,
+        gamma: gammaResult,
+        bootstrap: bootstrapResult,
       })
     }
   }
@@ -182,10 +238,14 @@ export function ForecastTab() {
         sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
         trialCount: TRIAL_COUNT,
       },
-      normalResults: results.normal,
+      truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
-      normalSprintsRequired: simulationData.normal,
+      gammaResults: results.gamma,
+      bootstrapResults: results.bootstrap,
+      truncatedNormalSprintsRequired: simulationData.truncatedNormal,
       lognormalSprintsRequired: simulationData.lognormal,
+      gammaSprintsRequired: simulationData.gamma,
+      bootstrapSprintsRequired: simulationData.bootstrap,
     })
 
     downloadCsv(csvContent, generateFilename(selectedProject.name))
@@ -253,14 +313,18 @@ export function ForecastTab() {
       {selectedProject && results && (
         <>
           <ForecastResults
-            normalResults={results.normal}
+            truncatedNormalResults={results.truncatedNormal}
             lognormalResults={results.lognormal}
+            gammaResults={results.gamma}
+            bootstrapResults={results.bootstrap}
             onExport={handleExportCsv}
           />
           <PercentileSelector
             percentile={customPercentile}
-            normalResult={customResults.normal}
+            truncatedNormalResult={customResults.truncatedNormal}
             lognormalResult={customResults.lognormal}
+            gammaResult={customResults.gamma}
+            bootstrapResult={customResults.bootstrap}
             onPercentileChange={handleCustomPercentileChange}
           />
         </>

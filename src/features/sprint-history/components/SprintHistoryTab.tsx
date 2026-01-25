@@ -175,6 +175,17 @@ export function SprintHistoryTab() {
         </button>
       </div>
 
+      {/* Sprint Form - appears immediately after the Add Sprint button */}
+      {selectedProject && isFormOpen && (
+        <SprintForm
+          sprint={editingSprint}
+          project={selectedProject}
+          existingSprintCount={sprints.length}
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+        />
+      )}
+
       {selectedProject && (
         <>
           {/* Sprint Configuration - editable only when no sprints exist */}
@@ -265,15 +276,7 @@ export function SprintHistoryTab() {
 
           <VelocityStats sprints={sprints} unitOfMeasure={selectedProject.unitOfMeasure} />
 
-          {isFormOpen ? (
-            <SprintForm
-              sprint={editingSprint}
-              project={selectedProject}
-              existingSprintCount={sprints.length}
-              onSubmit={handleFormSubmit}
-              onCancel={handleFormCancel}
-            />
-          ) : (
+          {!isFormOpen && (
             <SprintList
               sprints={sprints}
               unitOfMeasure={selectedProject.unitOfMeasure}

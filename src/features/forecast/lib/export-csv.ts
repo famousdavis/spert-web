@@ -12,33 +12,62 @@ interface ExportConfig {
 
 interface ExportData {
   config: ExportConfig
-  normalResults: PercentileResults
+  truncatedNormalResults: PercentileResults
   lognormalResults: PercentileResults
-  normalSprintsRequired: number[]
+  gammaResults: PercentileResults
+  bootstrapResults: PercentileResults | null
+  truncatedNormalSprintsRequired: number[]
   lognormalSprintsRequired: number[]
+  gammaSprintsRequired: number[]
+  bootstrapSprintsRequired: number[] | null
+}
+
+interface FrequencyCount {
+  truncatedNormal: number
+  lognormal: number
+  gamma: number
+  bootstrap: number
 }
 
 /**
  * Build frequency distribution from sorted sprint data
  */
 function buildFrequencyDistribution(
-  normalSprints: number[],
-  lognormalSprints: number[]
-): Map<number, { normal: number; lognormal: number }> {
-  const freq = new Map<number, { normal: number; lognormal: number }>()
+  truncatedNormalSprints: number[],
+  lognormalSprints: number[],
+  gammaSprints: number[],
+  bootstrapSprints: number[] | null
+): Map<number, FrequencyCount> {
+  const freq = new Map<number, FrequencyCount>()
 
-  // Count normal distribution
-  for (const sprints of normalSprints) {
-    const existing = freq.get(sprints) || { normal: 0, lognormal: 0 }
-    existing.normal++
+  // Count truncated normal distribution
+  for (const sprints of truncatedNormalSprints) {
+    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
+    existing.truncatedNormal++
     freq.set(sprints, existing)
   }
 
   // Count lognormal distribution
   for (const sprints of lognormalSprints) {
-    const existing = freq.get(sprints) || { normal: 0, lognormal: 0 }
+    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
     existing.lognormal++
     freq.set(sprints, existing)
+  }
+
+  // Count gamma distribution
+  for (const sprints of gammaSprints) {
+    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
+    existing.gamma++
+    freq.set(sprints, existing)
+  }
+
+  // Count bootstrap distribution (if available)
+  if (bootstrapSprints) {
+    for (const sprints of bootstrapSprints) {
+      const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
+      existing.bootstrap++
+      freq.set(sprints, existing)
+    }
   }
 
   return freq
@@ -50,6 +79,7 @@ function buildFrequencyDistribution(
 export function generateForecastCsv(data: ExportData): string {
   const lines: string[] = []
   const totalTrials = data.config.trialCount
+  const hasBootstrap = data.bootstrapResults !== null && data.bootstrapSprintsRequired !== null
 
   // Section 1: Parameters
   lines.push('SIMULATION PARAMETERS')
@@ -61,11 +91,15 @@ export function generateForecastCsv(data: ExportData): string {
   lines.push(`Start Date,${data.config.startDate}`)
   lines.push(`Sprint Cadence (weeks),${data.config.sprintCadenceWeeks}`)
   lines.push(`Trial Count,${totalTrials}`)
+  lines.push(`Bootstrap Enabled,${hasBootstrap ? 'Yes' : 'No'}`)
   lines.push('')
 
   // Section 2: Percentile Results
   lines.push('PERCENTILE RESULTS')
-  lines.push('Percentile,Normal Sprints,Normal Finish Date,Lognormal Sprints,Lognormal Finish Date')
+  const percentileHeader = hasBootstrap
+    ? 'Percentile,T-Normal Sprints,T-Normal Finish Date,Lognorm Sprints,Lognorm Finish Date,Gamma Sprints,Gamma Finish Date,Bootstrap Sprints,Bootstrap Finish Date'
+    : 'Percentile,T-Normal Sprints,T-Normal Finish Date,Lognorm Sprints,Lognorm Finish Date,Gamma Sprints,Gamma Finish Date'
+  lines.push(percentileHeader)
 
   const percentiles = [
     { key: 'p50', label: '50' },
@@ -76,52 +110,74 @@ export function generateForecastCsv(data: ExportData): string {
   ] as const
 
   for (const p of percentiles) {
-    const normal = data.normalResults[p.key]
+    const truncatedNormal = data.truncatedNormalResults[p.key]
     const lognormal = data.lognormalResults[p.key]
-    lines.push(
-      `P${p.label},${normal.sprintsRequired},${normal.finishDate},${lognormal.sprintsRequired},${lognormal.finishDate}`
-    )
+    const gamma = data.gammaResults[p.key]
+    let line = `P${p.label},${truncatedNormal.sprintsRequired},${truncatedNormal.finishDate},${lognormal.sprintsRequired},${lognormal.finishDate},${gamma.sprintsRequired},${gamma.finishDate}`
+    if (hasBootstrap && data.bootstrapResults) {
+      const bootstrap = data.bootstrapResults[p.key]
+      line += `,${bootstrap.sprintsRequired},${bootstrap.finishDate}`
+    }
+    lines.push(line)
   }
   lines.push('')
 
   // Section 3: Frequency Distribution
   lines.push('FREQUENCY DISTRIBUTION')
-  lines.push(
-    'Sprints,Normal Count,Normal %,Normal Cumulative %,Lognormal Count,Lognormal %,Lognormal Cumulative %'
-  )
+  const freqHeader = hasBootstrap
+    ? 'Sprints,T-Normal Count,T-Normal %,T-Normal Cumul %,Lognorm Count,Lognorm %,Lognorm Cumul %,Gamma Count,Gamma %,Gamma Cumul %,Bootstrap Count,Bootstrap %,Bootstrap Cumul %'
+    : 'Sprints,T-Normal Count,T-Normal %,T-Normal Cumul %,Lognorm Count,Lognorm %,Lognorm Cumul %,Gamma Count,Gamma %,Gamma Cumul %'
+  lines.push(freqHeader)
 
   const freq = buildFrequencyDistribution(
-    data.normalSprintsRequired,
-    data.lognormalSprintsRequired
+    data.truncatedNormalSprintsRequired,
+    data.lognormalSprintsRequired,
+    data.gammaSprintsRequired,
+    data.bootstrapSprintsRequired
   )
 
   // Sort by sprint count
   const sortedSprints = Array.from(freq.keys()).sort((a, b) => a - b)
 
-  let normalCumulative = 0
+  let truncatedNormalCumulative = 0
   let lognormalCumulative = 0
+  let gammaCumulative = 0
+  let bootstrapCumulative = 0
 
   for (const sprints of sortedSprints) {
     const counts = freq.get(sprints)!
-    const normalPct = (counts.normal / totalTrials) * 100
+    const truncatedNormalPct = (counts.truncatedNormal / totalTrials) * 100
     const lognormalPct = (counts.lognormal / totalTrials) * 100
-    normalCumulative += normalPct
+    const gammaPct = (counts.gamma / totalTrials) * 100
+    truncatedNormalCumulative += truncatedNormalPct
     lognormalCumulative += lognormalPct
+    gammaCumulative += gammaPct
 
-    lines.push(
-      `${sprints},${counts.normal},${normalPct.toFixed(2)}%,${normalCumulative.toFixed(2)}%,${counts.lognormal},${lognormalPct.toFixed(2)}%,${lognormalCumulative.toFixed(2)}%`
-    )
+    let line = `${sprints},${counts.truncatedNormal},${truncatedNormalPct.toFixed(2)}%,${truncatedNormalCumulative.toFixed(2)}%,${counts.lognormal},${lognormalPct.toFixed(2)}%,${lognormalCumulative.toFixed(2)}%,${counts.gamma},${gammaPct.toFixed(2)}%,${gammaCumulative.toFixed(2)}%`
+
+    if (hasBootstrap) {
+      const bootstrapPct = (counts.bootstrap / totalTrials) * 100
+      bootstrapCumulative += bootstrapPct
+      line += `,${counts.bootstrap},${bootstrapPct.toFixed(2)}%,${bootstrapCumulative.toFixed(2)}%`
+    }
+
+    lines.push(line)
   }
   lines.push('')
 
   // Section 4: Raw Trial Data
   lines.push('RAW TRIAL DATA (sorted)')
-  lines.push('Trial,Normal Sprints,Lognormal Sprints')
+  const rawHeader = hasBootstrap
+    ? 'Trial,T-Normal Sprints,Lognorm Sprints,Gamma Sprints,Bootstrap Sprints'
+    : 'Trial,T-Normal Sprints,Lognorm Sprints,Gamma Sprints'
+  lines.push(rawHeader)
 
   for (let i = 0; i < totalTrials; i++) {
-    lines.push(
-      `${i + 1},${data.normalSprintsRequired[i]},${data.lognormalSprintsRequired[i]}`
-    )
+    let line = `${i + 1},${data.truncatedNormalSprintsRequired[i]},${data.lognormalSprintsRequired[i]},${data.gammaSprintsRequired[i]}`
+    if (hasBootstrap && data.bootstrapSprintsRequired) {
+      line += `,${data.bootstrapSprintsRequired[i]}`
+    }
+    lines.push(line)
   }
 
   return lines.join('\n')

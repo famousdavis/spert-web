@@ -97,3 +97,120 @@ export function randomLognormalFromMeanStdDev(mean: number, stdDev: number): num
   const { muLn, sigmaLn } = normalToLognormalParams(mean, stdDev)
   return randomLognormal(muLn, sigmaLn)
 }
+
+/**
+ * Generate a random number from a truncated normal distribution
+ * using rejection sampling. The distribution is truncated at lowerBound (default 0).
+ *
+ * This ensures we never generate negative values for quantities like velocity.
+ *
+ * @param mean - Mean of the underlying normal distribution
+ * @param stdDev - Standard deviation of the underlying normal distribution
+ * @param lowerBound - Lower bound for truncation (default 0)
+ */
+export function randomTruncatedNormal(
+  mean: number,
+  stdDev: number,
+  lowerBound: number = 0
+): number {
+  // If mean is far above the lower bound (more than 4 std devs),
+  // the probability of rejection is negligible, so use simple rejection sampling
+  const maxAttempts = 1000
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const sample = randomNormal(mean, stdDev)
+    if (sample >= lowerBound) {
+      return sample
+    }
+  }
+
+  // Fallback: if we somehow can't sample (mean very close to or below lower bound),
+  // return the lower bound plus a small positive value
+  return lowerBound + 0.1
+}
+
+/**
+ * Convert normal distribution parameters (mean, stdDev) to gamma parameters (shape, scale)
+ * so that the resulting gamma distribution has the same mean and standard deviation.
+ *
+ * Given observed mean (μ) and standard deviation (σ):
+ * shape (k) = (μ/σ)²
+ * scale (θ) = σ²/μ
+ *
+ * Note: Gamma distribution requires positive mean.
+ */
+export function normalToGammaParams(
+  mean: number,
+  stdDev: number
+): { shape: number; scale: number } {
+  if (mean <= 0) {
+    // Gamma requires positive mean; fall back to reasonable defaults
+    return { shape: 1, scale: 0.1 }
+  }
+
+  if (stdDev <= 0) {
+    // If no variation, return a shape that produces deterministic-like output
+    return { shape: 100, scale: mean / 100 }
+  }
+
+  const shape = Math.pow(mean / stdDev, 2)
+  const scale = Math.pow(stdDev, 2) / mean
+
+  return { shape, scale }
+}
+
+/**
+ * Generate a random number from a gamma distribution
+ * using the Marsaglia and Tsang method.
+ *
+ * @param shape - Shape parameter (k or α), must be > 0
+ * @param scale - Scale parameter (θ), must be > 0
+ */
+export function randomGamma(shape: number, scale: number): number {
+  // Handle shape < 1 by using the property that if X ~ Gamma(shape+1, 1),
+  // then X * U^(1/shape) ~ Gamma(shape, 1) where U ~ Uniform(0,1)
+  if (shape < 1) {
+    const u = Math.random()
+    return randomGamma(shape + 1, scale) * Math.pow(u, 1 / shape)
+  }
+
+  // Marsaglia and Tsang's method for shape >= 1
+  const d = shape - 1 / 3
+  const c = 1 / Math.sqrt(9 * d)
+
+  while (true) {
+    let x: number
+    let v: number
+
+    do {
+      // Generate standard normal
+      const u1 = Math.random()
+      const u2 = Math.random()
+      x = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+      v = 1 + c * x
+    } while (v <= 0)
+
+    v = v * v * v
+    const u = Math.random()
+
+    // Check acceptance
+    if (u < 1 - 0.0331 * (x * x) * (x * x)) {
+      return d * v * scale
+    }
+
+    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
+      return d * v * scale
+    }
+  }
+}
+
+/**
+ * Generate a random number from a gamma distribution
+ * given the desired mean and standard deviation.
+ *
+ * This is a convenience function that converts normal params to gamma params first.
+ */
+export function randomGammaFromMeanStdDev(mean: number, stdDev: number): number {
+  const { shape, scale } = normalToGammaParams(mean, stdDev)
+  return randomGamma(shape, scale)
+}
