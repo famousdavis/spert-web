@@ -22,6 +22,7 @@ interface DistributionChartProps {
   customPercentile: number
   startDate: string
   sprintCadenceWeeks: number
+  completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
 }
 
 interface CdfDataPoint {
@@ -138,6 +139,7 @@ export function DistributionChart({
   customPercentile,
   startDate,
   sprintCadenceWeeks,
+  completedSprintCount,
 }: DistributionChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -190,10 +192,11 @@ export function DistributionChart({
                 tick={(props) => {
                   const { x, y, payload } = props
                   const dateLabel = sprintToDate.get(payload.value) || ''
+                  const absoluteSprint = payload.value + completedSprintCount
                   return (
                     <g transform={`translate(${x},${y})`}>
                       <text x={0} y={0} dy={12} textAnchor="middle" fontSize={11} fill="#666">
-                        {payload.value}
+                        {absoluteSprint}
                       </text>
                       <text x={0} y={0} dy={26} textAnchor="middle" fontSize={10} fill="#999">
                         {dateLabel}
@@ -214,7 +217,8 @@ export function DistributionChart({
                 formatter={(value) => [typeof value === 'number' ? `${value.toFixed(1)}%` : value, '']}
                 labelFormatter={(sprints) => {
                   const dateLabel = sprintToDate.get(sprints as number) || ''
-                  return `${sprints} sprints (${dateLabel})`
+                  const absoluteSprint = (sprints as number) + completedSprintCount
+                  return `Sprint ${absoluteSprint} (${dateLabel})`
                 }}
                 contentStyle={{ fontSize: 12 }}
               />

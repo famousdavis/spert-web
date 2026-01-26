@@ -3,7 +3,7 @@
 export interface Project {
   id: string
   name: string
-  sprintCadenceWeeks: 1 | 2 | 3 | 4
+  sprintCadenceWeeks?: 1 | 2 | 3 | 4 // Optional until configured on Sprint History tab
   projectStartDate?: string // ISO date string (YYYY-MM-DD)
   projectFinishDate?: string // ISO date string (YYYY-MM-DD)
   firstSprintStartDate?: string // ISO date string (YYYY-MM-DD) - when the team started their first sprint

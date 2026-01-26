@@ -21,6 +21,7 @@ interface PercentileSelectorProps {
   lognormalResult: ForecastResult | null
   gammaResult: ForecastResult | null
   bootstrapResult: ForecastResult | null
+  completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
   onPercentileChange: (percentile: number) => void
 }
 
@@ -30,6 +31,7 @@ export function PercentileSelector({
   lognormalResult,
   gammaResult,
   bootstrapResult,
+  completedSprintCount,
   onPercentileChange,
 }: PercentileSelectorProps) {
   const hasResults = truncatedNormalResult && lognormalResult && gammaResult
@@ -70,7 +72,7 @@ export function PercentileSelector({
               <p className="text-sm text-muted-foreground">Finish Date</p>
               <p className="text-base font-semibold">{formatDateShort(truncatedNormalResult.finishDate)}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {truncatedNormalResult.sprintsRequired} sprints
+                Sprint {truncatedNormalResult.sprintsRequired + completedSprintCount}
               </p>
             </div>
           </div>
@@ -100,7 +102,7 @@ export function PercentileSelector({
                 {formatDateShort(lognormalResult.finishDate)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {lognormalResult.sprintsRequired} sprints
+                Sprint {lognormalResult.sprintsRequired + completedSprintCount}
               </p>
             </div>
           </div>
@@ -130,7 +132,7 @@ export function PercentileSelector({
                 {formatDateShort(gammaResult.finishDate)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {gammaResult.sprintsRequired} sprints
+                Sprint {gammaResult.sprintsRequired + completedSprintCount}
               </p>
             </div>
           </div>
@@ -161,7 +163,7 @@ export function PercentileSelector({
                   {formatDateShort(bootstrapResult.finishDate)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {bootstrapResult.sprintsRequired} sprints
+                  Sprint {bootstrapResult.sprintsRequired + completedSprintCount}
                 </p>
               </div>
             </div>

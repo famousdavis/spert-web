@@ -72,7 +72,7 @@ export function ForecastForm({
             type="number"
             min="0"
             step="any"
-            value={velocityMean}
+            value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
             onChange={(e) => onVelocityMeanChange(e.target.value)}
             style={{
               padding: '0.5rem',
@@ -80,8 +80,10 @@ export function ForecastForm({
               border: '1px solid #ddd',
               borderRadius: '4px',
               width: '100%',
+              backgroundColor: 'white',
+              color: '#333',
             }}
-            placeholder={calculatedMean > 0 ? calculatedMean.toFixed(1) : 'No data'}
+            placeholder={calculatedMean > 0 ? '' : 'No data'}
           />
           <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
             {calculatedMean > 0
@@ -103,7 +105,7 @@ export function ForecastForm({
             type="number"
             min="0"
             step="any"
-            value={velocityStdDev}
+            value={velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')}
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
             style={{
               padding: '0.5rem',
@@ -111,8 +113,10 @@ export function ForecastForm({
               border: '1px solid #ddd',
               borderRadius: '4px',
               width: '100%',
+              backgroundColor: 'white',
+              color: '#333',
             }}
-            placeholder={calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : 'No data'}
+            placeholder={calculatedStdDev > 0 ? '' : 'No data'}
           />
           <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
             {calculatedStdDev > 0

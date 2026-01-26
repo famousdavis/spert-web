@@ -19,6 +19,7 @@ interface ForecastResultsProps {
   lognormalResults: PercentileResults
   gammaResults: PercentileResults
   bootstrapResults: PercentileResults | null
+  completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
   onExport?: () => void
 }
 
@@ -27,6 +28,7 @@ export function ForecastResults({
   lognormalResults,
   gammaResults,
   bootstrapResults,
+  completedSprintCount,
   onExport,
 }: ForecastResultsProps) {
   const hasBootstrap = bootstrapResults !== null
@@ -115,31 +117,31 @@ export function ForecastResults({
               )}
             </tr>
             <tr className="border-b border-border">
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                Date
-              </th>
               <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Spr
-              </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                Date
-              </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Spr
+                Sprint
               </th>
               <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
                 Date
               </th>
               <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Spr
+                Sprint
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                Date
+              </th>
+              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                Sprint
+              </th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                Date
               </th>
               {hasBootstrap && (
                 <>
+                  <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+                    Sprint
+                  </th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
                     Date
-                  </th>
-                  <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                    Spr
                   </th>
                 </>
               )}
@@ -162,8 +164,17 @@ export function ForecastResults({
               return (
                 <tr key={key} className="border-b border-border">
                   <td className="px-2 py-3 text-sm font-medium">{label}</td>
+                  <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
                   <td className="px-2 py-3 text-sm">{formatDateShort(truncatedNormal.finishDate)}</td>
-                  <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired}</td>
+                  <td
+                    className="px-2 py-3 text-right text-sm"
+                    style={{
+                      color: lognormalDiffSprints ? '#0070f3' : 'inherit',
+                      fontWeight: lognormalDiffSprints ? 500 : 'normal',
+                    }}
+                  >
+                    {lognormal.sprintsRequired + completedSprintCount}
+                  </td>
                   <td
                     className="px-2 py-3 text-sm"
                     style={{
@@ -176,11 +187,11 @@ export function ForecastResults({
                   <td
                     className="px-2 py-3 text-right text-sm"
                     style={{
-                      color: lognormalDiffSprints ? '#0070f3' : 'inherit',
-                      fontWeight: lognormalDiffSprints ? 500 : 'normal',
+                      color: gammaDiffSprints ? '#0070f3' : 'inherit',
+                      fontWeight: gammaDiffSprints ? 500 : 'normal',
                     }}
                   >
-                    {lognormal.sprintsRequired}
+                    {gamma.sprintsRequired + completedSprintCount}
                   </td>
                   <td
                     className="px-2 py-3 text-sm"
@@ -191,17 +202,17 @@ export function ForecastResults({
                   >
                     {formatDateShort(gamma.finishDate)}
                   </td>
-                  <td
-                    className="px-2 py-3 text-right text-sm"
-                    style={{
-                      color: gammaDiffSprints ? '#0070f3' : 'inherit',
-                      fontWeight: gammaDiffSprints ? 500 : 'normal',
-                    }}
-                  >
-                    {gamma.sprintsRequired}
-                  </td>
                   {hasBootstrap && bootstrap && (
                     <>
+                      <td
+                        className="px-2 py-3 text-right text-sm"
+                        style={{
+                          color: bootstrapDiffSprints ? '#0070f3' : 'inherit',
+                          fontWeight: bootstrapDiffSprints ? 500 : 'normal',
+                        }}
+                      >
+                        {bootstrap.sprintsRequired + completedSprintCount}
+                      </td>
                       <td
                         className="px-2 py-3 text-sm"
                         style={{
@@ -210,15 +221,6 @@ export function ForecastResults({
                         }}
                       >
                         {formatDateShort(bootstrap.finishDate)}
-                      </td>
-                      <td
-                        className="px-2 py-3 text-right text-sm"
-                        style={{
-                          color: bootstrapDiffSprints ? '#0070f3' : 'inherit',
-                          fontWeight: bootstrapDiffSprints ? 500 : 'normal',
-                        }}
-                      >
-                        {bootstrap.sprintsRequired}
                       </td>
                     </>
                   )}

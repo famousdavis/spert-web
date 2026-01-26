@@ -59,20 +59,24 @@ export function ForecastTab() {
     [includedSprints]
   )
 
+  // Calculate the number of completed sprints (highest sprint number in history)
+  const completedSprintCount = useMemo(() => {
+    if (projectSprints.length === 0) return 0
+    return Math.max(...projectSprints.map((s) => s.sprintNumber))
+  }, [projectSprints])
+
   // Calculate the forecast start date (next sprint start date after the latest sprint)
   const forecastStartDate = useMemo(() => {
-    if (!selectedProject?.firstSprintStartDate) return today()
+    if (!selectedProject?.firstSprintStartDate || !selectedProject?.sprintCadenceWeeks) return today()
     if (projectSprints.length === 0) return today()
 
-    // Find the highest sprint number
-    const highestSprintNumber = Math.max(...projectSprints.map((s) => s.sprintNumber))
-    // Next sprint would be highestSprintNumber + 1
+    // Next sprint would be completedSprintCount + 1
     return calculateSprintStartDate(
       selectedProject.firstSprintStartDate,
-      highestSprintNumber + 1,
+      completedSprintCount + 1,
       selectedProject.sprintCadenceWeeks
     )
-  }, [selectedProject, projectSprints])
+  }, [selectedProject, projectSprints, completedSprintCount])
 
   // Check if we have enough sprints for bootstrap
   const canUseBootstrap = includedSprints.length >= MIN_SPRINTS_FOR_BOOTSTRAP
@@ -119,7 +123,7 @@ export function ForecastTab() {
   const effectiveStdDev = velocityStdDev ? Number(velocityStdDev) : calculatedStats.standardDeviation
 
   const handleRunForecast = () => {
-    if (!selectedProject || !remainingBacklog) return
+    if (!selectedProject || !remainingBacklog || !selectedProject.sprintCadenceWeeks) return
 
     const config = {
       remainingBacklog: Number(remainingBacklog),
@@ -188,7 +192,7 @@ export function ForecastTab() {
 
   const handleCustomPercentileChange = (percentile: number) => {
     setCustomPercentile(percentile)
-    if (simulationData && selectedProject) {
+    if (simulationData && selectedProject?.sprintCadenceWeeks) {
       const truncatedNormalResult = calculateCustomPercentile(
         simulationData.truncatedNormal,
         percentile,
@@ -226,7 +230,7 @@ export function ForecastTab() {
   }
 
   const handleExportCsv = () => {
-    if (!selectedProject || !results || !simulationData) return
+    if (!selectedProject || !results || !simulationData || !selectedProject.sprintCadenceWeeks) return
 
     const csvContent = generateForecastCsv({
       config: {
@@ -310,13 +314,14 @@ export function ForecastTab() {
         />
       )}
 
-      {selectedProject && results && simulationData && (
+      {selectedProject?.sprintCadenceWeeks && results && simulationData && (
         <>
           <ForecastResults
             truncatedNormalResults={results.truncatedNormal}
             lognormalResults={results.lognormal}
             gammaResults={results.gamma}
             bootstrapResults={results.bootstrap}
+            completedSprintCount={completedSprintCount}
             onExport={handleExportCsv}
           />
           <DistributionChart
@@ -327,6 +332,7 @@ export function ForecastTab() {
             customPercentile={customPercentile}
             startDate={forecastStartDate}
             sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
+            completedSprintCount={completedSprintCount}
           />
           <PercentileSelector
             percentile={customPercentile}
@@ -334,6 +340,7 @@ export function ForecastTab() {
             lognormalResult={customResults.lognormal}
             gammaResult={customResults.gamma}
             bootstrapResult={customResults.bootstrap}
+            completedSprintCount={completedSprintCount}
             onPercentileChange={handleCustomPercentileChange}
           />
         </>

@@ -7,7 +7,11 @@ import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
 import type { Project } from '@/shared/types'
 
-export function ProjectsTab() {
+interface ProjectsTabProps {
+  onViewHistory?: (projectId: string) => void
+}
+
+export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const isClient = useIsClient()
   const projects = useProjectStore((state) => state.projects)
   const activeProject = useProjectStore(selectActiveProject)
@@ -145,6 +149,7 @@ export function ProjectsTab() {
         onEdit={handleEdit}
         onDelete={deleteProject}
         onReorder={reorderProjects}
+        onViewHistory={onViewHistory ?? (() => {})}
       />
     </div>
   )

@@ -44,12 +44,12 @@ export function SprintForm({
       }
     }
 
-    // New sprint - calculate dates from firstSprintStartDate
-    if (!project.firstSprintStartDate) {
+    // New sprint - calculate dates from firstSprintStartDate and sprintCadenceWeeks
+    if (!project.firstSprintStartDate || !project.sprintCadenceWeeks) {
       return {
         sprintStartDate: '',
         sprintFinishDate: '',
-        dateLabel: 'Set First Sprint Start Date above to calculate dates',
+        dateLabel: 'Set sprint configuration above to calculate dates',
       }
     }
 

@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Project } from '@/shared/types'
-import {
-  DEFAULT_SPRINT_CADENCE,
-  DEFAULT_UNIT_OF_MEASURE,
-} from '../constants'
+import { DEFAULT_UNIT_OF_MEASURE } from '../constants'
 
 interface ProjectFormProps {
   project: Project | null
@@ -96,7 +93,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
 
     onSubmit({
       name: name.trim(),
-      sprintCadenceWeeks: project?.sprintCadenceWeeks ?? DEFAULT_SPRINT_CADENCE,
+      sprintCadenceWeeks: project?.sprintCadenceWeeks, // Not set until configured on Sprint History tab
       projectStartDate: projectStartDate || undefined,
       projectFinishDate: projectFinishDate || undefined,
       unitOfMeasure: unitOfMeasure.trim(),

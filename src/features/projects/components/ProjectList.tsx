@@ -10,6 +10,7 @@ interface ProjectListProps {
   onEdit: (project: Project) => void
   onDelete: (id: string) => void
   onReorder: (projectIds: string[]) => void
+  onViewHistory: (projectId: string) => void
 }
 
 export function ProjectList({
@@ -18,6 +19,7 @@ export function ProjectList({
   onEdit,
   onDelete,
   onReorder,
+  onViewHistory,
 }: ProjectListProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -67,12 +69,15 @@ export function ProjectList({
   // Build sprint count summary
   const getProjectSummary = (project: Project) => {
     const parts: string[] = []
-    parts.push(`${project.sprintCadenceWeeks}-week sprints`)
+    // Only show sprint cadence if it's been configured
+    if (project.sprintCadenceWeeks) {
+      parts.push(`${project.sprintCadenceWeeks}-week sprints`)
+    }
     parts.push(project.unitOfMeasure)
     if (project.projectFinishDate) {
       parts.push(`finish: ${formatDate(project.projectFinishDate)}`)
     }
-    return `(${parts.join(', ')})`
+    return parts.length > 0 ? `(${parts.join(', ')})` : ''
   }
 
   return (
@@ -127,6 +132,20 @@ export function ProjectList({
 
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => onViewHistory(project.id)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#e7f3ff',
+                  border: '1px solid #0070f3',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  color: '#0070f3',
+                }}
+              >
+                View History
+              </button>
               <button
                 onClick={() => onEdit(project)}
                 style={{

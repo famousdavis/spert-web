@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { TabNavigation, type TabId } from './TabNavigation'
 import { Footer } from './Footer'
 import { ProjectsTab } from '@/features/projects'
@@ -9,9 +9,16 @@ import { ForecastTab } from '@/features/forecast'
 import { AboutTab } from '@/features/about'
 import { SettingsTab } from '@/features/settings'
 import { APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
+import { useProjectStore } from '@/shared/state/project-store'
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('projects')
+  const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
+
+  const handleViewHistory = useCallback((projectId: string) => {
+    setViewingProjectId(projectId)
+    setActiveTab('sprint-history')
+  }, [setViewingProjectId])
 
   return (
     <div className="min-h-screen bg-white p-8">
@@ -37,7 +44,7 @@ export function AppShell() {
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
         <main className="mt-8">
-          {activeTab === 'projects' && <ProjectsTab />}
+          {activeTab === 'projects' && <ProjectsTab onViewHistory={handleViewHistory} />}
           {activeTab === 'sprint-history' && <SprintHistoryTab />}
           {activeTab === 'forecast' && <ForecastTab />}
           {activeTab === 'about' && <AboutTab />}

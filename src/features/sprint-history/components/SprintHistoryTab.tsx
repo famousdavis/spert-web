@@ -106,6 +106,11 @@ export function SprintHistoryTab() {
   // Check if firstSprintStartDate can be edited (only when no sprints exist)
   const canEditFirstSprintDate = sprints.length === 0
 
+  // Check if sprint configuration is complete (both cadence and first sprint date are set)
+  const isSprintConfigComplete =
+    selectedProject?.sprintCadenceWeeks !== undefined &&
+    selectedProject?.firstSprintStartDate !== undefined
+
   if (!isClient) {
     return <div className="text-muted-foreground">Loading...</div>
   }
@@ -150,15 +155,18 @@ export function SprintHistoryTab() {
         </h2>
         <button
           onClick={handleCreate}
+          disabled={!isSprintConfigComplete}
+          title={!isSprintConfigComplete ? 'Set sprint cadence and first sprint start date first' : undefined}
           style={{
             padding: '0.5rem 1rem',
-            background: '#0070f3',
+            background: isSprintConfigComplete ? '#0070f3' : '#ccc',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer',
+            cursor: isSprintConfigComplete ? 'pointer' : 'not-allowed',
             fontSize: '0.9rem',
             fontWeight: 600,
+            opacity: isSprintConfigComplete ? 1 : 0.6,
           }}
         >
           Add Sprint
@@ -180,6 +188,11 @@ export function SprintHistoryTab() {
         <>
           {/* Sprint Configuration - editable only when no sprints exist */}
           <div className="rounded-lg border border-border p-4" style={{ background: '#f9f9f9' }}>
+            {canEditFirstSprintDate && !isSprintConfigComplete && (
+              <p style={{ fontSize: '0.875rem', color: '#555', marginBottom: '0.75rem' }}>
+                Configure the sprint cadence and first sprint start date before adding sprints.
+              </p>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
               {/* Sprint Cadence */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -192,22 +205,34 @@ export function SprintHistoryTab() {
                   }}
                 >
                   Sprint Cadence
+                  {canEditFirstSprintDate && !selectedProject.sprintCadenceWeeks && (
+                    <span style={{ color: '#dc3545', marginLeft: '2px' }}>*</span>
+                  )}
                 </label>
                 <select
                   id="sprintCadence"
-                  value={selectedProject.sprintCadenceWeeks}
+                  value={selectedProject.sprintCadenceWeeks ?? ''}
                   onChange={(e) => handleCadenceChange(Number(e.target.value) as SprintCadence)}
                   disabled={!canEditFirstSprintDate}
                   style={{
                     padding: '0.5rem',
                     fontSize: '0.9rem',
-                    border: '1px solid #ddd',
+                    border: canEditFirstSprintDate && !selectedProject.sprintCadenceWeeks
+                      ? '2px solid #0070f3'
+                      : '1px solid #ddd',
                     borderRadius: '4px',
                     width: '90px',
-                    backgroundColor: canEditFirstSprintDate ? 'white' : '#e9ecef',
+                    backgroundColor: !canEditFirstSprintDate
+                      ? '#e9ecef'
+                      : !selectedProject.sprintCadenceWeeks
+                        ? '#f0f7ff'
+                        : 'white',
                     cursor: canEditFirstSprintDate ? 'pointer' : 'not-allowed',
                   }}
                 >
+                  <option value="" disabled>
+                    Select
+                  </option>
                   {SPRINT_CADENCE_OPTIONS.map((weeks) => (
                     <option key={weeks} value={weeks}>
                       {weeks} wk{weeks > 1 ? 's' : ''}
@@ -227,6 +252,9 @@ export function SprintHistoryTab() {
                   }}
                 >
                   First Sprint Start Date
+                  {canEditFirstSprintDate && !selectedProject.firstSprintStartDate && (
+                    <span style={{ color: '#dc3545', marginLeft: '2px' }}>*</span>
+                  )}
                 </label>
                 <input
                   id="firstSprintStartDate"
@@ -241,11 +269,19 @@ export function SprintHistoryTab() {
                   style={{
                     padding: '0.5rem',
                     fontSize: '0.9rem',
-                    border: firstSprintDateError ? '1px solid #dc3545' : '1px solid #ddd',
+                    border: firstSprintDateError
+                      ? '1px solid #dc3545'
+                      : canEditFirstSprintDate && !selectedProject.firstSprintStartDate
+                        ? '2px solid #0070f3'
+                        : '1px solid #ddd',
                     borderRadius: '4px',
                     width: '150px',
                     color: '#333',
-                    backgroundColor: canEditFirstSprintDate ? 'white' : '#e9ecef',
+                    backgroundColor: !canEditFirstSprintDate
+                      ? '#e9ecef'
+                      : !selectedProject.firstSprintStartDate
+                        ? '#f0f7ff'
+                        : 'white',
                     cursor: canEditFirstSprintDate ? 'text' : 'not-allowed',
                   }}
                 />
