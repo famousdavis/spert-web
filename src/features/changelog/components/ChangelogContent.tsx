@@ -11,6 +11,23 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.4.0',
+    date: '2026-01-25',
+    sections: [
+      {
+        title: 'Visualization',
+        items: [
+          'Added CDF (Cumulative Distribution Function) chart to Forecast tab',
+          'Chart shows probability of completing backlog within X sprints for all distributions',
+          'X-axis displays sprint count with finish dates (Mon DD format)',
+          'Horizontal reference line marks selected custom percentile (P85 default)',
+          'Collapsible chart panel with discreet expand/collapse triangle',
+          'Interactive tooltips show probability and date on hover',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.3.0',
     date: '2026-01-25',
     sections: [

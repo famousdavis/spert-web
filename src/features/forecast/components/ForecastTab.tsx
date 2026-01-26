@@ -10,6 +10,7 @@ import { calculateVelocityStats } from '../lib/statistics'
 import { runQuadrupleForecast, calculateCustomPercentile, type PercentileResults } from '../lib/monte-carlo'
 import { ForecastForm } from './ForecastForm'
 import { ForecastResults } from './ForecastResults'
+import { DistributionChart } from './DistributionChart'
 import { PercentileSelector } from './PercentileSelector'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
@@ -309,7 +310,7 @@ export function ForecastTab() {
         />
       )}
 
-      {selectedProject && results && (
+      {selectedProject && results && simulationData && (
         <>
           <ForecastResults
             truncatedNormalResults={results.truncatedNormal}
@@ -317,6 +318,15 @@ export function ForecastTab() {
             gammaResults={results.gamma}
             bootstrapResults={results.bootstrap}
             onExport={handleExportCsv}
+          />
+          <DistributionChart
+            truncatedNormal={simulationData.truncatedNormal}
+            lognormal={simulationData.lognormal}
+            gamma={simulationData.gamma}
+            bootstrap={simulationData.bootstrap}
+            customPercentile={customPercentile}
+            startDate={forecastStartDate}
+            sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
           />
           <PercentileSelector
             percentile={customPercentile}
