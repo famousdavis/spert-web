@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   useProjectStore,
-  selectActiveProject,
+  selectViewingProject,
 } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { calculateVelocityStats } from '../lib/statistics'
@@ -33,19 +33,12 @@ interface QuadSimulationData {
 export function ForecastTab() {
   const isClient = useIsClient()
   const projects = useProjectStore((state) => state.projects)
-  const activeProject = useProjectStore(selectActiveProject)
+  const selectedProject = useProjectStore(selectViewingProject)
   const allSprints = useProjectStore((state) => state.sprints)
+  const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
 
-  // Local state for selected project (defaults to active project)
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
-
-  // Determine which project to show
-  const selectedProject = useMemo(() => {
-    if (selectedProjectId) {
-      return projects.find((p) => p.id === selectedProjectId) || activeProject
-    }
-    return activeProject
-  }, [selectedProjectId, projects, activeProject])
+  // Track previous project to clear results when project changes
+  const prevProjectIdRef = useRef<string | undefined>(selectedProject?.id)
 
   // Get all sprints for the selected project
   const projectSprints = useMemo(
@@ -89,13 +82,19 @@ export function ForecastTab() {
     [includedSprints]
   )
 
+  // Clear results when project changes (from either this tab or Sprint History tab)
+  useEffect(() => {
+    if (prevProjectIdRef.current !== selectedProject?.id) {
+      setResults(null)
+      setSimulationData(null)
+      setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
+      prevProjectIdRef.current = selectedProject?.id
+    }
+  }, [selectedProject?.id])
+
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectId = e.target.value
-    setSelectedProjectId(newProjectId)
-    // Clear results when switching projects
-    setResults(null)
-    setSimulationData(null)
-    setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
+    setViewingProjectId(newProjectId)
   }
 
   // Form state

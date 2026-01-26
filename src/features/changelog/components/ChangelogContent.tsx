@@ -11,6 +11,30 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.0',
+    date: '2026-01-25',
+    sections: [
+      {
+        title: 'User Experience',
+        items: [
+          'Project selection now syncs between Sprint History and Forecast tabs',
+          'Compact sprint form: Done input and Include checkbox on same line as sprint dates',
+          'Visual cues for required Done field (blue border, light blue background when empty)',
+        ],
+      },
+      {
+        title: 'About Page',
+        items: [
+          'Redesigned About page with GanttApp-style formatting',
+          'Added Author & Source Code section with GitHub link button',
+          'Added Your Data & Privacy section explaining local storage',
+          'Added No Warranty Disclaimer from GNU GPL v3',
+          'Updated trademark text with full USPTO reference',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.2.0',
     date: '2026-01-25',
     sections: [

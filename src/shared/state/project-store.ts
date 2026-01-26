@@ -14,12 +14,14 @@ export interface ExportData {
 interface ProjectState {
   projects: Project[]
   sprints: Sprint[]
+  viewingProjectId: string | null // Shared across Sprint History and Forecast tabs
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateProject: (id: string, updates: Partial<Omit<Project, 'id' | 'createdAt'>>) => void
   deleteProject: (id: string) => void
   reorderProjects: (projectIds: string[]) => void
+  setViewingProjectId: (id: string | null) => void
 
   // Sprint actions
   addSprint: (sprint: Omit<Sprint, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -40,6 +42,7 @@ export const useProjectStore = create<ProjectState>()(
     (set, get) => ({
       projects: [] as Project[],
       sprints: [] as Sprint[],
+      viewingProjectId: null as string | null,
 
       addProject: (projectData) =>
         set((state) => ({
@@ -76,6 +79,8 @@ export const useProjectStore = create<ProjectState>()(
               .filter((p): p is Project => p !== undefined),
           }
         }),
+
+      setViewingProjectId: (id) => set({ viewingProjectId: id }),
 
       addSprint: (sprintData) =>
         set((state) => ({
@@ -141,6 +146,11 @@ export const useProjectStore = create<ProjectState>()(
           storage.removeItem(name)
         },
       },
+      // Don't persist viewingProjectId - it's session-only state
+      partialize: (state) => ({
+        projects: state.projects,
+        sprints: state.sprints,
+      } as ProjectState),
     }
   )
 )
@@ -148,6 +158,13 @@ export const useProjectStore = create<ProjectState>()(
 // Selectors
 export const selectActiveProject = (state: ProjectState): Project | undefined =>
   state.projects[0]
+
+export const selectViewingProject = (state: ProjectState): Project | undefined => {
+  if (state.viewingProjectId) {
+    return state.projects.find((p) => p.id === state.viewingProjectId) || state.projects[0]
+  }
+  return state.projects[0]
+}
 
 export const selectProjectSprints = (projectId: string) => (state: ProjectState): Sprint[] =>
   state.sprints.filter((s) => s.projectId === projectId)

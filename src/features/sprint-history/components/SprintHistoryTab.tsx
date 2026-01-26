@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import {
   useProjectStore,
-  selectActiveProject,
+  selectViewingProject,
 } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { SprintList } from './SprintList'
@@ -19,24 +19,14 @@ import {
 export function SprintHistoryTab() {
   const isClient = useIsClient()
   const projects = useProjectStore((state) => state.projects)
-  const activeProject = useProjectStore(selectActiveProject)
+  const selectedProject = useProjectStore(selectViewingProject)
   const allSprints = useProjectStore((state) => state.sprints)
   const addSprint = useProjectStore((state) => state.addSprint)
   const updateSprint = useProjectStore((state) => state.updateSprint)
   const deleteSprint = useProjectStore((state) => state.deleteSprint)
   const toggleSprintIncluded = useProjectStore((state) => state.toggleSprintIncluded)
   const updateProject = useProjectStore((state) => state.updateProject)
-
-  // Local state for selected project (defaults to active project)
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
-
-  // Determine which project to show
-  const selectedProject = useMemo(() => {
-    if (selectedProjectId) {
-      return projects.find((p) => p.id === selectedProjectId) || activeProject
-    }
-    return activeProject
-  }, [selectedProjectId, projects, activeProject])
+  const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
 
   const sprints = useMemo(
     () => (selectedProject ? allSprints.filter((s) => s.projectId === selectedProject.id) : []),
@@ -50,7 +40,7 @@ export function SprintHistoryTab() {
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectId = e.target.value
-    setSelectedProjectId(newProjectId)
+    setViewingProjectId(newProjectId)
     // Close form if open when switching projects
     setIsFormOpen(false)
     setEditingSprint(null)

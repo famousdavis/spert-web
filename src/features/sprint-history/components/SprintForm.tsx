@@ -92,52 +92,64 @@ export function SprintForm({
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border p-4">
       <h3 className="font-medium">{sprint ? 'Edit Sprint' : 'Add Sprint'}</h3>
 
-      {/* Sprint dates display (read-only) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Sprint Dates</label>
+      {/* Single row: Sprint dates, Done input, Include checkbox */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        {/* Sprint dates display (read-only) */}
         <div
           style={{
-            padding: '0.75rem',
+            padding: '0.5rem 0.75rem',
             background: needsFirstSprintDate ? '#fff3cd' : '#e9ecef',
             border: needsFirstSprintDate ? '1px solid #ffc107' : '1px solid #ddd',
             borderRadius: '4px',
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             fontWeight: 500,
             color: needsFirstSprintDate ? '#856404' : '#333',
           }}
         >
           {dateLabel}
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <label htmlFor="doneValue" className="text-sm font-medium">
-          Done ({project.unitOfMeasure}) *
-        </label>
-        <input
-          id="doneValue"
-          type="number"
-          min="0"
-          step="any"
-          value={doneValue}
-          onChange={(e) => setDoneValue(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          placeholder="0"
-          required
-        />
-      </div>
+        {/* Done input - compact width */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label
+            htmlFor="doneValue"
+            style={{ fontSize: '0.875rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}
+          >
+            Done ({project.unitOfMeasure}) <span style={{ color: '#dc3545' }}>*</span>
+          </label>
+          <input
+            id="doneValue"
+            type="number"
+            min="0"
+            step="any"
+            value={doneValue}
+            onChange={(e) => setDoneValue(e.target.value)}
+            style={{
+              padding: '0.5rem',
+              fontSize: '0.9rem',
+              border: doneValue ? '1px solid #ddd' : '2px solid #0070f3',
+              borderRadius: '4px',
+              width: '80px',
+              backgroundColor: doneValue ? 'white' : '#f0f7ff',
+            }}
+            placeholder="0"
+            required
+          />
+        </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          id="includedInForecast"
-          type="checkbox"
-          checked={includedInForecast}
-          onChange={(e) => setIncludedInForecast(e.target.checked)}
-          className="h-4 w-4 rounded border-input"
-        />
-        <label htmlFor="includedInForecast" className="text-sm">
-          Include in forecast calculations
-        </label>
+        {/* Include in forecast checkbox */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input
+            id="includedInForecast"
+            type="checkbox"
+            checked={includedInForecast}
+            onChange={(e) => setIncludedInForecast(e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          <label htmlFor="includedInForecast" style={{ fontSize: '0.875rem', color: '#555' }}>
+            Include in forecast
+          </label>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
