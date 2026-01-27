@@ -17,15 +17,26 @@ export function addWeeks(dateStr: string, weeks: number): string {
 }
 
 /**
- * Format a date string for display
+ * Format a date string for display (e.g., "Jan 15, 2026")
+ * Uses T00:00:00 suffix to avoid timezone issues with date-only strings
  */
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr + 'T00:00:00')
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   })
+}
+
+/**
+ * Format a date string without year (e.g., "Jan 15")
+ * Useful for compact chart labels where year is implied
+ */
+export function formatDateCompact(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[date.getMonth()]} ${date.getDate()}`
 }
 
 /**
@@ -113,9 +124,10 @@ export function calculateSprintFinishDate(
 
 /**
  * Check if a date string is valid and within the allowed year range (2000-2050)
+ * @param allowEmpty - If true, returns true for empty/incomplete strings (useful for form validation)
  */
-export function isValidDateRange(dateStr: string): boolean {
-  if (!dateStr || dateStr.length !== 10) return false
+export function isValidDateRange(dateStr: string, allowEmpty = false): boolean {
+  if (!dateStr || dateStr.length !== 10) return allowEmpty
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false
   return dateStr >= '2000-01-01' && dateStr <= '2050-12-31'
 }

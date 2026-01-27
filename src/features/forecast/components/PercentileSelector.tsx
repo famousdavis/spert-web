@@ -1,19 +1,10 @@
 'use client'
 
+import type { RefObject } from 'react'
 import type { ForecastResult } from '@/shared/types'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
-
-/**
- * Format a date with abbreviated month (e.g., "Jan 15, 2026")
- */
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+import { CopyImageButton } from '@/shared/components/CopyImageButton'
+import { formatDate } from '@/shared/lib/dates'
 
 interface PercentileSelectorProps {
   percentile: number
@@ -23,6 +14,7 @@ interface PercentileSelectorProps {
   bootstrapResult: ForecastResult | null
   completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
   onPercentileChange: (percentile: number) => void
+  selectorRef?: RefObject<HTMLDivElement | null>
 }
 
 export function PercentileSelector({
@@ -33,13 +25,15 @@ export function PercentileSelector({
   bootstrapResult,
   completedSprintCount,
   onPercentileChange,
+  selectorRef,
 }: PercentileSelectorProps) {
   const hasResults = truncatedNormalResult && lognormalResult && gammaResult
   const hasBootstrap = bootstrapResult !== null
 
   return (
-    <div className="space-y-4 rounded-lg border border-border p-4">
-      <h3 className="font-medium">Custom Percentile</h3>
+    <div style={{ position: 'relative' }}>
+      <div ref={selectorRef} className="space-y-4 rounded-lg border border-border p-4" style={{ background: 'white' }}>
+        <h3 className="font-medium">Custom Percentile</h3>
 
       <div className="flex items-center gap-4">
         <div className="flex-1 space-y-2">
@@ -70,7 +64,7 @@ export function PercentileSelector({
             </p>
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-sm text-muted-foreground">Finish Date</p>
-              <p className="text-base font-semibold">{formatDateShort(truncatedNormalResult.finishDate)}</p>
+              <p className="text-base font-semibold">{formatDate(truncatedNormalResult.finishDate)}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Sprint {truncatedNormalResult.sprintsRequired + completedSprintCount}
               </p>
@@ -99,7 +93,7 @@ export function PercentileSelector({
                     truncatedNormalResult.finishDate !== lognormalResult.finishDate ? '#0070f3' : 'inherit',
                 }}
               >
-                {formatDateShort(lognormalResult.finishDate)}
+                {formatDate(lognormalResult.finishDate)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Sprint {lognormalResult.sprintsRequired + completedSprintCount}
@@ -129,7 +123,7 @@ export function PercentileSelector({
                     truncatedNormalResult.finishDate !== gammaResult.finishDate ? '#0070f3' : 'inherit',
                 }}
               >
-                {formatDateShort(gammaResult.finishDate)}
+                {formatDate(gammaResult.finishDate)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Sprint {gammaResult.sprintsRequired + completedSprintCount}
@@ -160,7 +154,7 @@ export function PercentileSelector({
                       truncatedNormalResult.finishDate !== bootstrapResult.finishDate ? '#0070f3' : 'inherit',
                   }}
                 >
-                  {formatDateShort(bootstrapResult.finishDate)}
+                  {formatDate(bootstrapResult.finishDate)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Sprint {bootstrapResult.sprintsRequired + completedSprintCount}
@@ -168,6 +162,15 @@ export function PercentileSelector({
               </div>
             </div>
           )}
+        </div>
+      )}
+      </div>
+      {selectorRef && hasResults && (
+        <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+          <CopyImageButton
+            targetRef={selectorRef}
+            title="Copy custom percentile as image"
+          />
         </div>
       )}
     </div>

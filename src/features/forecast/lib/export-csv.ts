@@ -30,6 +30,21 @@ interface FrequencyCount {
 }
 
 /**
+ * Count occurrences of each sprint value and add to frequency map
+ */
+function countDistribution(
+  sprints: number[],
+  freq: Map<number, FrequencyCount>,
+  key: keyof FrequencyCount
+): void {
+  for (const sprint of sprints) {
+    const existing = freq.get(sprint) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
+    existing[key]++
+    freq.set(sprint, existing)
+  }
+}
+
+/**
  * Build frequency distribution from sorted sprint data
  */
 function buildFrequencyDistribution(
@@ -40,34 +55,11 @@ function buildFrequencyDistribution(
 ): Map<number, FrequencyCount> {
   const freq = new Map<number, FrequencyCount>()
 
-  // Count truncated normal distribution
-  for (const sprints of truncatedNormalSprints) {
-    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
-    existing.truncatedNormal++
-    freq.set(sprints, existing)
-  }
-
-  // Count lognormal distribution
-  for (const sprints of lognormalSprints) {
-    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
-    existing.lognormal++
-    freq.set(sprints, existing)
-  }
-
-  // Count gamma distribution
-  for (const sprints of gammaSprints) {
-    const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
-    existing.gamma++
-    freq.set(sprints, existing)
-  }
-
-  // Count bootstrap distribution (if available)
+  countDistribution(truncatedNormalSprints, freq, 'truncatedNormal')
+  countDistribution(lognormalSprints, freq, 'lognormal')
+  countDistribution(gammaSprints, freq, 'gamma')
   if (bootstrapSprints) {
-    for (const sprints of bootstrapSprints) {
-      const existing = freq.get(sprints) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
-      existing.bootstrap++
-      freq.set(sprints, existing)
-    }
+    countDistribution(bootstrapSprints, freq, 'bootstrap')
   }
 
   return freq

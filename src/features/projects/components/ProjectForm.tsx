@@ -3,17 +3,12 @@
 import { useState, useEffect } from 'react'
 import type { Project } from '@/shared/types'
 import { DEFAULT_UNIT_OF_MEASURE } from '../constants'
+import { isValidDateRange } from '@/shared/lib/dates'
 
 interface ProjectFormProps {
   project: Project | null
   onSubmit: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
   onCancel: () => void
-}
-
-// Date validation: must be between 2000-2050
-function isValidDateRange(dateStr: string): boolean {
-  if (!dateStr || dateStr.length !== 10) return true // Empty or incomplete is ok
-  return dateStr >= '2000-01-01' && dateStr <= '2050-12-31'
 }
 
 export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {

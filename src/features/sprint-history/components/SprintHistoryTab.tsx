@@ -153,24 +153,26 @@ export function SprintHistoryTab() {
             ))}
           </select>
         </h2>
-        <button
-          onClick={handleCreate}
-          disabled={!isSprintConfigComplete}
-          title={!isSprintConfigComplete ? 'Set sprint cadence and first sprint start date first' : undefined}
-          style={{
-            padding: '0.5rem 1rem',
-            background: isSprintConfigComplete ? '#0070f3' : '#ccc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isSprintConfigComplete ? 'pointer' : 'not-allowed',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            opacity: isSprintConfigComplete ? 1 : 0.6,
-          }}
-        >
-          Add Sprint
-        </button>
+        {!isFormOpen && (
+          <button
+            onClick={handleCreate}
+            disabled={!isSprintConfigComplete}
+            title={!isSprintConfigComplete ? 'Set sprint cadence and first sprint start date first' : undefined}
+            style={{
+              padding: '0.5rem 1rem',
+              background: isSprintConfigComplete ? '#0070f3' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isSprintConfigComplete ? 'pointer' : 'not-allowed',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              opacity: isSprintConfigComplete ? 1 : 0.6,
+            }}
+          >
+            Add Sprint
+          </button>
+        )}
       </div>
 
       {/* Sprint Form - appears immediately after the Add Sprint button */}

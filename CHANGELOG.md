@@ -2,25 +2,12 @@
 
 ## v0.5.0 - 2026-01-26
 
-### Projects Tab
+### Features
 
-- Added "View History" button on project rows to navigate directly to Sprint History
-- Clicking View History switches tab and selects the associated project
-- Sprint cadence now shown only when configured (no default 2-week value)
-
-### Sprint History Tab
-
+- "View History" button on Projects tab navigates directly to Sprint History for that project
 - Sprint configuration (cadence and start date) now required before adding sprints
-- Add Sprint button disabled with visual feedback until configuration complete
-- Required field styling for Sprint Cadence and First Sprint Start Date
-
-### Forecast Tab
-
-- Sprint numbers now show absolute values (completed + remaining sprints)
-- Reordered columns: Sprint before Date in Forecast Results table
-- Spelled out "Sprint" instead of abbreviation "Spr"
-- Velocity and Std Dev fields now display with white background and black text
-- "Calculated:" helper text always visible below fields for reference
+- Forecast results show absolute sprint numbers (completed + remaining)
+- Copy-to-clipboard buttons for forecast inputs/results, CDF chart, and custom percentile
 
 ## v0.4.0 - 2026-01-25
 

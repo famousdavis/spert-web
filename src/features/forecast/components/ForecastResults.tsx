@@ -1,18 +1,7 @@
 'use client'
 
 import type { PercentileResults } from '../lib/monte-carlo'
-
-/**
- * Format a date with abbreviated month (e.g., "Jan 15, 2026")
- */
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
+import { formatDate } from '@/shared/lib/dates'
 
 interface ForecastResultsProps {
   truncatedNormalResults: PercentileResults
@@ -165,7 +154,7 @@ export function ForecastResults({
                 <tr key={key} className="border-b border-border">
                   <td className="px-2 py-3 text-sm font-medium">{label}</td>
                   <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
-                  <td className="px-2 py-3 text-sm">{formatDateShort(truncatedNormal.finishDate)}</td>
+                  <td className="px-2 py-3 text-sm">{formatDate(truncatedNormal.finishDate)}</td>
                   <td
                     className="px-2 py-3 text-right text-sm"
                     style={{
@@ -182,7 +171,7 @@ export function ForecastResults({
                       fontWeight: lognormalDiffDate ? 500 : 'normal',
                     }}
                   >
-                    {formatDateShort(lognormal.finishDate)}
+                    {formatDate(lognormal.finishDate)}
                   </td>
                   <td
                     className="px-2 py-3 text-right text-sm"
@@ -200,7 +189,7 @@ export function ForecastResults({
                       fontWeight: gammaDiffDate ? 500 : 'normal',
                     }}
                   >
-                    {formatDateShort(gamma.finishDate)}
+                    {formatDate(gamma.finishDate)}
                   </td>
                   {hasBootstrap && bootstrap && (
                     <>
@@ -220,7 +209,7 @@ export function ForecastResults({
                           fontWeight: bootstrapDiffDate ? 500 : 'normal',
                         }}
                       >
-                        {formatDateShort(bootstrap.finishDate)}
+                        {formatDate(bootstrap.finishDate)}
                       </td>
                     </>
                   )}

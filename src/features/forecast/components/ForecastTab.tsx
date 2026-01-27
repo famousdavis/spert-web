@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import {
   useProjectStore,
   selectViewingProject,
@@ -16,6 +16,7 @@ import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import type { ForecastResult } from '@/shared/types'
+import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface QuadResults {
   truncatedNormal: PercentileResults
@@ -31,6 +32,32 @@ interface QuadSimulationData {
   bootstrap: number[] | null
 }
 
+interface QuadCustomResults {
+  truncatedNormal: ForecastResult | null
+  lognormal: ForecastResult | null
+  gamma: ForecastResult | null
+  bootstrap: ForecastResult | null
+}
+
+/**
+ * Calculate custom percentile for all distributions
+ */
+function calculateAllCustomPercentiles(
+  data: QuadSimulationData,
+  percentile: number,
+  startDate: string,
+  sprintCadenceWeeks: number
+): QuadCustomResults {
+  return {
+    truncatedNormal: calculateCustomPercentile(data.truncatedNormal, percentile, startDate, sprintCadenceWeeks),
+    lognormal: calculateCustomPercentile(data.lognormal, percentile, startDate, sprintCadenceWeeks),
+    gamma: calculateCustomPercentile(data.gamma, percentile, startDate, sprintCadenceWeeks),
+    bootstrap: data.bootstrap
+      ? calculateCustomPercentile(data.bootstrap, percentile, startDate, sprintCadenceWeeks)
+      : null,
+  }
+}
+
 export function ForecastTab() {
   const isClient = useIsClient()
   const projects = useProjectStore((state) => state.projects)
@@ -40,6 +67,11 @@ export function ForecastTab() {
 
   // Track previous project to clear results when project changes
   const prevProjectIdRef = useRef<string | undefined>(selectedProject?.id)
+
+  // Refs for copy-to-clipboard functionality
+  const forecastInputsResultsRef = useRef<HTMLDivElement>(null)
+  const distributionChartRef = useRef<HTMLDivElement>(null)
+  const percentileSelectorRef = useRef<HTMLDivElement>(null)
 
   // Get all sprints for the selected project
   const projectSprints = useMemo(
@@ -111,12 +143,12 @@ export function ForecastTab() {
   const [results, setResults] = useState<QuadResults | null>(null)
   const [simulationData, setSimulationData] = useState<QuadSimulationData | null>(null)
   const [customPercentile, setCustomPercentile] = useState(85)
-  const [customResults, setCustomResults] = useState<{
-    truncatedNormal: ForecastResult | null
-    lognormal: ForecastResult | null
-    gamma: ForecastResult | null
-    bootstrap: ForecastResult | null
-  }>({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
+  const [customResults, setCustomResults] = useState<QuadCustomResults>({
+    truncatedNormal: null,
+    lognormal: null,
+    gamma: null,
+    bootstrap: null,
+  })
 
   // Use calculated stats or overrides
   const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
@@ -155,77 +187,29 @@ export function ForecastTab() {
     })
 
     // Calculate custom percentile results for the default value
-    const truncatedNormalCustom = calculateCustomPercentile(
-      quadResults.truncatedNormal.sprintsRequired,
-      customPercentile,
-      forecastStartDate,
-      selectedProject.sprintCadenceWeeks
-    )
-    const lognormalCustom = calculateCustomPercentile(
-      quadResults.lognormal.sprintsRequired,
-      customPercentile,
-      forecastStartDate,
-      selectedProject.sprintCadenceWeeks
-    )
-    const gammaCustom = calculateCustomPercentile(
-      quadResults.gamma.sprintsRequired,
-      customPercentile,
-      forecastStartDate,
-      selectedProject.sprintCadenceWeeks
-    )
-    let bootstrapCustom: ForecastResult | null = null
-    if (quadResults.bootstrap) {
-      bootstrapCustom = calculateCustomPercentile(
-        quadResults.bootstrap.sprintsRequired,
-        customPercentile,
-        forecastStartDate,
-        selectedProject.sprintCadenceWeeks
-      )
+    const simData: QuadSimulationData = {
+      truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+      lognormal: quadResults.lognormal.sprintsRequired,
+      gamma: quadResults.gamma.sprintsRequired,
+      bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
     }
-    setCustomResults({
-      truncatedNormal: truncatedNormalCustom,
-      lognormal: lognormalCustom,
-      gamma: gammaCustom,
-      bootstrap: bootstrapCustom,
-    })
+    setCustomResults(calculateAllCustomPercentiles(
+      simData,
+      customPercentile,
+      forecastStartDate,
+      selectedProject.sprintCadenceWeeks
+    ))
   }
 
   const handleCustomPercentileChange = (percentile: number) => {
     setCustomPercentile(percentile)
     if (simulationData && selectedProject?.sprintCadenceWeeks) {
-      const truncatedNormalResult = calculateCustomPercentile(
-        simulationData.truncatedNormal,
+      setCustomResults(calculateAllCustomPercentiles(
+        simulationData,
         percentile,
         forecastStartDate,
         selectedProject.sprintCadenceWeeks
-      )
-      const lognormalResult = calculateCustomPercentile(
-        simulationData.lognormal,
-        percentile,
-        forecastStartDate,
-        selectedProject.sprintCadenceWeeks
-      )
-      const gammaResult = calculateCustomPercentile(
-        simulationData.gamma,
-        percentile,
-        forecastStartDate,
-        selectedProject.sprintCadenceWeeks
-      )
-      let bootstrapResult: ForecastResult | null = null
-      if (simulationData.bootstrap) {
-        bootstrapResult = calculateCustomPercentile(
-          simulationData.bootstrap,
-          percentile,
-          forecastStartDate,
-          selectedProject.sprintCadenceWeeks
-        )
-      }
-      setCustomResults({
-        truncatedNormal: truncatedNormalResult,
-        lognormal: lognormalResult,
-        gamma: gammaResult,
-        bootstrap: bootstrapResult,
-      })
+      ))
     }
   }
 
@@ -298,32 +282,48 @@ export function ForecastTab() {
       </h2>
 
       {selectedProject && (
-        <ForecastForm
-          remainingBacklog={remainingBacklog}
-          velocityMean={velocityMean}
-          velocityStdDev={velocityStdDev}
-          startDate={forecastStartDate}
-          calculatedMean={calculatedStats.mean}
-          calculatedStdDev={calculatedStats.standardDeviation}
-          unitOfMeasure={selectedProject.unitOfMeasure}
-          onRemainingBacklogChange={setRemainingBacklog}
-          onVelocityMeanChange={setVelocityMean}
-          onVelocityStdDevChange={setVelocityStdDev}
-          onRunForecast={handleRunForecast}
-          canRun={!!remainingBacklog && effectiveMean > 0}
-        />
+        <div style={{ position: 'relative' }}>
+          <div ref={forecastInputsResultsRef} style={{ background: 'white' }}>
+            <ForecastForm
+              remainingBacklog={remainingBacklog}
+              velocityMean={velocityMean}
+              velocityStdDev={velocityStdDev}
+              startDate={forecastStartDate}
+              calculatedMean={calculatedStats.mean}
+              calculatedStdDev={calculatedStats.standardDeviation}
+              unitOfMeasure={selectedProject.unitOfMeasure}
+              onRemainingBacklogChange={setRemainingBacklog}
+              onVelocityMeanChange={setVelocityMean}
+              onVelocityStdDevChange={setVelocityStdDev}
+              onRunForecast={handleRunForecast}
+              canRun={!!remainingBacklog && effectiveMean > 0}
+            />
+            {selectedProject?.sprintCadenceWeeks && results && simulationData && (
+              <div style={{ marginTop: '1.5rem' }}>
+                <ForecastResults
+                  truncatedNormalResults={results.truncatedNormal}
+                  lognormalResults={results.lognormal}
+                  gammaResults={results.gamma}
+                  bootstrapResults={results.bootstrap}
+                  completedSprintCount={completedSprintCount}
+                  onExport={handleExportCsv}
+                />
+              </div>
+            )}
+          </div>
+          {selectedProject?.sprintCadenceWeeks && results && simulationData && (
+            <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+              <CopyImageButton
+                targetRef={forecastInputsResultsRef}
+                title="Copy inputs and results as image"
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {selectedProject?.sprintCadenceWeeks && results && simulationData && (
         <>
-          <ForecastResults
-            truncatedNormalResults={results.truncatedNormal}
-            lognormalResults={results.lognormal}
-            gammaResults={results.gamma}
-            bootstrapResults={results.bootstrap}
-            completedSprintCount={completedSprintCount}
-            onExport={handleExportCsv}
-          />
           <DistributionChart
             truncatedNormal={simulationData.truncatedNormal}
             lognormal={simulationData.lognormal}
@@ -333,6 +333,7 @@ export function ForecastTab() {
             startDate={forecastStartDate}
             sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
             completedSprintCount={completedSprintCount}
+            chartRef={distributionChartRef}
           />
           <PercentileSelector
             percentile={customPercentile}
@@ -342,6 +343,7 @@ export function ForecastTab() {
             bootstrapResult={customResults.bootstrap}
             completedSprintCount={completedSprintCount}
             onPercentileChange={handleCustomPercentileChange}
+            selectorRef={percentileSelectorRef}
           />
         </>
       )}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type RefObject } from 'react'
 import {
   LineChart,
   Line,
@@ -12,7 +12,8 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
-import { addWeeks } from '@/shared/lib/dates'
+import { addWeeks, formatDateCompact } from '@/shared/lib/dates'
+import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface DistributionChartProps {
   truncatedNormal: number[]
@@ -23,6 +24,7 @@ interface DistributionChartProps {
   startDate: string
   sprintCadenceWeeks: number
   completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
+  chartRef?: RefObject<HTMLDivElement | null>
 }
 
 interface CdfDataPoint {
@@ -60,15 +62,6 @@ function buildCdfPoints(sortedData: number[]): Map<number, number> {
 }
 
 /**
- * Format date as "Mon DD" (e.g., "Jan 15")
- */
-function formatShortDate(isoDate: string): string {
-  const date = new Date(isoDate + 'T00:00:00')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${months[date.getMonth()]} ${date.getDate()}`
-}
-
-/**
  * Merge CDF data from all distributions into unified chart data
  */
 function mergeDistributions(
@@ -101,7 +94,7 @@ function mergeDistributions(
     const finishDate = addWeeks(startDate, sprints * sprintCadenceWeeks)
     const point: CdfDataPoint = {
       sprints,
-      dateLabel: formatShortDate(finishDate),
+      dateLabel: formatDateCompact(finishDate),
       tNormal: calculateCumulativePercentage(tNormal, sprints),
       lognormal: calculateCumulativePercentage(lognormal, sprints),
       gamma: calculateCumulativePercentage(gamma, sprints),
@@ -140,6 +133,7 @@ export function DistributionChart({
   startDate,
   sprintCadenceWeeks,
   completedSprintCount,
+  chartRef,
 }: DistributionChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -179,12 +173,13 @@ export function DistributionChart({
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground mb-4">
-            Shows the probability of completing the backlog within a given number of sprints.
-            The dashed line marks your selected P{customPercentile} confidence level.
-          </p>
-          <ResponsiveContainer width="100%" height={340}>
+        <div className="px-4 pb-4" style={{ position: 'relative' }}>
+          <div ref={chartRef} style={{ background: 'white', padding: '0.5rem' }}>
+            <p className="text-xs text-muted-foreground mb-4">
+              Shows the probability of completing the backlog within a given number of sprints.
+              The dashed line marks your selected P{customPercentile} confidence level.
+            </p>
+            <ResponsiveContainer width="100%" height={340}>
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 50 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
@@ -268,6 +263,15 @@ export function DistributionChart({
               )}
             </LineChart>
           </ResponsiveContainer>
+          </div>
+          {chartRef && (
+            <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+              <CopyImageButton
+                targetRef={chartRef}
+                title="Copy chart as image"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

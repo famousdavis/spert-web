@@ -34,7 +34,7 @@ export function AboutTab() {
 
       <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>How It Works</h3>
-        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555' }}>
+        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555', listStyleType: 'disc' }}>
           <li>Create a project with your sprint cadence</li>
           <li>Record your sprint history with &quot;done&quot; values</li>
           <li>Enter your remaining backlog size</li>
@@ -54,7 +54,7 @@ export function AboutTab() {
 
       <section style={{ marginBottom: '2rem' }}>
         <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>Your Data &amp; Privacy</h3>
-        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555' }}>
+        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555', listStyleType: 'disc' }}>
           <li>Stored locally in your <strong>browser</strong> (not in any cloud database)</li>
           <li><strong>Your data never leaves your device</strong></li>
           <li>No external database servers, no third-party access, no data governance concerns</li>
