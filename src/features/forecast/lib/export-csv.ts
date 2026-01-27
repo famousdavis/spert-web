@@ -1,4 +1,5 @@
 import type { PercentileResults } from './monte-carlo'
+import type { ProductivityAdjustment } from '@/shared/types'
 
 interface ExportConfig {
   projectName: string
@@ -8,6 +9,7 @@ interface ExportConfig {
   startDate: string
   sprintCadenceWeeks: number
   trialCount: number
+  productivityAdjustments?: ProductivityAdjustment[]
 }
 
 interface ExportData {
@@ -84,6 +86,20 @@ export function generateForecastCsv(data: ExportData): string {
   lines.push(`Sprint Cadence (weeks),${data.config.sprintCadenceWeeks}`)
   lines.push(`Trial Count,${totalTrials}`)
   lines.push(`Bootstrap Enabled,${hasBootstrap ? 'Yes' : 'No'}`)
+  lines.push('')
+
+  // Section 1b: Productivity Adjustments
+  const adjustments = data.config.productivityAdjustments ?? []
+  lines.push('PRODUCTIVITY ADJUSTMENTS')
+  if (adjustments.length === 0) {
+    lines.push('None')
+  } else {
+    lines.push('Name,Start Date,End Date,Factor,Reason')
+    for (const adj of adjustments) {
+      const reason = adj.reason ? `"${adj.reason.replace(/"/g, '""')}"` : ''
+      lines.push(`"${adj.name.replace(/"/g, '""')}",${adj.startDate},${adj.endDate},${Math.round(adj.factor * 100)}%,${reason}`)
+    }
+  }
   lines.push('')
 
   // Section 2: Percentile Results

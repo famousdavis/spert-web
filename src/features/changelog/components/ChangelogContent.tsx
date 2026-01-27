@@ -23,6 +23,30 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.6.0',
+    date: '2026-01-27',
+    sections: [
+      {
+        title: 'Productivity Adjustments',
+        items: [
+          'Define periods of reduced productivity (holidays, vacations, company events) that adjust forecasted velocity',
+          'Each adjustment has name, date range, productivity factor (0-100%), and optional memo',
+          'Enable/disable toggle for what-if scenario analysis without deleting adjustments',
+          'Adjustments apply weighted factors per sprint based on working days overlap',
+          'Only enabled adjustments are used in Monte Carlo simulation and CSV export',
+        ],
+      },
+      {
+        title: 'User Experience',
+        items: [
+          'Forecast form inputs (backlog, velocity overrides) now persist when navigating between tabs',
+          'Each project maintains its own forecast inputs independently',
+          'Sprint cadence displayed alongside start date in forecast form',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.5.0',
     date: '2026-01-26',
     sections: [

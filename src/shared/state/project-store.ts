@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Project, Sprint } from '@/shared/types'
+import type { Project, Sprint, ProductivityAdjustment } from '@/shared/types'
 import { storage, STORAGE_KEY } from './storage'
 import { APP_VERSION } from '@/shared/constants'
 
@@ -11,10 +11,18 @@ export interface ExportData {
   sprints: Sprint[]
 }
 
+// Session-only forecast inputs (per project, not persisted to localStorage)
+interface ForecastInputs {
+  remainingBacklog: string
+  velocityMean: string
+  velocityStdDev: string
+}
+
 interface ProjectState {
   projects: Project[]
   sprints: Sprint[]
   viewingProjectId: string | null // Shared across Sprint History and Forecast tabs
+  forecastInputs: Record<string, ForecastInputs> // projectId -> inputs (session only)
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -29,9 +37,25 @@ interface ProjectState {
   deleteSprint: (id: string) => void
   toggleSprintIncluded: (id: string) => void
 
+  // Productivity Adjustment actions
+  addProductivityAdjustment: (
+    projectId: string,
+    adjustment: Omit<ProductivityAdjustment, 'id' | 'createdAt' | 'updatedAt'>
+  ) => void
+  updateProductivityAdjustment: (
+    projectId: string,
+    adjustmentId: string,
+    updates: Partial<Omit<ProductivityAdjustment, 'id' | 'createdAt'>>
+  ) => void
+  deleteProductivityAdjustment: (projectId: string, adjustmentId: string) => void
+
   // Import/Export actions
   exportData: () => ExportData
   importData: (data: ExportData) => void
+
+  // Forecast input actions (session only)
+  setForecastInput: (projectId: string, field: keyof ForecastInputs, value: string) => void
+  getForecastInputs: (projectId: string) => ForecastInputs
 }
 
 const generateId = () => crypto.randomUUID()
@@ -43,6 +67,7 @@ export const useProjectStore = create<ProjectState>()(
       projects: [] as Project[],
       sprints: [] as Sprint[],
       viewingProjectId: null as string | null,
+      forecastInputs: {} as Record<string, ForecastInputs>,
 
       addProject: (projectData) =>
         set((state) => ({
@@ -116,6 +141,59 @@ export const useProjectStore = create<ProjectState>()(
           ),
         })),
 
+      addProductivityAdjustment: (projectId, adjustmentData) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  productivityAdjustments: [
+                    ...(p.productivityAdjustments || []),
+                    {
+                      ...adjustmentData,
+                      id: generateId(),
+                      createdAt: now(),
+                      updatedAt: now(),
+                    },
+                  ],
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
+      updateProductivityAdjustment: (projectId, adjustmentId, updates) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  productivityAdjustments: (p.productivityAdjustments || []).map((adj) =>
+                    adj.id === adjustmentId
+                      ? { ...adj, ...updates, updatedAt: now() }
+                      : adj
+                  ),
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
+      deleteProductivityAdjustment: (projectId, adjustmentId) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  productivityAdjustments: (p.productivityAdjustments || []).filter(
+                    (adj) => adj.id !== adjustmentId
+                  ),
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
       exportData: (): ExportData => {
         const state = get()
         return {
@@ -131,6 +209,22 @@ export const useProjectStore = create<ProjectState>()(
           projects: data.projects,
           sprints: data.sprints,
         })),
+
+      setForecastInput: (projectId, field, value) =>
+        set((state) => ({
+          forecastInputs: {
+            ...state.forecastInputs,
+            [projectId]: {
+              ...(state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '' }),
+              [field]: value,
+            },
+          },
+        })),
+
+      getForecastInputs: (projectId) => {
+        const state = get()
+        return state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '' }
+      },
     }),
     {
       name: STORAGE_KEY,
@@ -146,7 +240,7 @@ export const useProjectStore = create<ProjectState>()(
           storage.removeItem(name)
         },
       },
-      // Don't persist viewingProjectId - it's session-only state
+      // Only persist projects and sprints - viewingProjectId and forecastInputs are session-only
       partialize: (state) => ({
         projects: state.projects,
         sprints: state.sprints,
@@ -171,3 +265,10 @@ export const selectProjectSprints = (projectId: string) => (state: ProjectState)
 
 export const selectIncludedSprints = (projectId: string) => (state: ProjectState): Sprint[] =>
   state.sprints.filter((s) => s.projectId === projectId && s.includedInForecast)
+
+export const selectProjectAdjustments =
+  (projectId: string) =>
+  (state: ProjectState): ProductivityAdjustment[] => {
+    const project = state.projects.find((p) => p.id === projectId)
+    return project?.productivityAdjustments || []
+  }

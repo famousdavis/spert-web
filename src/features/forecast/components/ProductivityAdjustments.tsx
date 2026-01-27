@@ -1,0 +1,149 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useProjectStore } from '@/shared/state/project-store'
+import type { ProductivityAdjustment } from '@/shared/types'
+import { ProductivityAdjustmentForm } from './ProductivityAdjustmentForm'
+import { ProductivityAdjustmentList } from './ProductivityAdjustmentList'
+
+interface ProductivityAdjustmentsProps {
+  projectId: string
+}
+
+export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const [editingAdjustment, setEditingAdjustment] = useState<ProductivityAdjustment | null>(null)
+
+  // Get adjustments from store (derive from projects to avoid selector re-creation)
+  const projects = useProjectStore((state) => state.projects)
+  const adjustments = useMemo(() => {
+    const project = projects.find((p) => p.id === projectId)
+    return project?.productivityAdjustments ?? []
+  }, [projects, projectId])
+  const addProductivityAdjustment = useProjectStore((state) => state.addProductivityAdjustment)
+  const updateProductivityAdjustment = useProjectStore((state) => state.updateProductivityAdjustment)
+  const deleteProductivityAdjustment = useProjectStore((state) => state.deleteProductivityAdjustment)
+
+  const handleSubmit = (data: Omit<ProductivityAdjustment, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingAdjustment) {
+      updateProductivityAdjustment(projectId, editingAdjustment.id, data)
+    } else {
+      addProductivityAdjustment(projectId, data)
+    }
+    setIsAdding(false)
+    setEditingAdjustment(null)
+  }
+
+  const handleCancel = () => {
+    setIsAdding(false)
+    setEditingAdjustment(null)
+  }
+
+  const handleEdit = (adjustment: ProductivityAdjustment) => {
+    setEditingAdjustment(adjustment)
+    setIsAdding(false)
+  }
+
+  const handleDelete = (adjustmentId: string) => {
+    deleteProductivityAdjustment(projectId, adjustmentId)
+  }
+
+  const handleToggleEnabled = (adjustmentId: string) => {
+    const adjustment = adjustments.find((a) => a.id === adjustmentId)
+    if (adjustment) {
+      updateProductivityAdjustment(projectId, adjustmentId, {
+        enabled: adjustment.enabled === false ? true : false,
+      })
+    }
+  }
+
+  const showForm = isAdding || editingAdjustment !== null
+
+  return (
+    <div className="rounded-lg border bg-card">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
+      >
+        <span
+          className="text-muted-foreground transition-transform duration-200"
+          style={{
+            display: 'inline-block',
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            fontSize: '10px',
+          }}
+        >
+          ▶
+        </span>
+        <h3 className="text-sm font-medium text-muted-foreground">
+          Productivity Adjustments
+        </h3>
+        {adjustments.length > 0 && (
+          <span
+            style={{
+              fontSize: '0.75rem',
+              color: '#666',
+              backgroundColor: '#e5e7eb',
+              padding: '0.125rem 0.5rem',
+              borderRadius: '10px',
+            }}
+          >
+            {adjustments.length}
+          </span>
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="px-4 pb-4">
+          <p className="text-xs text-muted-foreground mb-4">
+            Define periods of reduced productivity (holidays, vacations, events) that will adjust
+            the forecasted velocity. A factor of 50% means the team will complete half their normal
+            velocity during that period.
+          </p>
+
+          {/* Add button - only show when not in form mode */}
+          {!showForm && (
+            <button
+              onClick={() => setIsAdding(true)}
+              style={{
+                padding: '0.5rem 1rem',
+                background: '#0070f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                marginBottom: '1rem',
+              }}
+            >
+              + Add Adjustment
+            </button>
+          )}
+
+          {/* Form */}
+          {showForm && (
+            <div style={{ marginBottom: '1rem' }}>
+              <ProductivityAdjustmentForm
+                adjustment={editingAdjustment}
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+              />
+            </div>
+          )}
+
+          {/* List */}
+          {!showForm && (
+            <ProductivityAdjustmentList
+              adjustments={adjustments}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onToggleEnabled={handleToggleEnabled}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

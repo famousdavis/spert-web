@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.6.0 - 2026-01-27
+
+### Productivity Adjustments
+
+- Define periods of reduced productivity (holidays, vacations, company events) that adjust forecasted velocity
+- Each adjustment has name, date range, productivity factor (0-100%), and optional memo
+- Enable/disable toggle for what-if scenario analysis without deleting adjustments
+- Adjustments apply weighted factors per sprint based on working days overlap
+- Only enabled adjustments are used in Monte Carlo simulation and CSV export
+
+### User Experience
+
+- Forecast form inputs (backlog, velocity overrides) now persist when navigating between tabs
+- Each project maintains its own forecast inputs independently
+- Sprint cadence displayed alongside start date in forecast form
+- Shortened "Remaining Backlog" label to "Backlog" for compact display
+
+### Code Quality
+
+- Refactored forecast types and helper functions to monte-carlo.ts for better organization
+- Added comprehensive test coverage for productivity factor calculations (70 tests total)
+
 ## v0.5.0 - 2026-01-26
 
 ### Features

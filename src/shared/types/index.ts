@@ -1,5 +1,17 @@
 // Core domain types for SPERT
 
+export interface ProductivityAdjustment {
+  id: string
+  name: string // e.g., "Holiday Season", "Team Vacation"
+  startDate: string // ISO date string (YYYY-MM-DD)
+  endDate: string // ISO date string (YYYY-MM-DD)
+  factor: number // 0.0 to 1.0 (0 = no productivity, 1 = normal)
+  enabled: boolean // Whether this adjustment is active for forecasting
+  reason?: string // Optional description
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -8,6 +20,7 @@ export interface Project {
   projectFinishDate?: string // ISO date string (YYYY-MM-DD)
   firstSprintStartDate?: string // ISO date string (YYYY-MM-DD) - when the team started their first sprint
   unitOfMeasure: string
+  productivityAdjustments?: ProductivityAdjustment[] // Periods of reduced productivity for forecasting
   createdAt: string
   updatedAt: string
 }

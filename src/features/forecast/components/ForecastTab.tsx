@@ -1,21 +1,28 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   useProjectStore,
   selectViewingProject,
 } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { calculateVelocityStats } from '../lib/statistics'
-import { runQuadrupleForecast, calculateCustomPercentile, type PercentileResults } from '../lib/monte-carlo'
+import {
+  runQuadrupleForecast,
+  calculateAllCustomPercentiles,
+  type PercentileResults,
+  type QuadSimulationData,
+  type QuadCustomResults,
+} from '../lib/monte-carlo'
+import { preCalculateSprintFactors } from '../lib/productivity'
 import { ForecastForm } from './ForecastForm'
 import { ForecastResults } from './ForecastResults'
 import { DistributionChart } from './DistributionChart'
 import { PercentileSelector } from './PercentileSelector'
+import { ProductivityAdjustments } from './ProductivityAdjustments'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
-import type { ForecastResult } from '@/shared/types'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface QuadResults {
@@ -25,45 +32,18 @@ interface QuadResults {
   bootstrap: PercentileResults | null
 }
 
-interface QuadSimulationData {
-  truncatedNormal: number[]
-  lognormal: number[]
-  gamma: number[]
-  bootstrap: number[] | null
-}
-
-interface QuadCustomResults {
-  truncatedNormal: ForecastResult | null
-  lognormal: ForecastResult | null
-  gamma: ForecastResult | null
-  bootstrap: ForecastResult | null
-}
-
-/**
- * Calculate custom percentile for all distributions
- */
-function calculateAllCustomPercentiles(
-  data: QuadSimulationData,
-  percentile: number,
-  startDate: string,
-  sprintCadenceWeeks: number
-): QuadCustomResults {
-  return {
-    truncatedNormal: calculateCustomPercentile(data.truncatedNormal, percentile, startDate, sprintCadenceWeeks),
-    lognormal: calculateCustomPercentile(data.lognormal, percentile, startDate, sprintCadenceWeeks),
-    gamma: calculateCustomPercentile(data.gamma, percentile, startDate, sprintCadenceWeeks),
-    bootstrap: data.bootstrap
-      ? calculateCustomPercentile(data.bootstrap, percentile, startDate, sprintCadenceWeeks)
-      : null,
-  }
-}
-
 export function ForecastTab() {
   const isClient = useIsClient()
   const projects = useProjectStore((state) => state.projects)
   const selectedProject = useProjectStore(selectViewingProject)
   const allSprints = useProjectStore((state) => state.sprints)
   const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
+
+  // Get productivity adjustments for the selected project (derived from project to avoid selector re-creation)
+  const productivityAdjustments = useMemo(
+    () => selectedProject?.productivityAdjustments ?? [],
+    [selectedProject?.productivityAdjustments]
+  )
 
   // Track previous project to clear results when project changes
   const prevProjectIdRef = useRef<string | undefined>(selectedProject?.id)
@@ -134,10 +114,24 @@ export function ForecastTab() {
     setViewingProjectId(newProjectId)
   }
 
-  // Form state
-  const [remainingBacklog, setRemainingBacklog] = useState('')
-  const [velocityMean, setVelocityMean] = useState('')
-  const [velocityStdDev, setVelocityStdDev] = useState('')
+  // Form state - stored per project so it persists across tab navigation
+  const setForecastInput = useProjectStore((state) => state.setForecastInput)
+  const forecastInputs = useProjectStore((state) =>
+    selectedProject ? state.forecastInputs[selectedProject.id] : undefined
+  )
+  const remainingBacklog = forecastInputs?.remainingBacklog ?? ''
+  const velocityMean = forecastInputs?.velocityMean ?? ''
+  const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
+
+  const setRemainingBacklog = (value: string) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'remainingBacklog', value)
+  }
+  const setVelocityMean = (value: string) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'velocityMean', value)
+  }
+  const setVelocityStdDev = (value: string) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'velocityStdDev', value)
+  }
 
   // Results state - now holds truncated normal, lognormal, gamma, and bootstrap results
   const [results, setResults] = useState<QuadResults | null>(null)
@@ -156,6 +150,7 @@ export function ForecastTab() {
 
   const handleRunForecast = () => {
     if (!selectedProject || !remainingBacklog || !selectedProject.sprintCadenceWeeks) return
+    if (!selectedProject.firstSprintStartDate) return
 
     const config = {
       remainingBacklog: Number(remainingBacklog),
@@ -166,10 +161,24 @@ export function ForecastTab() {
       sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
     }
 
+    // Pre-calculate productivity factors if enabled adjustments exist
+    const enabledAdjustments = productivityAdjustments.filter((a) => a.enabled !== false)
+    let productivityFactors: number[] | undefined
+    if (enabledAdjustments.length > 0) {
+      const { factors } = preCalculateSprintFactors(
+        selectedProject.firstSprintStartDate,
+        selectedProject.sprintCadenceWeeks,
+        completedSprintCount + 1, // Starting sprint number for forecast
+        enabledAdjustments
+      )
+      productivityFactors = factors
+    }
+
     // Run all simulations (bootstrap only if we have enough sprints)
     const quadResults = runQuadrupleForecast(
       config,
-      canUseBootstrap ? historicalVelocities : undefined
+      canUseBootstrap ? historicalVelocities : undefined,
+      productivityFactors
     )
 
     setSimulationData({
@@ -225,6 +234,7 @@ export function ForecastTab() {
         startDate: forecastStartDate,
         sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
         trialCount: TRIAL_COUNT,
+        productivityAdjustments: productivityAdjustments.filter((a) => a.enabled !== false),
       },
       truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
@@ -281,6 +291,11 @@ export function ForecastTab() {
         </select>
       </h2>
 
+      {/* Productivity Adjustments - show when project is selected */}
+      {selectedProject && (
+        <ProductivityAdjustments projectId={selectedProject.id} />
+      )}
+
       {selectedProject && (
         <div style={{ position: 'relative' }}>
           <div ref={forecastInputsResultsRef} style={{ background: 'white' }}>
@@ -289,6 +304,7 @@ export function ForecastTab() {
               velocityMean={velocityMean}
               velocityStdDev={velocityStdDev}
               startDate={forecastStartDate}
+              sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
               calculatedMean={calculatedStats.mean}
               calculatedStdDev={calculatedStats.standardDeviation}
               unitOfMeasure={selectedProject.unitOfMeasure}

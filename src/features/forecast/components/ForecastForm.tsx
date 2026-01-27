@@ -5,6 +5,7 @@ interface ForecastFormProps {
   velocityMean: string
   velocityStdDev: string
   startDate: string
+  sprintCadenceWeeks: number | undefined
   calculatedMean: number
   calculatedStdDev: number
   unitOfMeasure: string
@@ -20,6 +21,7 @@ export function ForecastForm({
   velocityMean,
   velocityStdDev,
   startDate,
+  sprintCadenceWeeks,
   calculatedMean,
   calculatedStdDev,
   unitOfMeasure,
@@ -38,7 +40,7 @@ export function ForecastForm({
             htmlFor="remainingBacklog"
             style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
           >
-            Remaining Backlog ({unitOfMeasure}) <span style={{ color: '#dc3545' }}>*</span>
+            Backlog ({unitOfMeasure}) <span style={{ color: '#dc3545' }}>*</span>
           </label>
           <input
             id="remainingBacklog"
@@ -151,6 +153,31 @@ export function ForecastForm({
           />
           <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
             Next sprint start
+          </p>
+        </div>
+
+        {/* Sprint Cadence (display only) */}
+        <div style={{ flex: '0 0 80px' }}>
+          <label
+            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+          >
+            Cadence
+          </label>
+          <div
+            style={{
+              padding: '0.5rem',
+              fontSize: '0.9rem',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              backgroundColor: '#e9ecef',
+              color: '#333',
+              textAlign: 'center',
+            }}
+          >
+            {sprintCadenceWeeks ? `${sprintCadenceWeeks} Week${sprintCadenceWeeks > 1 ? 's' : ''}` : '—'}
+          </div>
+          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+            &nbsp;
           </p>
         </div>
 
