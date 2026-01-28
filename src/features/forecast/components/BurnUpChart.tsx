@@ -13,7 +13,8 @@ import {
 } from 'recharts'
 import type { Sprint } from '@/shared/types'
 import type { QuadSimulationData } from '../lib/monte-carlo'
-import type { BurnUpConfig } from '../types'
+import type { BurnUpConfig, ChartFontSize } from '../types'
+import { CHART_FONT_SIZES } from '../types'
 import { calculateBurnUpData, isBootstrapAvailable } from '../lib/burn-up'
 import { BurnUpConfigUI } from './BurnUpConfig'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
@@ -33,6 +34,7 @@ interface BurnUpChartProps {
   config: BurnUpConfig
   onConfigChange: (config: BurnUpConfig) => void
   chartRef?: RefObject<HTMLDivElement | null>
+  fontSize?: ChartFontSize
 }
 
 export function BurnUpChart({
@@ -45,8 +47,10 @@ export function BurnUpChart({
   config,
   onConfigChange,
   chartRef,
+  fontSize = 'small',
 }: BurnUpChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const fontSizes = CHART_FONT_SIZES[fontSize]
 
   const hasBootstrap = isBootstrapAvailable(simulationData)
 
@@ -122,10 +126,10 @@ export function BurnUpChart({
                     const dateLabel = point?.dateLabel || ''
                     return (
                       <g transform={`translate(${x},${y})`}>
-                        <text x={0} y={0} dy={14} textAnchor="middle" fontSize={12} fill="#333">
+                        <text x={0} y={0} dy={14} textAnchor="middle" fontSize={fontSizes.axisTick} fill="#333">
                           {payload.value}
                         </text>
-                        <text x={0} y={0} dy={30} textAnchor="middle" fontSize={11} fill="#555">
+                        <text x={0} y={0} dy={30} textAnchor="middle" fontSize={fontSizes.dateLabel} fill="#555">
                           {dateLabel}
                         </text>
                       </g>
@@ -137,8 +141,8 @@ export function BurnUpChart({
                 />
                 <YAxis
                   domain={[0, yAxisMax]}
-                  label={{ value: 'Work Units', angle: -90, position: 'insideLeft', fontSize: 12 }}
-                  tick={{ fontSize: 11 }}
+                  label={{ value: 'Work Units', angle: -90, position: 'insideLeft', fontSize: fontSizes.axisLabel }}
+                  tick={{ fontSize: fontSizes.axisTick }}
                 />
                 <Tooltip
                   formatter={(value, name) => {
@@ -149,9 +153,9 @@ export function BurnUpChart({
                     const point = chartData.find((p) => p.sprintNumber === sprintNumber)
                     return point ? `Sprint ${sprintNumber} (${point.dateLabel})` : `Sprint ${sprintNumber}`
                   }}
-                  contentStyle={{ fontSize: 12 }}
+                  contentStyle={{ fontSize: fontSizes.axisTick }}
                 />
-                <Legend wrapperStyle={{ fontSize: 13, paddingTop: 20 }} verticalAlign="bottom" />
+                <Legend wrapperStyle={{ fontSize: fontSizes.legend, paddingTop: 20 }} verticalAlign="bottom" />
 
                 {/* Scope line (solid) - total product scope over time */}
                 <Line

@@ -30,3 +30,25 @@ export const DISTRIBUTION_LABELS: Record<DistributionType, string> = {
   gamma: 'Gamma',
   bootstrap: 'Bootstrap',
 }
+
+// Chart font size configuration
+export type ChartFontSize = 'small' | 'medium' | 'large'
+
+export interface ChartFontSizes {
+  axisTick: number
+  axisLabel: number
+  legend: number
+  dateLabel: number
+}
+
+export const CHART_FONT_SIZES: Record<ChartFontSize, ChartFontSizes> = {
+  small: { axisTick: 11, axisLabel: 12, legend: 13, dateLabel: 11 },
+  medium: { axisTick: 13, axisLabel: 14, legend: 15, dateLabel: 13 },
+  large: { axisTick: 15, axisLabel: 16, legend: 17, dateLabel: 15 },
+}
+
+export const CHART_FONT_SIZE_LABELS: Record<ChartFontSize, string> = {
+  small: 'Small',
+  medium: 'Medium',
+  large: 'Large',
+}

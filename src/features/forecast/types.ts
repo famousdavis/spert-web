@@ -5,4 +5,8 @@ export {
   type BurnUpConfig,
   DEFAULT_BURN_UP_CONFIG,
   DISTRIBUTION_LABELS,
+  type ChartFontSize,
+  type ChartFontSizes,
+  CHART_FONT_SIZES,
+  CHART_FONT_SIZE_LABELS,
 } from '@/shared/types/burn-up'

@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 import { calculateSprintStartDate, calculateSprintFinishDate, formatDateCompact } from '@/shared/lib/dates'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
+import { type ChartFontSize, CHART_FONT_SIZES } from '../types'
 
 interface DistributionChartProps {
   truncatedNormal: number[]
@@ -25,6 +26,7 @@ interface DistributionChartProps {
   sprintCadenceWeeks: number
   completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
   chartRef?: RefObject<HTMLDivElement | null>
+  fontSize?: ChartFontSize
 }
 
 interface CdfDataPoint {
@@ -137,8 +139,10 @@ export function DistributionChart({
   sprintCadenceWeeks,
   completedSprintCount,
   chartRef,
+  fontSize = 'small',
 }: DistributionChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const fontSizes = CHART_FONT_SIZES[fontSize]
 
   const chartData = useMemo(
     () => mergeDistributions(truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks),
@@ -193,10 +197,10 @@ export function DistributionChart({
                   const absoluteSprint = payload.value + completedSprintCount
                   return (
                     <g transform={`translate(${x},${y})`}>
-                      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={11} fill="#666">
+                      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={fontSizes.axisTick} fill="#666">
                         {absoluteSprint}
                       </text>
-                      <text x={0} y={0} dy={26} textAnchor="middle" fontSize={10} fill="#999">
+                      <text x={0} y={0} dy={26} textAnchor="middle" fontSize={fontSizes.dateLabel} fill="#999">
                         {dateLabel}
                       </text>
                     </g>
@@ -208,8 +212,8 @@ export function DistributionChart({
               />
               <YAxis
                 domain={[0, 100]}
-                label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft', fontSize: 12 }}
-                tick={{ fontSize: 11 }}
+                label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft', fontSize: fontSizes.axisLabel }}
+                tick={{ fontSize: fontSizes.axisTick }}
               />
               <Tooltip
                 formatter={(value) => [typeof value === 'number' ? `${value.toFixed(1)}%` : value, '']}
@@ -218,17 +222,17 @@ export function DistributionChart({
                   const absoluteSprint = (sprints as number) + completedSprintCount
                   return `Sprint ${absoluteSprint} (${dateLabel})`
                 }}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{ fontSize: fontSizes.axisTick }}
               />
               <Legend
-                wrapperStyle={{ fontSize: 13, paddingTop: 20 }}
+                wrapperStyle={{ fontSize: fontSizes.legend, paddingTop: 20 }}
                 verticalAlign="bottom"
               />
               <ReferenceLine
                 y={customPercentile}
                 stroke="#666"
                 strokeDasharray="5 5"
-                label={{ value: `P${customPercentile}`, position: 'right', fontSize: 11 }}
+                label={{ value: `P${customPercentile}`, position: 'right', fontSize: fontSizes.axisTick }}
               />
               <Line
                 type="stepAfter"

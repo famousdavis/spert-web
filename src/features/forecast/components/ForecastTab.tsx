@@ -21,11 +21,12 @@ import { DistributionChart } from './DistributionChart'
 import { PercentileSelector } from './PercentileSelector'
 import { ProductivityAdjustments } from './ProductivityAdjustments'
 import { BurnUpChart } from './BurnUpChart'
+import { ChartFontSizeSelector } from './ChartFontSizeSelector'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
-import { DEFAULT_BURN_UP_CONFIG, type BurnUpConfig } from '../types'
+import { DEFAULT_BURN_UP_CONFIG, type BurnUpConfig, type ChartFontSize } from '../types'
 
 interface QuadResults {
   truncatedNormal: PercentileResults
@@ -159,6 +160,9 @@ export function ForecastTab() {
     gamma: null,
     bootstrap: null,
   })
+
+  // Chart font size (session only, not persisted)
+  const [chartFontSize, setChartFontSize] = useState<ChartFontSize>('small')
 
   // Use calculated stats or overrides
   const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
@@ -368,6 +372,11 @@ export function ForecastTab() {
             selectorRef={percentileSelectorRef}
           />
 
+          {/* Chart font size selector */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '-0.5rem' }}>
+            <ChartFontSizeSelector value={chartFontSize} onChange={setChartFontSize} />
+          </div>
+
           {/* Burn-Up Chart - new in v0.7.0 */}
           <BurnUpChart
             sprints={projectSprints}
@@ -379,6 +388,7 @@ export function ForecastTab() {
             config={burnUpConfig}
             onConfigChange={handleBurnUpConfigChange}
             chartRef={burnUpChartRef}
+            fontSize={chartFontSize}
           />
 
           {/* Cumulative Probability Distribution */}
@@ -392,6 +402,7 @@ export function ForecastTab() {
             sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
             completedSprintCount={completedSprintCount}
             chartRef={distributionChartRef}
+            fontSize={chartFontSize}
           />
         </>
       )}
