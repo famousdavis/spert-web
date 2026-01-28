@@ -14,7 +14,9 @@ import {
 } from 'recharts'
 import { calculateSprintStartDate, calculateSprintFinishDate, formatDateCompact } from '@/shared/lib/dates'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
-import { type ChartFontSize, CHART_FONT_SIZES } from '../types'
+import { type ChartFontSize, CHART_FONT_SIZES, CHART_FONT_SIZE_LABELS } from '../types'
+
+const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
 
 interface DistributionChartProps {
   truncatedNormal: number[]
@@ -27,6 +29,7 @@ interface DistributionChartProps {
   completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
   chartRef?: RefObject<HTMLDivElement | null>
   fontSize?: ChartFontSize
+  onFontSizeChange?: (size: ChartFontSize) => void
 }
 
 interface CdfDataPoint {
@@ -140,6 +143,7 @@ export function DistributionChart({
   completedSprintCount,
   chartRef,
   fontSize = 'small',
+  onFontSizeChange,
 }: DistributionChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
@@ -181,6 +185,36 @@ export function DistributionChart({
 
       {isExpanded && (
         <div className="px-4 pb-4" style={{ position: 'relative' }}>
+          {/* Configuration row */}
+          {onFontSizeChange && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <label
+                htmlFor="cdf-font-size"
+                style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
+              >
+                Text:
+              </label>
+              <select
+                id="cdf-font-size"
+                value={fontSize}
+                onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
+                style={{
+                  padding: '0.25rem 0.375rem',
+                  fontSize: '0.8125rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  background: 'white',
+                }}
+              >
+                {FONT_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {CHART_FONT_SIZE_LABELS[size]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div ref={chartRef} style={{ background: 'white', padding: '0.5rem' }}>
             <p className="text-xs text-muted-foreground mb-4">
               Shows the probability of completing the backlog within a given number of sprints.

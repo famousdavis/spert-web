@@ -1,16 +1,20 @@
 'use client'
 
-import type { BurnUpConfig, DistributionType, ForecastLineConfig } from '../types'
-import { DISTRIBUTION_LABELS } from '../types'
+import type { BurnUpConfig, DistributionType, ForecastLineConfig, ChartFontSize } from '../types'
+import { DISTRIBUTION_LABELS, CHART_FONT_SIZE_LABELS } from '../types'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
+
+const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
 
 interface BurnUpConfigProps {
   config: BurnUpConfig
   hasBootstrap: boolean
   onChange: (config: BurnUpConfig) => void
+  fontSize?: ChartFontSize
+  onFontSizeChange?: (size: ChartFontSize) => void
 }
 
-export function BurnUpConfigUI({ config, hasBootstrap, onChange }: BurnUpConfigProps) {
+export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'small', onFontSizeChange }: BurnUpConfigProps) {
   const handleDistributionChange = (distribution: DistributionType) => {
     onChange({ ...config, distribution })
   }
@@ -67,6 +71,36 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange }: BurnUpConfigP
             onChange={(updates) => handleLineChange(index as 0 | 1 | 2, updates)}
           />
         ))}
+
+        {/* Font size selector */}
+        {onFontSizeChange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+            <label
+              htmlFor="burnup-font-size"
+              style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
+            >
+              Text:
+            </label>
+            <select
+              id="burnup-font-size"
+              value={fontSize}
+              onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
+              style={{
+                padding: '0.25rem 0.375rem',
+                fontSize: '0.8125rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                background: 'white',
+              }}
+            >
+              {FONT_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {CHART_FONT_SIZE_LABELS[size]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   )

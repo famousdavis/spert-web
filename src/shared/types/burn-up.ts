@@ -52,3 +52,5 @@ export const CHART_FONT_SIZE_LABELS: Record<ChartFontSize, string> = {
   medium: 'Medium',
   large: 'Large',
 }
+
+export const DEFAULT_CHART_FONT_SIZE: ChartFontSize = 'small'

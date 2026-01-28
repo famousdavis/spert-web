@@ -35,6 +35,7 @@ interface BurnUpChartProps {
   onConfigChange: (config: BurnUpConfig) => void
   chartRef?: RefObject<HTMLDivElement | null>
   fontSize?: ChartFontSize
+  onFontSizeChange?: (size: ChartFontSize) => void
 }
 
 export function BurnUpChart({
@@ -48,6 +49,7 @@ export function BurnUpChart({
   onConfigChange,
   chartRef,
   fontSize = 'small',
+  onFontSizeChange,
 }: BurnUpChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
@@ -108,6 +110,8 @@ export function BurnUpChart({
             config={config}
             hasBootstrap={hasBootstrap}
             onChange={onConfigChange}
+            fontSize={fontSize}
+            onFontSizeChange={onFontSizeChange}
           />
 
           <div ref={chartRef} style={{ background: 'white', padding: '0.5rem' }}>

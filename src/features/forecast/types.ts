@@ -9,4 +9,5 @@ export {
   type ChartFontSizes,
   CHART_FONT_SIZES,
   CHART_FONT_SIZE_LABELS,
+  DEFAULT_CHART_FONT_SIZE,
 } from '@/shared/types/burn-up'
