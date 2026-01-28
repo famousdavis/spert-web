@@ -187,7 +187,7 @@ export function DistributionChart({
         <div className="px-4 pb-4" style={{ position: 'relative' }}>
           {/* Configuration row */}
           {onFontSizeChange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', marginRight: '2.5rem' }}>
               <label
                 htmlFor="cdf-font-size"
                 style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}

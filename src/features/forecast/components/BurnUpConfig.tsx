@@ -74,7 +74,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
 
         {/* Font size selector */}
         {onFontSizeChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto', marginRight: '2.5rem' }}>
             <label
               htmlFor="burnup-font-size"
               style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
