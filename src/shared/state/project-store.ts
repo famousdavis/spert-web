@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Project, Sprint, ProductivityAdjustment } from '@/shared/types'
 import { storage, STORAGE_KEY } from './storage'
 import { APP_VERSION } from '@/shared/constants'
+import { type BurnUpConfig, DEFAULT_BURN_UP_CONFIG } from '@/shared/types/burn-up'
 
 export interface ExportData {
   version: string
@@ -23,6 +24,7 @@ interface ProjectState {
   sprints: Sprint[]
   viewingProjectId: string | null // Shared across Sprint History and Forecast tabs
   forecastInputs: Record<string, ForecastInputs> // projectId -> inputs (session only)
+  burnUpConfigs: Record<string, BurnUpConfig> // projectId -> config (session only)
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -56,6 +58,10 @@ interface ProjectState {
   // Forecast input actions (session only)
   setForecastInput: (projectId: string, field: keyof ForecastInputs, value: string) => void
   getForecastInputs: (projectId: string) => ForecastInputs
+
+  // Burn-up config actions (session only)
+  setBurnUpConfig: (projectId: string, config: BurnUpConfig) => void
+  getBurnUpConfig: (projectId: string) => BurnUpConfig
 }
 
 const generateId = () => crypto.randomUUID()
@@ -68,6 +74,7 @@ export const useProjectStore = create<ProjectState>()(
       sprints: [] as Sprint[],
       viewingProjectId: null as string | null,
       forecastInputs: {} as Record<string, ForecastInputs>,
+      burnUpConfigs: {} as Record<string, BurnUpConfig>,
 
       addProject: (projectData) =>
         set((state) => ({
@@ -224,6 +231,19 @@ export const useProjectStore = create<ProjectState>()(
       getForecastInputs: (projectId) => {
         const state = get()
         return state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '' }
+      },
+
+      setBurnUpConfig: (projectId, config) =>
+        set((state) => ({
+          burnUpConfigs: {
+            ...state.burnUpConfigs,
+            [projectId]: config,
+          },
+        })),
+
+      getBurnUpConfig: (projectId) => {
+        const state = get()
+        return state.burnUpConfigs[projectId] || DEFAULT_BURN_UP_CONFIG
       },
     }),
     {

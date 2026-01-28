@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useCallback } from 'react'
+
 interface ForecastFormProps {
   remainingBacklog: string
   velocityMean: string
@@ -31,6 +33,15 @@ export function ForecastForm({
   onRunForecast,
   canRun,
 }: ForecastFormProps) {
+  const [isRunning, setIsRunning] = useState(false)
+
+  const handleClick = useCallback(() => {
+    if (!canRun || isRunning) return
+    setIsRunning(true)
+    onRunForecast()
+    // Reset after a brief moment to show the feedback
+    setTimeout(() => setIsRunning(false), 400)
+  }, [canRun, isRunning, onRunForecast])
   return (
     <div className="rounded-lg border border-border p-4" style={{ background: '#f9f9f9' }}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -184,21 +195,24 @@ export function ForecastForm({
         {/* Run Forecast Button */}
         <div style={{ flex: '0 0 auto', alignSelf: 'flex-end', paddingBottom: '1.25rem' }}>
           <button
-            onClick={onRunForecast}
-            disabled={!canRun}
+            onClick={handleClick}
+            disabled={!canRun || isRunning}
             style={{
               padding: '0.5rem 1rem',
-              background: canRun ? '#0070f3' : '#ccc',
+              background: isRunning ? '#28a745' : canRun ? '#0070f3' : '#ccc',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: canRun ? 'pointer' : 'not-allowed',
+              cursor: canRun && !isRunning ? 'pointer' : 'not-allowed',
               fontSize: '0.9rem',
               fontWeight: 600,
               height: '38px',
+              width: '140px',
+              transition: 'background-color 0.15s ease, transform 0.1s ease',
+              transform: isRunning ? 'scale(0.97)' : 'scale(1)',
             }}
           >
-            Run Forecast
+            {isRunning ? 'Running…' : 'Run Forecast'}
           </button>
         </div>
       </div>

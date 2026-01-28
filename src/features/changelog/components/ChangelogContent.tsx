@@ -23,25 +23,41 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.7.0',
+    date: '2026-01-27',
+    sections: [
+      {
+        title: 'Burn-Up Chart',
+        items: [
+          'Probabilistic burn-up chart showing work completed vs total scope',
+          'Three configurable forecast lines with labels, percentiles, and colors',
+          'Selectable distribution for projections',
+        ],
+      },
+      {
+        title: 'Sprint History',
+        items: [
+          'Optional "Backlog at End" field enables stepped scope line',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-01-27',
     sections: [
       {
         title: 'Productivity Adjustments',
         items: [
-          'Define periods of reduced productivity (holidays, vacations, company events) that adjust forecasted velocity',
-          'Each adjustment has name, date range, productivity factor (0-100%), and optional memo',
-          'Enable/disable toggle for what-if scenario analysis without deleting adjustments',
-          'Adjustments apply weighted factors per sprint based on working days overlap',
-          'Only enabled adjustments are used in Monte Carlo simulation and CSV export',
+          'Define periods of reduced productivity that adjust forecasted velocity',
+          'Each adjustment has name, date range, productivity factor, and optional memo',
+          'Enable/disable toggle for what-if scenarios',
         ],
       },
       {
         title: 'User Experience',
         items: [
-          'Forecast form inputs (backlog, velocity overrides) now persist when navigating between tabs',
-          'Each project maintains its own forecast inputs independently',
-          'Sprint cadence displayed alongside start date in forecast form',
+          'Forecast form inputs persist when navigating between tabs',
         ],
       },
     ],
@@ -53,10 +69,8 @@ const CHANGELOG: ChangelogEntry[] = [
       {
         title: 'Features',
         items: [
-          '"View History" button on Projects tab navigates directly to Sprint History for that project',
-          'Sprint configuration (cadence and start date) now required before adding sprints',
-          'Forecast results show absolute sprint numbers (completed + remaining)',
-          'Copy-to-clipboard buttons for forecast inputs/results, CDF chart, and custom percentile',
+          '"View History" button navigates to Sprint History for that project',
+          'Copy-to-clipboard buttons for forecast inputs/results and charts',
         ],
       },
     ],
@@ -68,12 +82,8 @@ const CHANGELOG: ChangelogEntry[] = [
       {
         title: 'Visualization',
         items: [
-          'Added CDF (Cumulative Distribution Function) chart to Forecast tab',
-          'Chart shows probability of completing backlog within X sprints for all distributions',
-          'X-axis displays sprint count with finish dates (Mon DD format)',
-          'Horizontal reference line marks selected custom percentile (P85 default)',
-          'Collapsible chart panel with discreet expand/collapse triangle',
-          'Interactive tooltips show probability and date on hover',
+          'CDF chart showing probability of completion within X sprints',
+          'X-axis displays sprint count with finish dates',
         ],
       },
     ],
@@ -85,19 +95,8 @@ const CHANGELOG: ChangelogEntry[] = [
       {
         title: 'User Experience',
         items: [
-          'Project selection now syncs between Sprint History and Forecast tabs',
-          'Compact sprint form: Done input and Include checkbox on same line as sprint dates',
-          'Visual cues for required Done field (blue border, light blue background when empty)',
-        ],
-      },
-      {
-        title: 'About Page',
-        items: [
-          'Redesigned About page with GanttApp-style formatting',
-          'Added Author & Source Code section with GitHub link button',
-          'Added Your Data & Privacy section explaining local storage',
-          'Added No Warranty Disclaimer from GNU GPL v3',
-          'Updated trademark text with full USPTO reference',
+          'Project selection syncs between Sprint History and Forecast tabs',
+          'Compact sprint form with visual cues for required fields',
         ],
       },
     ],
@@ -107,27 +106,10 @@ const CHANGELOG: ChangelogEntry[] = [
     date: '2026-01-25',
     sections: [
       {
-        title: 'Distribution Enhancements',
+        title: 'Distributions',
         items: [
-          'Replaced normal distribution with truncated normal (bounded at zero) using rejection sampling',
-          'Added Gamma distribution using Marsaglia-Tsang method',
-          'Added Bootstrap simulation (#NoEstimates) that samples from actual sprint history',
-          'Bootstrap automatically enabled when 5+ sprints are included in forecast',
-        ],
-      },
-      {
-        title: 'UI Improvements',
-        items: [
-          'Four-column forecast display: T-Normal, Lognorm, Gamma, Bootstrap',
-          'Blue highlighting for results that differ from truncated normal baseline',
-          'Responsive grid layout adapts based on bootstrap availability',
-        ],
-      },
-      {
-        title: 'Export',
-        items: [
-          'CSV export updated to include all four distributions',
-          'Frequency distribution and raw trial data for all simulation methods',
+          'Truncated Normal, Gamma, and Bootstrap distributions added',
+          'Four-column forecast display with highlighting for differences',
         ],
       },
     ],
@@ -139,13 +121,9 @@ const CHANGELOG: ChangelogEntry[] = [
       {
         title: 'Initial Release',
         items: [
-          'Project management with CRUD operations',
-          'Sprint history tracking with include/exclude toggle',
-          'Monte Carlo simulation with 50,000 trials',
-          'Percentile-based forecasting (P50-P90)',
-          'Custom percentile selector (P1-P99)',
-          'CSV export with simulation parameters and results',
-          'LocalStorage persistence',
+          'Project management, sprint history, Monte Carlo simulation',
+          'Percentile-based forecasting (P50-P90) with custom selector',
+          'CSV export and LocalStorage persistence',
         ],
       },
     ],

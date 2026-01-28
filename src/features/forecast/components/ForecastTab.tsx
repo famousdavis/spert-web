@@ -20,10 +20,12 @@ import { ForecastResults } from './ForecastResults'
 import { DistributionChart } from './DistributionChart'
 import { PercentileSelector } from './PercentileSelector'
 import { ProductivityAdjustments } from './ProductivityAdjustments'
+import { BurnUpChart } from './BurnUpChart'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
+import { DEFAULT_BURN_UP_CONFIG, type BurnUpConfig } from '../types'
 
 interface QuadResults {
   truncatedNormal: PercentileResults
@@ -52,6 +54,7 @@ export function ForecastTab() {
   const forecastInputsResultsRef = useRef<HTMLDivElement>(null)
   const distributionChartRef = useRef<HTMLDivElement>(null)
   const percentileSelectorRef = useRef<HTMLDivElement>(null)
+  const burnUpChartRef = useRef<HTMLDivElement>(null)
 
   // Get all sprints for the selected project
   const projectSprints = useMemo(
@@ -131,6 +134,19 @@ export function ForecastTab() {
   }
   const setVelocityStdDev = (value: string) => {
     if (selectedProject) setForecastInput(selectedProject.id, 'velocityStdDev', value)
+  }
+
+  // Burn-up config state (per project, session only)
+  const setBurnUpConfigStore = useProjectStore((state) => state.setBurnUpConfig)
+  const burnUpConfigFromStore = useProjectStore((state) =>
+    selectedProject ? state.burnUpConfigs[selectedProject.id] : undefined
+  )
+  const burnUpConfig = burnUpConfigFromStore ?? DEFAULT_BURN_UP_CONFIG
+
+  const handleBurnUpConfigChange = (config: BurnUpConfig) => {
+    if (selectedProject) {
+      setBurnUpConfigStore(selectedProject.id, config)
+    }
   }
 
   // Results state - now holds truncated normal, lognormal, gamma, and bootstrap results
@@ -340,6 +356,32 @@ export function ForecastTab() {
 
       {selectedProject?.sprintCadenceWeeks && results && simulationData && (
         <>
+          {/* Custom Percentile - moved above charts */}
+          <PercentileSelector
+            percentile={customPercentile}
+            truncatedNormalResult={customResults.truncatedNormal}
+            lognormalResult={customResults.lognormal}
+            gammaResult={customResults.gamma}
+            bootstrapResult={customResults.bootstrap}
+            completedSprintCount={completedSprintCount}
+            onPercentileChange={handleCustomPercentileChange}
+            selectorRef={percentileSelectorRef}
+          />
+
+          {/* Burn-Up Chart - new in v0.7.0 */}
+          <BurnUpChart
+            sprints={projectSprints}
+            forecastBacklog={Number(remainingBacklog) || 0}
+            simulationData={simulationData}
+            sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
+            firstSprintStartDate={selectedProject.firstSprintStartDate!}
+            completedSprintCount={completedSprintCount}
+            config={burnUpConfig}
+            onConfigChange={handleBurnUpConfigChange}
+            chartRef={burnUpChartRef}
+          />
+
+          {/* Cumulative Probability Distribution */}
           <DistributionChart
             truncatedNormal={simulationData.truncatedNormal}
             lognormal={simulationData.lognormal}
@@ -350,16 +392,6 @@ export function ForecastTab() {
             sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
             completedSprintCount={completedSprintCount}
             chartRef={distributionChartRef}
-          />
-          <PercentileSelector
-            percentile={customPercentile}
-            truncatedNormalResult={customResults.truncatedNormal}
-            lognormalResult={customResults.lognormal}
-            gammaResult={customResults.gamma}
-            bootstrapResult={customResults.bootstrap}
-            completedSprintCount={completedSprintCount}
-            onPercentileChange={handleCustomPercentileChange}
-            selectorRef={percentileSelectorRef}
           />
         </>
       )}

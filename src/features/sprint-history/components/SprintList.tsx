@@ -63,6 +63,9 @@ export function SprintList({
               Done ({unitOfMeasure})
             </th>
             <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+              Backlog
+            </th>
+            <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
               Actions
             </th>
           </tr>
@@ -92,6 +95,9 @@ export function SprintList({
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-medium">
                   {sprint.doneValue}
+                </td>
+                <td className="px-4 py-3 text-right text-sm text-muted-foreground">
+                  {sprint.backlogAtSprintEnd !== undefined ? sprint.backlogAtSprintEnd : '—'}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button

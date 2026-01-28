@@ -32,6 +32,7 @@ export interface Sprint {
   sprintStartDate: string // ISO date string (YYYY-MM-DD) - calculated from firstSprintStartDate + cadence
   sprintFinishDate: string // ISO date string (YYYY-MM-DD) - calculated, always a business day (Mon-Fri)
   doneValue: number
+  backlogAtSprintEnd?: number // Optional: total backlog remaining at sprint end (for burn-up chart)
   includedInForecast: boolean
   createdAt: string
   updatedAt: string

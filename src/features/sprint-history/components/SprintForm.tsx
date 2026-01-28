@@ -24,6 +24,9 @@ export function SprintForm({
   onCancel,
 }: SprintFormProps) {
   const [doneValue, setDoneValue] = useState(sprint?.doneValue?.toString() ?? '')
+  const [backlogAtSprintEnd, setBacklogAtSprintEnd] = useState(
+    sprint?.backlogAtSprintEnd?.toString() ?? ''
+  )
   const [includedInForecast, setIncludedInForecast] = useState(
     sprint?.includedInForecast ?? true
   )
@@ -76,6 +79,7 @@ export function SprintForm({
       sprintStartDate,
       sprintFinishDate,
       doneValue: Number(doneValue),
+      backlogAtSprintEnd: backlogAtSprintEnd ? Number(backlogAtSprintEnd) : undefined,
       includedInForecast,
     })
   }
@@ -134,6 +138,32 @@ export function SprintForm({
             }}
             placeholder="0"
             required
+          />
+        </div>
+
+        {/* Backlog at sprint end input - optional */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label
+            htmlFor="backlogAtSprintEnd"
+            style={{ fontSize: '0.875rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}
+          >
+            Backlog at End
+          </label>
+          <input
+            id="backlogAtSprintEnd"
+            type="number"
+            min="0"
+            step="any"
+            value={backlogAtSprintEnd}
+            onChange={(e) => setBacklogAtSprintEnd(e.target.value)}
+            style={{
+              padding: '0.5rem',
+              fontSize: '0.9rem',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              width: '80px',
+            }}
+            placeholder="—"
           />
         </div>
 

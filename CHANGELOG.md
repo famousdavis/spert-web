@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.7.0 - 2026-01-27
+
+### Burn-Up Chart
+
+- Probabilistic burn-up chart on Forecast tab showing work completed vs total scope
+- Three configurable forecast lines with customizable labels, percentiles (P1-P99), and colors
+- Selectable distribution (T-Normal, Lognormal, Gamma, Bootstrap) for projections
+- Copy-to-clipboard button for chart image
+
+### Sprint History
+
+- Optional "Backlog at End" field enables stepped scope line on burn-up chart
+
+### User Experience
+
+- Custom Percentile selector moved above chart sections
+- Burn-up chart configuration persists per project during session
+
 ## v0.6.0 - 2026-01-27
 
 ### Productivity Adjustments
