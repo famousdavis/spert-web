@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useProjectStore, selectActiveProject, type ExportData } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
+import { today } from '@/shared/lib/dates'
 import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
 import type { Project } from '@/shared/types'
@@ -49,7 +50,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `spert-data-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `spert-data-${today()}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)

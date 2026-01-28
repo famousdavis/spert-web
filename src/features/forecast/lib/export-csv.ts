@@ -1,5 +1,6 @@
 import type { PercentileResults } from './monte-carlo'
 import type { ProductivityAdjustment } from '@/shared/types'
+import { today } from '@/shared/lib/dates'
 
 interface ExportConfig {
   projectName: string
@@ -210,7 +211,6 @@ export function downloadCsv(content: string, filename: string): void {
  * Generate filename for the export
  */
 export function generateFilename(projectName: string): string {
-  const date = new Date().toISOString().split('T')[0]
   const safeName = projectName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
-  return `forecast-${safeName}-${date}.csv`
+  return `forecast-${safeName}-${today()}.csv`
 }

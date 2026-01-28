@@ -1,11 +1,12 @@
 // Date utility functions
 
 /**
- * Add days to a date string and return a new ISO date string
+ * Add days to a date string and return a new ISO date string.
+ * Uses UTC to avoid DST issues.
  */
 export function addDays(dateStr: string, days: number): string {
-  const date = new Date(dateStr)
-  date.setDate(date.getDate() + days)
+  const date = new Date(dateStr + 'T00:00:00Z')
+  date.setUTCDate(date.getUTCDate() + days)
   return date.toISOString().split('T')[0]
 }
 
@@ -40,10 +41,15 @@ export function formatDateCompact(dateStr: string): string {
 }
 
 /**
- * Get today's date as an ISO date string (YYYY-MM-DD)
+ * Get today's date as an ISO date string (YYYY-MM-DD) in local timezone.
+ * Use this for user-facing dates like filenames and default form values.
  */
 export function today(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**

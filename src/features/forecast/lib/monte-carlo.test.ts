@@ -215,10 +215,11 @@ describe('calculatePercentileResult', () => {
     )
 
     // Median of [3,4,5,6,7] is 5
-    // 5 sprints * 2 weeks = 10 weeks from start
+    // Sprint 5 finishes on the Friday before sprint 6 starts
+    // Sprint 6 would start on 2024-03-11 (Monday), so finish is 2024-03-08 (Friday)
     expect(result.sprintsRequired).toBe(5)
     expect(result.percentile).toBe(50)
-    expect(result.finishDate).toBe('2024-03-10') // 10 weeks after Jan 1
+    expect(result.finishDate).toBe('2024-03-08') // Friday finish of sprint 5
   })
 
   it('handles P90 correctly', () => {

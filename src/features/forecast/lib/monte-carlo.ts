@@ -4,7 +4,7 @@ import {
   randomGammaFromMeanStdDev,
   percentileFromSorted,
 } from '@/shared/lib/math'
-import { addWeeks } from '@/shared/lib/dates'
+import { calculateSprintStartDate, calculateSprintFinishDate } from '@/shared/lib/dates'
 import type { ForecastConfig, ForecastResult } from '@/shared/types'
 
 export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
@@ -399,7 +399,10 @@ export function calculatePercentileResult(
   const sprintsRequired = Math.ceil(
     percentileFromSorted(sortedSprintsRequired, percentile)
   )
-  const finishDate = addWeeks(startDate, sprintsRequired * sprintCadenceWeeks)
+  // Calculate the finish date as the last business day of the final sprint
+  // startDate is when sprint 1 starts, so sprint N starts at startDate + (N-1) * cadence
+  const finalSprintStart = calculateSprintStartDate(startDate, sprintsRequired, sprintCadenceWeeks)
+  const finishDate = calculateSprintFinishDate(finalSprintStart, sprintCadenceWeeks)
 
   return {
     percentile,

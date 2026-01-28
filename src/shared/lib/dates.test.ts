@@ -1,10 +1,134 @@
 import { describe, it, expect } from 'vitest'
 import {
+  addDays,
+  addWeeks,
+  calculateSprintStartDate,
+  calculateSprintFinishDate,
+  getPrecedingBusinessDay,
   getWorkingDaysInRange,
   countWorkingDays,
   calculateSprintProductivityFactor,
   isWeekend,
 } from './dates'
+
+describe('addDays', () => {
+  it('adds days correctly', () => {
+    expect(addDays('2024-01-01', 7)).toBe('2024-01-08')
+    expect(addDays('2024-01-01', 14)).toBe('2024-01-15')
+  })
+
+  it('handles month boundaries', () => {
+    expect(addDays('2024-01-31', 1)).toBe('2024-02-01')
+    expect(addDays('2024-02-28', 1)).toBe('2024-02-29') // 2024 is leap year
+    expect(addDays('2024-02-29', 1)).toBe('2024-03-01')
+  })
+
+  it('handles negative days', () => {
+    expect(addDays('2024-01-15', -7)).toBe('2024-01-08')
+  })
+
+  // This is the critical DST bug test - March 10, 2024 is when DST begins in US
+  it('handles DST spring forward transition correctly', () => {
+    // DST in US begins March 10, 2024 at 2am
+    // Adding days across this boundary should not cause date drift
+    expect(addDays('2024-03-09', 1)).toBe('2024-03-10') // Day before DST
+    expect(addDays('2024-03-09', 2)).toBe('2024-03-11') // Day after DST
+    expect(addDays('2024-03-01', 14)).toBe('2024-03-15') // Two weeks spanning DST
+  })
+
+  // DST fall back - November 3, 2024
+  it('handles DST fall back transition correctly', () => {
+    expect(addDays('2024-11-02', 1)).toBe('2024-11-03') // Day before fall back
+    expect(addDays('2024-11-02', 2)).toBe('2024-11-04') // Day after fall back
+    expect(addDays('2024-10-28', 14)).toBe('2024-11-11') // Two weeks spanning fall back
+  })
+
+  it('handles large day counts across DST', () => {
+    // 10 two-week sprints from Jan 1 = 140 days, crosses DST
+    expect(addDays('2024-01-01', 140)).toBe('2024-05-20')
+  })
+})
+
+describe('addWeeks', () => {
+  it('adds weeks correctly', () => {
+    expect(addWeeks('2024-01-01', 2)).toBe('2024-01-15')
+    expect(addWeeks('2024-01-01', 10)).toBe('2024-03-11')
+  })
+
+  it('handles DST transition', () => {
+    // 10 weeks from Jan 1 crosses March DST
+    expect(addWeeks('2024-01-01', 10)).toBe('2024-03-11') // Should be Monday
+  })
+})
+
+describe('getPrecedingBusinessDay', () => {
+  it('returns same day for weekdays', () => {
+    expect(getPrecedingBusinessDay('2024-01-08')).toBe('2024-01-08') // Monday
+    expect(getPrecedingBusinessDay('2024-01-12')).toBe('2024-01-12') // Friday
+  })
+
+  it('returns Friday for Saturday', () => {
+    expect(getPrecedingBusinessDay('2024-01-13')).toBe('2024-01-12') // Sat -> Fri
+  })
+
+  it('returns Friday for Sunday', () => {
+    expect(getPrecedingBusinessDay('2024-01-14')).toBe('2024-01-12') // Sun -> Fri
+  })
+})
+
+describe('calculateSprintStartDate', () => {
+  it('returns first sprint date for sprint 1', () => {
+    expect(calculateSprintStartDate('2024-01-01', 1, 2)).toBe('2024-01-01')
+  })
+
+  it('calculates correct start for subsequent sprints', () => {
+    // Sprint 2 starts 2 weeks after sprint 1
+    expect(calculateSprintStartDate('2024-01-01', 2, 2)).toBe('2024-01-15')
+    // Sprint 5 starts 8 weeks after sprint 1
+    expect(calculateSprintStartDate('2024-01-01', 5, 2)).toBe('2024-02-26')
+  })
+
+  it('handles sprints across DST transition', () => {
+    // Sprint 6 starts 10 weeks after Jan 1 = March 11 (Monday after DST)
+    expect(calculateSprintStartDate('2024-01-01', 6, 2)).toBe('2024-03-11')
+  })
+})
+
+describe('calculateSprintFinishDate', () => {
+  it('returns Friday for 2-week sprint starting Monday', () => {
+    // Sprint starts Jan 1 (Mon), next sprint would start Jan 15 (Mon)
+    // Finish should be Jan 12 (Fri)
+    expect(calculateSprintFinishDate('2024-01-01', 2)).toBe('2024-01-12')
+  })
+
+  it('handles sprint finishing before weekend', () => {
+    // Sprint starts Jan 15 (Mon), next starts Jan 29 (Mon)
+    // Day before is Jan 28 (Sun), preceding business day is Jan 26 (Fri)
+    expect(calculateSprintFinishDate('2024-01-15', 2)).toBe('2024-01-26')
+  })
+
+  it('handles 1-week sprint cadence', () => {
+    // Sprint starts Jan 1 (Mon), next starts Jan 8 (Mon)
+    // Day before is Jan 7 (Sun), preceding business day is Jan 5 (Fri)
+    expect(calculateSprintFinishDate('2024-01-01', 1)).toBe('2024-01-05')
+  })
+
+  it('handles finish date across DST transition', () => {
+    // Sprint 5 starts Feb 26, sprint 6 starts Mar 11
+    // Day before Mar 11 is Mar 10 (Sun), preceding business day is Mar 8 (Fri)
+    expect(calculateSprintFinishDate('2024-02-26', 2)).toBe('2024-03-08')
+  })
+
+  it('never returns a weekend date', () => {
+    // Test several sprints to ensure none finish on weekends
+    const startDate = '2024-01-01'
+    for (let sprint = 1; sprint <= 20; sprint++) {
+      const sprintStart = calculateSprintStartDate(startDate, sprint, 2)
+      const finishDate = calculateSprintFinishDate(sprintStart, 2)
+      expect(isWeekend(finishDate)).toBe(false)
+    }
+  })
+})
 
 describe('isWeekend', () => {
   it('identifies Saturday as weekend', () => {
