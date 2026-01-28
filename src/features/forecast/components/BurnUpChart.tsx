@@ -133,7 +133,7 @@ export function BurnUpChart({
                   }}
                   tickLine={{ transform: 'translate(0, 0)' }}
                   axisLine={{ stroke: '#e5e7eb' }}
-                  interval={chartData.length <= 15 ? 0 : chartData.length <= 25 ? 1 : chartData.length <= 40 ? 2 : Math.floor(chartData.length / 15)}
+                  interval={chartData.length <= 30 ? 0 : chartData.length <= 50 ? 1 : chartData.length <= 80 ? 2 : Math.floor(chartData.length / 30)}
                 />
                 <YAxis
                   domain={[0, yAxisMax]}
