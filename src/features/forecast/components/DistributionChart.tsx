@@ -12,7 +12,7 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
-import { addWeeks, formatDateCompact } from '@/shared/lib/dates'
+import { calculateSprintStartDate, calculateSprintFinishDate, formatDateCompact } from '@/shared/lib/dates'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface DistributionChartProps {
@@ -91,7 +91,10 @@ function mergeDistributions(
   // For each sprint value, find the cumulative probability
   // by counting how many trials completed in that many sprints or fewer
   return sortedSprints.map((sprints) => {
-    const finishDate = addWeeks(startDate, sprints * sprintCadenceWeeks)
+    // Calculate finish date: startDate is when sprint 1 of remaining work begins
+    // sprints = how many more sprints needed, so sprint N starts at calculateSprintStartDate(startDate, N, cadence)
+    const sprintStart = calculateSprintStartDate(startDate, sprints, sprintCadenceWeeks)
+    const finishDate = calculateSprintFinishDate(sprintStart, sprintCadenceWeeks)
     const point: CdfDataPoint = {
       sprints,
       dateLabel: formatDateCompact(finishDate),
