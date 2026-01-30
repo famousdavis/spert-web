@@ -23,6 +23,44 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.8.0',
+    date: '2026-01-29',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        items: [
+          'Fixed productivity factor truncation that could silently bias forecasts',
+          'Fixed burn-up chart crash when no forecast lines intersect scope',
+          'Fixed CSV export not escaping newlines in adjustment names and memos',
+          'Fixed percentile calculation for out-of-range input values',
+        ],
+      },
+      {
+        title: 'Refactoring',
+        items: [
+          'Consolidated 8 redundant trial functions into generic runTrial() with thin wrappers',
+          'Removed deprecated dual-forecast API',
+          'Extracted SprintConfig component from SprintHistoryTab',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          'Added 62 new tests (89 → 151 total) for math, burn-up, export-csv, and monte-carlo edge cases',
+        ],
+      },
+      {
+        title: 'Enhancements',
+        items: [
+          'Console warnings for distribution parameter fallbacks',
+          'Version mismatch logging on data import',
+          'Orphaned session state cleaned up on project delete',
+          'Import errors shown as dismissible inline messages instead of browser alerts',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.7.0',
     date: '2026-01-27',
     sections: [
