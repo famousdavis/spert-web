@@ -59,7 +59,7 @@ export function normalToLognormalParams(
   stdDev: number
 ): { muLn: number; sigmaLn: number } {
   if (mean <= 0) {
-    // Lognormal requires positive mean; fall back to small positive value
+    console.warn(`Lognormal parameter warning: mean (${mean}) must be positive, using fallback values`)
     return { muLn: Math.log(0.1), sigmaLn: 0.1 }
   }
 
@@ -145,7 +145,7 @@ export function normalToGammaParams(
   stdDev: number
 ): { shape: number; scale: number } {
   if (mean <= 0) {
-    // Gamma requires positive mean; fall back to reasonable defaults
+    console.warn(`Gamma parameter warning: mean (${mean}) must be positive, using fallback values`)
     return { shape: 1, scale: 0.1 }
   }
 

@@ -97,10 +97,16 @@ export const useProjectStore = create<ProjectState>()(
         })),
 
       deleteProject: (id) =>
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-          sprints: state.sprints.filter((s) => s.projectId !== id),
-        })),
+        set((state) => {
+          const { [id]: _forecastInputs, ...remainingForecastInputs } = state.forecastInputs
+          const { [id]: _burnUpConfig, ...remainingBurnUpConfigs } = state.burnUpConfigs
+          return {
+            projects: state.projects.filter((p) => p.id !== id),
+            sprints: state.sprints.filter((s) => s.projectId !== id),
+            forecastInputs: remainingForecastInputs,
+            burnUpConfigs: remainingBurnUpConfigs,
+          }
+        }),
 
       reorderProjects: (projectIds) =>
         set((state) => {
@@ -211,11 +217,15 @@ export const useProjectStore = create<ProjectState>()(
         }
       },
 
-      importData: (data: ExportData) =>
+      importData: (data: ExportData) => {
+        if (data.version && data.version !== APP_VERSION) {
+          console.info(`Importing data from version ${data.version} (current: ${APP_VERSION})`)
+        }
         set(() => ({
           projects: data.projects,
           sprints: data.sprints,
-        })),
+        }))
+      },
 
       setForecastInput: (projectId, field, value) =>
         set((state) => ({

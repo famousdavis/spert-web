@@ -24,6 +24,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const importData = useProjectStore((state) => state.importData)
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleEdit = (project: Project) => {
@@ -65,6 +66,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setImportError(null)
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
@@ -72,10 +74,10 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         if (data.projects && data.sprints) {
           importData(data)
         } else {
-          alert('Invalid file format. Please select a valid SPERT export file.')
+          setImportError('Invalid file format. Please select a valid SPERT export file.')
         }
       } catch {
-        alert('Failed to parse file. Please select a valid JSON file.')
+        setImportError('Failed to parse file. Please select a valid JSON file.')
       }
     }
     reader.readAsText(file)
@@ -137,6 +139,31 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
           />
         </div>
       </div>
+
+      {importError && (
+        <div
+          style={{
+            padding: '0.75rem 1rem',
+            background: '#fff3f3',
+            border: '1px solid #e53e3e',
+            borderRadius: '4px',
+            color: '#c53030',
+            fontSize: '0.9rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>{importError}</span>
+          <button
+            onClick={() => setImportError(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c53030', fontWeight: 'bold', fontSize: '1rem' }}
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <ProjectForm
         project={editingProject}
