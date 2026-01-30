@@ -7,7 +7,6 @@ import {
   runSimulation,
   calculatePercentileResult,
   runForecast,
-  runDualForecast,
   runTripleForecast,
   runQuadrupleForecast,
   runBootstrapSimulation,
@@ -264,51 +263,6 @@ describe('runForecast', () => {
     expect(result.p60.sprintsRequired).toBeLessThanOrEqual(result.p70.sprintsRequired)
     expect(result.p70.sprintsRequired).toBeLessThanOrEqual(result.p80.sprintsRequired)
     expect(result.p80.sprintsRequired).toBeLessThanOrEqual(result.p90.sprintsRequired)
-  })
-})
-
-describe('runDualForecast', () => {
-  it('returns results for both distributions', () => {
-    const result = runDualForecast({
-      remainingBacklog: 100,
-      velocityMean: 20,
-      velocityStdDev: 5,
-      startDate: '2024-01-01',
-      trialCount: 1000,
-      sprintCadenceWeeks: 2,
-    })
-
-    expect(result.normal).toBeDefined()
-    expect(result.lognormal).toBeDefined()
-    expect(result.normal.results.p50).toBeDefined()
-    expect(result.lognormal.results.p50).toBeDefined()
-    expect(result.normal.sprintsRequired).toHaveLength(1000)
-    expect(result.lognormal.sprintsRequired).toHaveLength(1000)
-  })
-
-  it('both distributions produce reasonable results', () => {
-    const result = runDualForecast({
-      remainingBacklog: 100,
-      velocityMean: 20,
-      velocityStdDev: 5,
-      startDate: '2024-01-01',
-      trialCount: 10000,
-      sprintCadenceWeeks: 2,
-    })
-
-    // Both should have P50 around 5 sprints (100/20)
-    expect(result.normal.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
-    expect(result.normal.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
-    expect(result.lognormal.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
-    expect(result.lognormal.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
-
-    // Higher percentiles should require at least as many sprints
-    expect(result.normal.results.p90.sprintsRequired).toBeGreaterThanOrEqual(
-      result.normal.results.p50.sprintsRequired
-    )
-    expect(result.lognormal.results.p90.sprintsRequired).toBeGreaterThanOrEqual(
-      result.lognormal.results.p50.sprintsRequired
-    )
   })
 })
 

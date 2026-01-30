@@ -34,122 +34,32 @@ export interface PercentileResults {
   p90: ForecastResult
 }
 
-export interface DualForecastResults {
-  normal: PercentileResults
-  lognormal: PercentileResults
-}
-
-export interface TripleForecastResults {
-  truncatedNormal: PercentileResults
-  lognormal: PercentileResults
-  gamma: PercentileResults
-}
-
-export interface QuadrupleForecastResults {
-  truncatedNormal: PercentileResults
-  lognormal: PercentileResults
-  gamma: PercentileResults
-  bootstrap: PercentileResults
-}
+/**
+ * Velocity sampler function type.
+ * Each distribution provides a sampler that returns a raw velocity sample.
+ */
+type VelocitySampler = () => number
 
 /**
- * Run a single Monte Carlo trial using truncated normal distribution
- * Returns the number of sprints required to complete the backlog
+ * Core trial runner: simulates sprints until backlog is exhausted.
+ * All distribution-specific trial functions delegate to this.
  *
- * Truncated normal is bounded at 0, properly handling the impossibility
- * of negative velocity without artificial clamping.
+ * @param remainingBacklog - Work remaining
+ * @param sampler - Function that returns a velocity sample from the chosen distribution
+ * @param productivityFactors - Optional per-sprint multipliers (index 0 = first sprint)
  */
-export function runSingleTrialTruncatedNormal(
+function runTrial(
   remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number
+  sampler: VelocitySampler,
+  productivityFactors?: number[]
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
 
   while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
-    // Generate velocity from truncated normal (bounded at 0)
-    // Apply minimum of 0.1 as safety fallback for edge cases
-    const velocity = Math.max(0.1, randomTruncatedNormal(velocityMean, velocityStdDev, 0))
-    remaining -= velocity
-    sprints++
-  }
-
-  return sprints
-}
-
-/**
- * Run a single Monte Carlo trial using lognormal distribution
- * Returns the number of sprints required to complete the backlog
- */
-export function runSingleTrialLognormal(
-  remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number
-): number {
-  let remaining = remainingBacklog
-  let sprints = 0
-
-  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
-    // Generate velocity for this sprint from lognormal distribution
-    // Lognormal is always positive, but we still apply a minimum for safety
-    const velocity = Math.max(0.1, randomLognormalFromMeanStdDev(velocityMean, velocityStdDev))
-    remaining -= velocity
-    sprints++
-  }
-
-  return sprints
-}
-
-/**
- * Run a single Monte Carlo trial using gamma distribution
- * Returns the number of sprints required to complete the backlog
- *
- * Gamma distribution is always positive and commonly used for
- * modeling throughput and waiting times.
- */
-export function runSingleTrialGamma(
-  remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number
-): number {
-  let remaining = remainingBacklog
-  let sprints = 0
-
-  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
-    // Generate velocity for this sprint from gamma distribution
-    // Gamma is always positive, but we still apply a minimum for safety
-    const velocity = Math.max(0.1, randomGammaFromMeanStdDev(velocityMean, velocityStdDev))
-    remaining -= velocity
-    sprints++
-  }
-
-  return sprints
-}
-
-/**
- * Run a single Monte Carlo trial using bootstrap (sampling with replacement)
- * Returns the number of sprints required to complete the backlog
- *
- * Bootstrap (#NoEstimates) samples from actual historical sprint velocities
- * with replacement, making no assumptions about the underlying distribution.
- */
-export function runSingleTrialBootstrap(
-  remainingBacklog: number,
-  historicalVelocities: number[]
-): number {
-  if (historicalVelocities.length === 0) {
-    throw new Error('Bootstrap requires historical velocity data')
-  }
-
-  let remaining = remainingBacklog
-  let sprints = 0
-
-  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
-    // Sample with replacement from historical velocities
-    const randomIndex = Math.floor(Math.random() * historicalVelocities.length)
-    const velocity = Math.max(0.1, historicalVelocities[randomIndex])
-    remaining -= velocity
+    const baseVelocity = Math.max(0.1, sampler())
+    const factor = productivityFactors?.[sprints] ?? 1.0
+    remaining -= baseVelocity * factor
     sprints++
   }
 
@@ -157,109 +67,80 @@ export function runSingleTrialBootstrap(
 }
 
 // ============================================================================
-// Productivity-Adjusted Trial Functions
+// Distribution-specific trial functions (thin wrappers around runTrial)
 // ============================================================================
 
-/**
- * Run a single trial with productivity adjustments applied.
- * The productivityFactors array is indexed by sprint number (0 = first forecast sprint).
- * Each sampled velocity is multiplied by the corresponding factor.
- */
+export function runSingleTrialTruncatedNormal(backlog: number, mean: number, stdDev: number): number {
+  return runTrial(backlog, () => randomTruncatedNormal(mean, stdDev, 0))
+}
+
+export function runSingleTrialLognormal(backlog: number, mean: number, stdDev: number): number {
+  return runTrial(backlog, () => randomLognormalFromMeanStdDev(mean, stdDev))
+}
+
+export function runSingleTrialGamma(backlog: number, mean: number, stdDev: number): number {
+  return runTrial(backlog, () => randomGammaFromMeanStdDev(mean, stdDev))
+}
+
+export function runSingleTrialBootstrap(backlog: number, velocities: number[]): number {
+  if (velocities.length === 0) throw new Error('Bootstrap requires historical velocity data')
+  return runTrial(backlog, () => velocities[Math.floor(Math.random() * velocities.length)])
+}
+
 export function runSingleTrialTruncatedNormalWithProductivity(
-  remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number,
-  productivityFactors: number[]
+  backlog: number, mean: number, stdDev: number, factors: number[]
 ): number {
-  let remaining = remainingBacklog
-  let sprints = 0
-  const maxSprints = MAX_TRIAL_SPRINTS
-
-  while (remaining > 0 && sprints < maxSprints) {
-    const baseVelocity = Math.max(0.1, randomTruncatedNormal(velocityMean, velocityStdDev, 0))
-    const factor = productivityFactors[sprints] ?? 1.0
-    const adjustedVelocity = baseVelocity * factor
-    remaining -= adjustedVelocity
-    sprints++
-  }
-
-  return sprints
+  return runTrial(backlog, () => randomTruncatedNormal(mean, stdDev, 0), factors)
 }
 
 export function runSingleTrialLognormalWithProductivity(
-  remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number,
-  productivityFactors: number[]
+  backlog: number, mean: number, stdDev: number, factors: number[]
 ): number {
-  let remaining = remainingBacklog
-  let sprints = 0
-  const maxSprints = MAX_TRIAL_SPRINTS
-
-  while (remaining > 0 && sprints < maxSprints) {
-    const baseVelocity = Math.max(0.1, randomLognormalFromMeanStdDev(velocityMean, velocityStdDev))
-    const factor = productivityFactors[sprints] ?? 1.0
-    const adjustedVelocity = baseVelocity * factor
-    remaining -= adjustedVelocity
-    sprints++
-  }
-
-  return sprints
+  return runTrial(backlog, () => randomLognormalFromMeanStdDev(mean, stdDev), factors)
 }
 
 export function runSingleTrialGammaWithProductivity(
-  remainingBacklog: number,
-  velocityMean: number,
-  velocityStdDev: number,
-  productivityFactors: number[]
+  backlog: number, mean: number, stdDev: number, factors: number[]
 ): number {
-  let remaining = remainingBacklog
-  let sprints = 0
-  const maxSprints = MAX_TRIAL_SPRINTS
-
-  while (remaining > 0 && sprints < maxSprints) {
-    const baseVelocity = Math.max(0.1, randomGammaFromMeanStdDev(velocityMean, velocityStdDev))
-    const factor = productivityFactors[sprints] ?? 1.0
-    const adjustedVelocity = baseVelocity * factor
-    remaining -= adjustedVelocity
-    sprints++
-  }
-
-  return sprints
+  return runTrial(backlog, () => randomGammaFromMeanStdDev(mean, stdDev), factors)
 }
 
 export function runSingleTrialBootstrapWithProductivity(
-  remainingBacklog: number,
-  historicalVelocities: number[],
-  productivityFactors: number[]
+  backlog: number, velocities: number[], factors: number[]
 ): number {
-  if (historicalVelocities.length === 0) {
-    throw new Error('Bootstrap requires historical velocity data')
-  }
-
-  let remaining = remainingBacklog
-  let sprints = 0
-  const maxSprints = MAX_TRIAL_SPRINTS
-
-  while (remaining > 0 && sprints < maxSprints) {
-    const randomIndex = Math.floor(Math.random() * historicalVelocities.length)
-    const baseVelocity = Math.max(0.1, historicalVelocities[randomIndex])
-    const factor = productivityFactors[sprints] ?? 1.0
-    const adjustedVelocity = baseVelocity * factor
-    remaining -= adjustedVelocity
-    sprints++
-  }
-
-  return sprints
+  if (velocities.length === 0) throw new Error('Bootstrap requires historical velocity data')
+  return runTrial(backlog, () => velocities[Math.floor(Math.random() * velocities.length)], factors)
 }
 
 /**
- * Run simulation with productivity adjustments
+ * Select the trial function for a given distribution type
  */
-function runSimulationWithProductivity(
-  input: SimulationInput,
-  productivityFactors: number[]
-): SimulationOutput {
+function getTrialFn(distributionType: DistributionType): (backlog: number, mean: number, stdDev: number) => number {
+  switch (distributionType) {
+    case 'lognormal': return runSingleTrialLognormal
+    case 'gamma': return runSingleTrialGamma
+    case 'truncatedNormal': default: return runSingleTrialTruncatedNormal
+  }
+}
+
+/**
+ * Select the productivity-adjusted trial function for a given distribution type
+ */
+function getTrialWithProductivityFn(
+  distributionType: DistributionType
+): (backlog: number, mean: number, stdDev: number, factors: number[]) => number {
+  switch (distributionType) {
+    case 'lognormal': return runSingleTrialLognormalWithProductivity
+    case 'gamma': return runSingleTrialGammaWithProductivity
+    case 'truncatedNormal': default: return runSingleTrialTruncatedNormalWithProductivity
+  }
+}
+
+/**
+ * Run a Monte Carlo simulation, optionally with productivity adjustments
+ * Returns the distribution of sprint counts across all trials
+ */
+export function runSimulation(input: SimulationInput, productivityFactors?: number[]): SimulationOutput {
   const {
     remainingBacklog,
     velocityMean,
@@ -269,45 +150,18 @@ function runSimulationWithProductivity(
   } = input
 
   const sprintsRequired: number[] = []
+  const useProductivity = productivityFactors && productivityFactors.length > 0
 
-  switch (distributionType) {
-    case 'lognormal':
-      for (let i = 0; i < trialCount; i++) {
-        sprintsRequired.push(
-          runSingleTrialLognormalWithProductivity(
-            remainingBacklog,
-            velocityMean,
-            velocityStdDev,
-            productivityFactors
-          )
-        )
-      }
-      break
-    case 'gamma':
-      for (let i = 0; i < trialCount; i++) {
-        sprintsRequired.push(
-          runSingleTrialGammaWithProductivity(
-            remainingBacklog,
-            velocityMean,
-            velocityStdDev,
-            productivityFactors
-          )
-        )
-      }
-      break
-    case 'truncatedNormal':
-    default:
-      for (let i = 0; i < trialCount; i++) {
-        sprintsRequired.push(
-          runSingleTrialTruncatedNormalWithProductivity(
-            remainingBacklog,
-            velocityMean,
-            velocityStdDev,
-            productivityFactors
-          )
-        )
-      }
-      break
+  if (useProductivity) {
+    const trialFn = getTrialWithProductivityFn(distributionType)
+    for (let i = 0; i < trialCount; i++) {
+      sprintsRequired.push(trialFn(remainingBacklog, velocityMean, velocityStdDev, productivityFactors))
+    }
+  } else {
+    const trialFn = getTrialFn(distributionType)
+    for (let i = 0; i < trialCount; i++) {
+      sprintsRequired.push(trialFn(remainingBacklog, velocityMean, velocityStdDev))
+    }
   }
 
   sprintsRequired.sort((a, b) => a - b)
@@ -320,68 +174,27 @@ function runSimulationWithProductivity(
 }
 
 /**
- * Run bootstrap simulation with productivity adjustments
+ * Run bootstrap simulation, optionally with productivity adjustments
  */
-function runBootstrapSimulationWithProductivity(
+function runBootstrapSimulationInternal(
   remainingBacklog: number,
   historicalVelocities: number[],
   trialCount: number,
-  productivityFactors: number[]
+  productivityFactors?: number[]
 ): number[] {
   const sprintsRequired: number[] = []
+  const useProductivity = productivityFactors && productivityFactors.length > 0
 
   for (let i = 0; i < trialCount; i++) {
     sprintsRequired.push(
-      runSingleTrialBootstrapWithProductivity(remainingBacklog, historicalVelocities, productivityFactors)
+      useProductivity
+        ? runSingleTrialBootstrapWithProductivity(remainingBacklog, historicalVelocities, productivityFactors)
+        : runSingleTrialBootstrap(remainingBacklog, historicalVelocities)
     )
   }
 
   sprintsRequired.sort((a, b) => a - b)
-
   return sprintsRequired
-}
-
-/**
- * Run a Monte Carlo simulation
- * Returns the distribution of sprint counts across all trials
- */
-export function runSimulation(input: SimulationInput): SimulationOutput {
-  const {
-    remainingBacklog,
-    velocityMean,
-    velocityStdDev,
-    trialCount,
-    distributionType = 'truncatedNormal',
-  } = input
-
-  let trialFn: (backlog: number, mean: number, stdDev: number) => number
-  switch (distributionType) {
-    case 'lognormal':
-      trialFn = runSingleTrialLognormal
-      break
-    case 'gamma':
-      trialFn = runSingleTrialGamma
-      break
-    case 'truncatedNormal':
-    default:
-      trialFn = runSingleTrialTruncatedNormal
-      break
-  }
-
-  // Run all trials
-  const sprintsRequired: number[] = []
-  for (let i = 0; i < trialCount; i++) {
-    sprintsRequired.push(trialFn(remainingBacklog, velocityMean, velocityStdDev))
-  }
-
-  // Sort for percentile calculation
-  sprintsRequired.sort((a, b) => a - b)
-
-  return {
-    sprintsRequired,
-    percentiles: new Map(),
-    distributionType,
-  }
 }
 
 /**
@@ -441,48 +254,6 @@ export function runForecast(config: ForecastConfig & { sprintCadenceWeeks: numbe
   })
 
   return extractPercentileResults(simulation.sprintsRequired, config.startDate, config.sprintCadenceWeeks)
-}
-
-/**
- * Run dual forecasts using both normal and lognormal distributions
- * Returns results from both simulations for comparison
- * @deprecated Use runTripleForecast instead
- */
-export function runDualForecast(
-  config: ForecastConfig & { sprintCadenceWeeks: number }
-): {
-  normal: { results: PercentileResults; sprintsRequired: number[] }
-  lognormal: { results: PercentileResults; sprintsRequired: number[] }
-} {
-  const baseInput = {
-    remainingBacklog: config.remainingBacklog,
-    velocityMean: config.velocityMean,
-    velocityStdDev: config.velocityStdDev,
-    startDate: config.startDate,
-    sprintCadenceWeeks: config.sprintCadenceWeeks,
-    trialCount: config.trialCount,
-  }
-
-  // Run truncated normal distribution simulation (renamed from 'normal')
-  const normalSimulation = runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
-  const normalResults = extractPercentileResults(
-    normalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run lognormal distribution simulation
-  const lognormalSimulation = runSimulation({ ...baseInput, distributionType: 'lognormal' })
-  const lognormalResults = extractPercentileResults(
-    lognormalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  return {
-    normal: { results: normalResults, sprintsRequired: normalSimulation.sprintsRequired },
-    lognormal: { results: lognormalResults, sprintsRequired: lognormalSimulation.sprintsRequired },
-  }
 }
 
 /**
@@ -594,34 +365,33 @@ export function calculateAllCustomPercentiles(
 
 /**
  * Run bootstrap simulation using historical sprint velocities
- * Returns the distribution of sprint counts across all trials
+ * Returns the sorted distribution of sprint counts across all trials
  */
 export function runBootstrapSimulation(
   remainingBacklog: number,
   historicalVelocities: number[],
   trialCount: number
 ): number[] {
-  const sprintsRequired: number[] = []
+  return runBootstrapSimulationInternal(remainingBacklog, historicalVelocities, trialCount)
+}
 
-  for (let i = 0; i < trialCount; i++) {
-    sprintsRequired.push(runSingleTrialBootstrap(remainingBacklog, historicalVelocities))
-  }
-
-  // Sort for percentile calculation
-  sprintsRequired.sort((a, b) => a - b)
-
-  return sprintsRequired
+/**
+ * Helper to run a simulation for one distribution type and extract percentile results
+ */
+function runDistributionSimulation(
+  baseInput: SimulationInput,
+  distributionType: DistributionType,
+  productivityFactors?: number[]
+): { results: PercentileResults; sprintsRequired: number[] } {
+  const sim = runSimulation({ ...baseInput, distributionType }, productivityFactors)
+  const results = extractPercentileResults(sim.sprintsRequired, baseInput.startDate, baseInput.sprintCadenceWeeks)
+  return { results, sprintsRequired: sim.sprintsRequired }
 }
 
 /**
  * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions
  * Bootstrap is only included if historical velocities are provided
  * Optionally applies productivity adjustments if factors are provided
- * Returns results from all simulations for comparison
- *
- * @param config - Forecast configuration
- * @param historicalVelocities - Optional array of historical velocities for bootstrap
- * @param productivityFactors - Optional array of productivity factors per sprint (0 = first forecast sprint)
  */
 export function runQuadrupleForecast(
   config: ForecastConfig & { sprintCadenceWeeks: number },
@@ -633,7 +403,7 @@ export function runQuadrupleForecast(
   gamma: { results: PercentileResults; sprintsRequired: number[] }
   bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null
 } {
-  const baseInput = {
+  const baseInput: SimulationInput = {
     remainingBacklog: config.remainingBacklog,
     velocityMean: config.velocityMean,
     velocityStdDev: config.velocityStdDev,
@@ -642,62 +412,20 @@ export function runQuadrupleForecast(
     trialCount: config.trialCount,
   }
 
-  // Determine if we should use productivity-adjusted simulations
-  const useProductivityAdjustment = productivityFactors && productivityFactors.length > 0
+  const truncatedNormal = runDistributionSimulation(baseInput, 'truncatedNormal', productivityFactors)
+  const lognormal = runDistributionSimulation(baseInput, 'lognormal', productivityFactors)
+  const gamma = runDistributionSimulation(baseInput, 'gamma', productivityFactors)
 
-  // Run truncated normal distribution simulation
-  const truncatedNormalSimulation = useProductivityAdjustment
-    ? runSimulationWithProductivity({ ...baseInput, distributionType: 'truncatedNormal' }, productivityFactors)
-    : runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
-  const truncatedNormalResults = extractPercentileResults(
-    truncatedNormalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run lognormal distribution simulation
-  const lognormalSimulation = useProductivityAdjustment
-    ? runSimulationWithProductivity({ ...baseInput, distributionType: 'lognormal' }, productivityFactors)
-    : runSimulation({ ...baseInput, distributionType: 'lognormal' })
-  const lognormalResults = extractPercentileResults(
-    lognormalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run gamma distribution simulation
-  const gammaSimulation = useProductivityAdjustment
-    ? runSimulationWithProductivity({ ...baseInput, distributionType: 'gamma' }, productivityFactors)
-    : runSimulation({ ...baseInput, distributionType: 'gamma' })
-  const gammaResults = extractPercentileResults(
-    gammaSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run bootstrap simulation only if historical velocities are provided
-  let bootstrapData: { results: PercentileResults; sprintsRequired: number[] } | null = null
+  let bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null = null
   if (historicalVelocities && historicalVelocities.length > 0) {
-    const bootstrapSprintsRequired = useProductivityAdjustment
-      ? runBootstrapSimulationWithProductivity(
-          config.remainingBacklog,
-          historicalVelocities,
-          config.trialCount,
-          productivityFactors
-        )
-      : runBootstrapSimulation(config.remainingBacklog, historicalVelocities, config.trialCount)
-    const bootstrapResults = extractPercentileResults(
-      bootstrapSprintsRequired,
-      config.startDate,
-      config.sprintCadenceWeeks
+    const sprintsRequired = runBootstrapSimulationInternal(
+      config.remainingBacklog, historicalVelocities, config.trialCount, productivityFactors
     )
-    bootstrapData = { results: bootstrapResults, sprintsRequired: bootstrapSprintsRequired }
+    bootstrap = {
+      results: extractPercentileResults(sprintsRequired, config.startDate, config.sprintCadenceWeeks),
+      sprintsRequired,
+    }
   }
 
-  return {
-    truncatedNormal: { results: truncatedNormalResults, sprintsRequired: truncatedNormalSimulation.sprintsRequired },
-    lognormal: { results: lognormalResults, sprintsRequired: lognormalSimulation.sprintsRequired },
-    gamma: { results: gammaResults, sprintsRequired: gammaSimulation.sprintsRequired },
-    bootstrap: bootstrapData,
-  }
+  return { truncatedNormal, lognormal, gamma, bootstrap }
 }
