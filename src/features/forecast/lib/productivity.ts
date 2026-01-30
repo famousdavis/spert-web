@@ -4,6 +4,7 @@ import {
   calculateSprintProductivityFactor,
 } from '@/shared/lib/dates'
 import type { ProductivityAdjustment } from '@/shared/types'
+import { MAX_TRIAL_SPRINTS } from '../constants'
 
 export interface SprintProductivityFactors {
   factors: number[] // Indexed by relative sprint (0 = first forecast sprint)
@@ -28,7 +29,7 @@ export function preCalculateSprintFactors(
   sprintCadenceWeeks: number,
   startingSprintNumber: number,
   adjustments: ProductivityAdjustment[],
-  maxSprintsToCalculate: number = 200
+  maxSprintsToCalculate: number = MAX_TRIAL_SPRINTS
 ): SprintProductivityFactors {
   const factors: number[] = []
 

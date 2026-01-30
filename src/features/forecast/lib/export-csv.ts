@@ -97,8 +97,9 @@ export function generateForecastCsv(data: ExportData): string {
   } else {
     lines.push('Name,Start Date,End Date,Factor,Reason')
     for (const adj of adjustments) {
-      const reason = adj.reason ? `"${adj.reason.replace(/"/g, '""')}"` : ''
-      lines.push(`"${adj.name.replace(/"/g, '""')}",${adj.startDate},${adj.endDate},${Math.round(adj.factor * 100)}%,${reason}`)
+      const escCsv = (s: string) => s.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')
+      const reason = adj.reason ? `"${escCsv(adj.reason)}"` : ''
+      lines.push(`"${escCsv(adj.name)}",${adj.startDate},${adj.endDate},${Math.round(adj.factor * 100)}%,${reason}`)
     }
   }
   lines.push('')

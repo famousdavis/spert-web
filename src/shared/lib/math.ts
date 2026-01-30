@@ -37,7 +37,8 @@ export function randomNormal(mean: number, stdDev: number): number {
  */
 export function percentileFromSorted(sortedValues: number[], percentile: number): number {
   if (sortedValues.length === 0) return 0
-  const index = (percentile / 100) * (sortedValues.length - 1)
+  const clamped = Math.max(0, Math.min(100, percentile))
+  const index = (clamped / 100) * (sortedValues.length - 1)
   const lower = Math.floor(index)
   const upper = Math.ceil(index)
   if (lower === upper) return sortedValues[lower]

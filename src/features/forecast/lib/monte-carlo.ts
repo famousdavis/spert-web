@@ -6,6 +6,7 @@ import {
 } from '@/shared/lib/math'
 import { calculateSprintStartDate, calculateSprintFinishDate } from '@/shared/lib/dates'
 import type { ForecastConfig, ForecastResult } from '@/shared/types'
+import { MAX_TRIAL_SPRINTS } from '../constants'
 
 export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
 
@@ -65,9 +66,8 @@ export function runSingleTrialTruncatedNormal(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = 1000 // Safety limit
 
-  while (remaining > 0 && sprints < maxSprints) {
+  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
     // Generate velocity from truncated normal (bounded at 0)
     // Apply minimum of 0.1 as safety fallback for edge cases
     const velocity = Math.max(0.1, randomTruncatedNormal(velocityMean, velocityStdDev, 0))
@@ -89,9 +89,8 @@ export function runSingleTrialLognormal(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = 1000 // Safety limit
 
-  while (remaining > 0 && sprints < maxSprints) {
+  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
     // Generate velocity for this sprint from lognormal distribution
     // Lognormal is always positive, but we still apply a minimum for safety
     const velocity = Math.max(0.1, randomLognormalFromMeanStdDev(velocityMean, velocityStdDev))
@@ -116,9 +115,8 @@ export function runSingleTrialGamma(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = 1000 // Safety limit
 
-  while (remaining > 0 && sprints < maxSprints) {
+  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
     // Generate velocity for this sprint from gamma distribution
     // Gamma is always positive, but we still apply a minimum for safety
     const velocity = Math.max(0.1, randomGammaFromMeanStdDev(velocityMean, velocityStdDev))
@@ -146,9 +144,8 @@ export function runSingleTrialBootstrap(
 
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = 1000 // Safety limit
 
-  while (remaining > 0 && sprints < maxSprints) {
+  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
     // Sample with replacement from historical velocities
     const randomIndex = Math.floor(Math.random() * historicalVelocities.length)
     const velocity = Math.max(0.1, historicalVelocities[randomIndex])
@@ -176,7 +173,7 @@ export function runSingleTrialTruncatedNormalWithProductivity(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = Math.min(1000, productivityFactors.length)
+  const maxSprints = MAX_TRIAL_SPRINTS
 
   while (remaining > 0 && sprints < maxSprints) {
     const baseVelocity = Math.max(0.1, randomTruncatedNormal(velocityMean, velocityStdDev, 0))
@@ -197,7 +194,7 @@ export function runSingleTrialLognormalWithProductivity(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = Math.min(1000, productivityFactors.length)
+  const maxSprints = MAX_TRIAL_SPRINTS
 
   while (remaining > 0 && sprints < maxSprints) {
     const baseVelocity = Math.max(0.1, randomLognormalFromMeanStdDev(velocityMean, velocityStdDev))
@@ -218,7 +215,7 @@ export function runSingleTrialGammaWithProductivity(
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = Math.min(1000, productivityFactors.length)
+  const maxSprints = MAX_TRIAL_SPRINTS
 
   while (remaining > 0 && sprints < maxSprints) {
     const baseVelocity = Math.max(0.1, randomGammaFromMeanStdDev(velocityMean, velocityStdDev))
@@ -242,7 +239,7 @@ export function runSingleTrialBootstrapWithProductivity(
 
   let remaining = remainingBacklog
   let sprints = 0
-  const maxSprints = Math.min(1000, productivityFactors.length)
+  const maxSprints = MAX_TRIAL_SPRINTS
 
   while (remaining > 0 && sprints < maxSprints) {
     const randomIndex = Math.floor(Math.random() * historicalVelocities.length)

@@ -90,7 +90,9 @@ function buildChartData(input: BuildChartDataInput): BurnUpDataPoint[] {
 
   const intersections = config.lines.map((l) => calculateIntersectionSprint(distData, l.percentile, completedSprintCount))
   const velocities = config.lines.map((l) => calculateImpliedVelocity(distData, l.percentile, forecastBacklog))
-  const maxSprint = Math.min(Math.max(...intersections), completedSprintCount + MAX_FORECAST_SPRINTS)
+  const maxSprint = intersections.length > 0
+    ? Math.min(Math.max(...intersections), completedSprintCount + MAX_FORECAST_SPRINTS)
+    : completedSprintCount
   const finalScope = hasBacklogHistory ? totalDone + forecastBacklog : syntheticBacklog
 
   const points: BurnUpDataPoint[] = []
