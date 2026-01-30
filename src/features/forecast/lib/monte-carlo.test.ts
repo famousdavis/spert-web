@@ -383,4 +383,129 @@ describe('runQuadrupleForecast', () => {
       result.bootstrap!.results.p50.sprintsRequired
     )
   })
+
+  it('applies productivity factors when provided', () => {
+    // Factors of 0.5 should roughly double the sprints needed
+    const factors = new Array(1000).fill(0.5)
+    const result = runQuadrupleForecast(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 0, // deterministic for predictability
+        startDate: '2024-01-01',
+        trialCount: 100,
+        sprintCadenceWeeks: 2,
+      },
+      undefined,
+      factors
+    )
+
+    // With factor 0.5, effective velocity = 10, so 100/10 = 10 sprints
+    expect(result.truncatedNormal.results.p50.sprintsRequired).toBe(10)
+  })
+})
+
+// ============================================================================
+// Edge Case Tests
+// ============================================================================
+
+describe('edge cases', () => {
+  it('runSimulation with remainingBacklog = 0 returns all zeros', () => {
+    const result = runSimulation({
+      remainingBacklog: 0,
+      velocityMean: 20,
+      velocityStdDev: 5,
+      startDate: '2024-01-01',
+      sprintCadenceWeeks: 2,
+      trialCount: 100,
+    })
+
+    expect(result.sprintsRequired).toHaveLength(100)
+    result.sprintsRequired.forEach((s) => expect(s).toBe(0))
+  })
+
+  it('runSimulation with very large backlog completes within MAX_TRIAL_SPRINTS', () => {
+    const result = runSimulation({
+      remainingBacklog: 100000,
+      velocityMean: 20,
+      velocityStdDev: 5,
+      startDate: '2024-01-01',
+      sprintCadenceWeeks: 2,
+      trialCount: 10,
+    })
+
+    expect(result.sprintsRequired).toHaveLength(10)
+    result.sprintsRequired.forEach((s) => {
+      expect(s).toBeLessThanOrEqual(1000)
+      expect(s).toBeGreaterThan(0)
+    })
+  })
+
+  it('productivity factors shorter than needed sprints use 1.0 fallback (BUG-1 regression)', () => {
+    // Provide only 5 factors, but trial needs more sprints
+    const factors = [0.5, 0.5, 0.5, 0.5, 0.5]
+    const result = runSimulation(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 0, // deterministic
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 1,
+      },
+      factors
+    )
+
+    // First 5 sprints: velocity 20 * 0.5 = 10/sprint = 50 total
+    // Remaining 50 backlog: velocity 20 * 1.0 = 20/sprint = 3 more sprints (20+20+10)
+    // Total: 5 + 3 = 8 sprints
+    expect(result.sprintsRequired[0]).toBe(8)
+  })
+
+  it('runSimulation with productivity factors works correctly', () => {
+    // All factors 1.0 should produce same result as without factors
+    const factors = new Array(1000).fill(1.0)
+    const withFactors = runSimulation(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 0,
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 10,
+      },
+      factors
+    )
+    const withoutFactors = runSimulation({
+      remainingBacklog: 100,
+      velocityMean: 20,
+      velocityStdDev: 0,
+      startDate: '2024-01-01',
+      sprintCadenceWeeks: 2,
+      trialCount: 10,
+    })
+
+    // Deterministic: both should be identical
+    expect(withFactors.sprintsRequired).toEqual(withoutFactors.sprintsRequired)
+  })
+
+  it('single trial in simulation produces valid result', () => {
+    const result = runSimulation({
+      remainingBacklog: 50,
+      velocityMean: 10,
+      velocityStdDev: 2,
+      startDate: '2024-01-01',
+      sprintCadenceWeeks: 2,
+      trialCount: 1,
+    })
+
+    expect(result.sprintsRequired).toHaveLength(1)
+    expect(result.sprintsRequired[0]).toBeGreaterThan(0)
+  })
+
+  it('calculatePercentileResult with single trial', () => {
+    const result = calculatePercentileResult([5], 50, '2024-01-01', 2)
+    expect(result.sprintsRequired).toBe(5)
+    expect(result.finishDate).toBeDefined()
+  })
 })
