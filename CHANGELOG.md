@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.8.0 - 2026-01-29
+
+### Bug Fixes
+
+- Fixed productivity factor truncation that could silently bias forecasts when trials exceed 200 sprints
+- Fixed burn-up chart crash when no forecast lines intersect scope
+- Fixed CSV export not escaping newlines in adjustment names and memos
+- Fixed percentile calculation for out-of-range input values
+
+### Refactoring
+
+- Consolidated 8 redundant trial functions into generic `runTrial()` with thin wrappers
+- Removed deprecated dual-forecast API
+- Extracted SprintConfig component from SprintHistoryTab (322 → 198 LOC)
+
+### Test Coverage
+
+- Added 62 new tests (89 → 151 total) for math, burn-up, export-csv, and monte-carlo edge cases
+
+### Enhancements
+
+- Console warnings for distribution parameter fallbacks
+- Version mismatch logging on data import
+- Orphaned session state cleaned up on project delete
+- Import errors shown as dismissible inline messages instead of browser alerts
+
 ## v0.7.0 - 2026-01-27
 
 ### Burn-Up Chart
@@ -59,6 +85,20 @@
 - Horizontal reference line marks selected custom percentile (P85 default)
 - Collapsible chart panel with discreet expand/collapse triangle
 - Interactive tooltips show probability and date on hover
+
+## v0.3.0 - 2026-01-25
+
+### User Experience
+
+- Project selection syncs between Sprint History and Forecast tabs
+- Compact sprint form with visual cues for required fields
+
+## v0.2.0 - 2026-01-25
+
+### Distributions
+
+- Truncated Normal, Gamma, and Bootstrap distributions added
+- Four-column forecast display with highlighting for differences
 
 ## v0.1.0 - 2026-01-24
 
