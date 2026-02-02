@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.0 - 2026-02-02
+
+### Dependencies
+
+- Upgraded Next.js 16.1.4 → 16.1.6 (security patches for CVE-2025-55183, CVE-2025-55184)
+- Upgraded React/React-DOM 19.2.3 → 19.2.4 (DoS mitigations, Server Components hardening)
+- Upgraded eslint-config-next to 16.1.6
+- Upgraded @types/node ^20 → ^24
+- All caret-range dependencies resolved to latest stable
+
 ## v0.8.0 - 2026-01-29
 
 ### Bug Fixes
