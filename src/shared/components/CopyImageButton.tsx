@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, type RefObject } from 'react'
+import { toast } from 'sonner'
 import { copyElementAsImage } from '@/shared/lib/copy-image'
 import { cn } from '@/lib/utils'
 import { COLORS } from '@/shared/lib/colors'
@@ -28,6 +29,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
       setTimeout(() => setStatus('idle'), 2000)
     } catch (err) {
       console.error('Copy failed:', err)
+      toast.error('Failed to copy image to clipboard')
       setStatus('error')
       setTimeout(() => setStatus('idle'), 2000)
     }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { toast } from 'sonner'
 import { useProjectStore, selectActiveProject, type ExportData } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { today } from '@/shared/lib/dates'
@@ -56,6 +57,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+    toast.success('Project data exported')
   }
 
   const handleImportClick = () => {
@@ -72,6 +74,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
       try {
         const data = JSON.parse(event.target?.result as string) as ExportData
         importData(data)
+        toast.success('Project data imported')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error'
         setImportError(`Import failed: ${message}`)

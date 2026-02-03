@@ -11,6 +11,7 @@ import { SettingsTab } from '@/features/settings'
 import { APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
+import { Toaster } from 'sonner'
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('projects')
@@ -48,6 +49,7 @@ export function AppShell() {
 
         <Footer />
       </div>
+      <Toaster position="bottom-right" richColors />
     </div>
   )
 }

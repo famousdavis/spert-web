@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, type RefObject } from 'react'
+import { toast } from 'sonner'
 import {
   useProjectStore,
   selectViewingProject,
@@ -255,6 +256,7 @@ export function useForecastState() {
     })
 
     downloadCsv(csvContent, generateFilename(selectedProject.name))
+    toast.success('Forecast exported to CSV')
   }
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
