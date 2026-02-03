@@ -7,6 +7,10 @@ export async function copyElementAsImage(
   element: HTMLElement,
   ignoreClassName: string = 'copy-image-button'
 ): Promise<void> {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.write) {
+    throw new Error('Clipboard API is not available. Copy-to-image requires a secure (HTTPS) context.')
+  }
+
   const dataUrl = await toPng(element, {
     filter: (node) => {
       // Filter out elements with the ignore class

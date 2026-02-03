@@ -71,13 +71,10 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string) as ExportData
-        if (data.projects && data.sprints) {
-          importData(data)
-        } else {
-          setImportError('Invalid file format. Please select a valid SPERT export file.')
-        }
-      } catch {
-        setImportError('Failed to parse file. Please select a valid JSON file.')
+        importData(data)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        setImportError(`Import failed: ${message}`)
       }
     }
     reader.readAsText(file)

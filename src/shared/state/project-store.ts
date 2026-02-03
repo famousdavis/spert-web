@@ -67,6 +67,62 @@ interface ProjectState {
 const generateId = () => crypto.randomUUID()
 const now = () => new Date().toISOString()
 
+/**
+ * Validate that imported data has the expected shape before loading it into the store.
+ * Throws a descriptive error if validation fails.
+ */
+export function validateImportData(data: unknown): data is ExportData {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Import data must be a JSON object.')
+  }
+
+  const d = data as Record<string, unknown>
+
+  if (!Array.isArray(d.projects)) {
+    throw new Error('Import data is missing a valid "projects" array.')
+  }
+  if (!Array.isArray(d.sprints)) {
+    throw new Error('Import data is missing a valid "sprints" array.')
+  }
+
+  for (let i = 0; i < d.projects.length; i++) {
+    const p = d.projects[i] as Record<string, unknown> | null
+    if (!p || typeof p !== 'object') {
+      throw new Error(`Project at index ${i} is not a valid object.`)
+    }
+    if (typeof p.id !== 'string' || !p.id) {
+      throw new Error(`Project at index ${i} is missing a valid "id".`)
+    }
+    if (typeof p.name !== 'string' || !p.name) {
+      throw new Error(`Project at index ${i} is missing a valid "name".`)
+    }
+    if (typeof p.unitOfMeasure !== 'string') {
+      throw new Error(`Project at index ${i} is missing a valid "unitOfMeasure".`)
+    }
+  }
+
+  for (let i = 0; i < d.sprints.length; i++) {
+    const s = d.sprints[i] as Record<string, unknown> | null
+    if (!s || typeof s !== 'object') {
+      throw new Error(`Sprint at index ${i} is not a valid object.`)
+    }
+    if (typeof s.id !== 'string' || !s.id) {
+      throw new Error(`Sprint at index ${i} is missing a valid "id".`)
+    }
+    if (typeof s.projectId !== 'string' || !s.projectId) {
+      throw new Error(`Sprint at index ${i} is missing a valid "projectId".`)
+    }
+    if (typeof s.sprintNumber !== 'number') {
+      throw new Error(`Sprint at index ${i} is missing a valid "sprintNumber".`)
+    }
+    if (typeof s.doneValue !== 'number') {
+      throw new Error(`Sprint at index ${i} is missing a valid "doneValue".`)
+    }
+  }
+
+  return true
+}
+
 export const useProjectStore = create<ProjectState>()(
   persist(
     (set, get) => ({
@@ -223,6 +279,7 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       importData: (data: ExportData) => {
+        validateImportData(data)
         if (data.version && data.version !== APP_VERSION) {
           console.info(`Importing data from version ${data.version} (current: ${APP_VERSION})`)
         }
