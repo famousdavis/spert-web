@@ -172,7 +172,12 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         projects={projects}
         activeProjectId={activeProject?.id}
         onEdit={handleEdit}
-        onDelete={deleteProject}
+        onDelete={(id) => {
+          const project = projects.find((p) => p.id === id)
+          if (window.confirm(`Delete project "${project?.name ?? 'Unknown'}"? This will also delete all its sprint history.`)) {
+            deleteProject(id)
+          }
+        }}
         onReorder={reorderProjects}
         onViewHistory={onViewHistory ?? (() => {})}
       />

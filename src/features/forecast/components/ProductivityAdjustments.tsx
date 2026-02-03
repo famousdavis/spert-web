@@ -46,7 +46,10 @@ export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsPr
   }
 
   const handleDelete = (adjustmentId: string) => {
-    deleteProductivityAdjustment(projectId, adjustmentId)
+    const adjustment = adjustments.find((a) => a.id === adjustmentId)
+    if (window.confirm(`Delete adjustment "${adjustment?.name ?? 'Unknown'}"?`)) {
+      deleteProductivityAdjustment(projectId, adjustmentId)
+    }
   }
 
   const handleToggleEnabled = (adjustmentId: string) => {

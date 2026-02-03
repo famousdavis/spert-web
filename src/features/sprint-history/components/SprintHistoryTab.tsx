@@ -186,7 +186,11 @@ export function SprintHistoryTab() {
               sortAscending={sortAscending}
               onToggleSortOrder={handleToggleSortOrder}
               onEdit={handleEdit}
-              onDelete={deleteSprint}
+              onDelete={(id) => {
+                if (window.confirm('Delete this sprint? This action cannot be undone.')) {
+                  deleteSprint(id)
+                }
+              }}
               onToggleIncluded={toggleSprintIncluded}
             />
           )}
