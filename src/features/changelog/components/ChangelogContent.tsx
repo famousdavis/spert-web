@@ -1,16 +1,6 @@
 'use client'
 
-/**
- * Format date as "Month DD, YYYY" (e.g., "January 26, 2026")
- */
-function formatDate(isoDate: string): string {
-  const date = new Date(isoDate + 'T00:00:00')
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+import { formatDateLong } from '@/shared/lib/dates'
 
 interface ChangelogEntry {
   version: string
@@ -213,7 +203,7 @@ export function ChangelogContent() {
             >
               v{entry.version}
             </h2>
-            <span className="text-sm text-muted-foreground">{formatDate(entry.date)}</span>
+            <span className="text-sm text-muted-foreground">{formatDateLong(entry.date)}</span>
           </div>
 
           {entry.sections.map((section, sectionIndex) => (

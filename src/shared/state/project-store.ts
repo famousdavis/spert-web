@@ -100,11 +100,16 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => {
           const { [id]: _forecastInputs, ...remainingForecastInputs } = state.forecastInputs
           const { [id]: _burnUpConfig, ...remainingBurnUpConfigs } = state.burnUpConfigs
+          const remainingProjects = state.projects.filter((p) => p.id !== id)
           return {
-            projects: state.projects.filter((p) => p.id !== id),
+            projects: remainingProjects,
             sprints: state.sprints.filter((s) => s.projectId !== id),
             forecastInputs: remainingForecastInputs,
             burnUpConfigs: remainingBurnUpConfigs,
+            viewingProjectId:
+              state.viewingProjectId === id
+                ? (remainingProjects[0]?.id ?? null)
+                : state.viewingProjectId,
           }
         }),
 

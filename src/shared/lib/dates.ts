@@ -31,6 +31,19 @@ export function formatDate(dateStr: string): string {
 }
 
 /**
+ * Format a date string for display with full month name (e.g., "January 15, 2026")
+ * Uses T00:00:00 suffix to avoid timezone issues with date-only strings
+ */
+export function formatDateLong(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+/**
  * Format a date string without year (e.g., "Jan 15")
  * Useful for compact chart labels where year is implied
  */
