@@ -86,17 +86,23 @@ export function BurnUpChart({
     return Math.ceil(max * 1.1)
   }, [chartData])
 
+  const panelId = 'burn-up-chart-panel'
+
   return (
     <div className="rounded-lg border bg-card">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
+        aria-label="Burn-Up Chart"
       >
         <span
           className={cn(
             'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
             isExpanded && 'rotate-90'
           )}
+          aria-hidden="true"
         >
           ▶
         </span>
@@ -104,7 +110,7 @@ export function BurnUpChart({
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4 relative">
+        <div id={panelId} role="region" aria-label="Burn-Up Chart" className="px-4 pb-4 relative">
           {/* Configuration UI */}
           <BurnUpConfigUI
             config={config}

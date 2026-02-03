@@ -14,6 +14,51 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.12.0',
+    date: '2026-02-03',
+    sections: [
+      {
+        title: 'Accessibility',
+        items: [
+          'Added ARIA attributes to all collapsible sections (aria-expanded, aria-controls, aria-label)',
+          'Replaced browser confirm dialogs with accessible modal dialog component',
+          'Added aria-label to icon-only buttons (copy, export)',
+          'Added keyboard support (Enter/Space) to sortable column header',
+          'Added aria-label to sprint include/exclude checkboxes',
+        ],
+      },
+      {
+        title: 'Security',
+        items: [
+          'Strengthened import validation with numeric ranges, string length limits, and date format validation',
+          'Added file type and size validation (10MB limit) on import',
+          'Added Content-Security-Policy header for defense-in-depth',
+          'Improved JSON parse error messages with specific failure context',
+          'Added duplicate ID detection in import validation',
+        ],
+      },
+      {
+        title: 'UI Polish',
+        items: [
+          'Responsive padding and text sizing for mobile devices',
+        ],
+      },
+      {
+        title: 'Refactoring',
+        items: [
+          'Extracted CDF chart helpers to lib/cdf.ts (component now 232 LOC)',
+          'Removed console.log statements from CopyImageButton',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          'Added 5 new validation tests (237 → 242 total)',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-02-02',
     sections: [

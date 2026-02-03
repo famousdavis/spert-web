@@ -54,8 +54,17 @@ export function SprintList({
               Include
             </th>
             <th
-              className="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+              className="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none"
               onClick={onToggleSortOrder}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onToggleSortOrder()
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              aria-label={`Sort by sprint number, currently ${sortAscending ? 'ascending' : 'descending'}`}
               title="Click to toggle sort order"
             >
               Sprint {sortAscending ? '↑' : '↓'}
@@ -89,6 +98,7 @@ export function SprintList({
                     checked={sprint.includedInForecast}
                     onChange={() => onToggleIncluded(sprint.id)}
                     className="h-4 w-4 rounded border-input"
+                    aria-label={`Include Sprint ${sprint.sprintNumber} in forecast`}
                   />
                 </td>
                 <td className="px-4 py-3 text-sm">

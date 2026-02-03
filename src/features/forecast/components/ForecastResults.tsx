@@ -235,9 +235,11 @@ export function ForecastResults({
           <button
             onClick={onExport}
             title="Export simulation data to CSV"
+            aria-label="Export simulation data to CSV"
             className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
           >
             <svg
+              aria-hidden="true"
               width="18"
               height="18"
               viewBox="0 0 24 24"

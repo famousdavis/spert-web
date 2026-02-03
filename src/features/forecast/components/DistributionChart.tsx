@@ -13,10 +13,10 @@ import {
   ReferenceLine,
   ResponsiveContainer,
 } from 'recharts'
-import { calculateSprintStartDate, calculateSprintFinishDate, formatDateCompact } from '@/shared/lib/dates'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { COLORS } from '@/shared/lib/colors'
 import { type ChartFontSize, CHART_FONT_SIZES, CHART_FONT_SIZE_LABELS } from '../types'
+import { mergeDistributions } from '../lib/cdf'
 
 const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
 
@@ -34,100 +34,7 @@ interface DistributionChartProps {
   onFontSizeChange?: (size: ChartFontSize) => void
 }
 
-interface CdfDataPoint {
-  sprints: number
-  dateLabel: string
-  tNormal: number
-  lognormal: number
-  gamma: number
-  bootstrap?: number
-}
-
 const CHART_COLORS = COLORS.chart
-
-/**
- * Build CDF points from sorted simulation data.
- * Returns ~100 points for smooth curves without overwhelming the chart.
- */
-function buildCdfPoints(sortedData: number[]): Map<number, number> {
-  const n = sortedData.length
-  const cdf = new Map<number, number>()
-
-  // Sample at regular percentile intervals for smooth curve
-  for (let p = 1; p <= 100; p++) {
-    const index = Math.floor((p / 100) * n) - 1
-    const sprints = sortedData[Math.max(0, index)]
-    cdf.set(sprints, p)
-  }
-
-  return cdf
-}
-
-/**
- * Merge CDF data from all distributions into unified chart data
- */
-function mergeDistributions(
-  tNormal: number[],
-  lognormal: number[],
-  gamma: number[],
-  bootstrap: number[] | null,
-  startDate: string,
-  sprintCadenceWeeks: number
-): CdfDataPoint[] {
-  const tNormalCdf = buildCdfPoints(tNormal)
-  const lognormalCdf = buildCdfPoints(lognormal)
-  const gammaCdf = buildCdfPoints(gamma)
-  const bootstrapCdf = bootstrap ? buildCdfPoints(bootstrap) : null
-
-  // Get all unique sprint values
-  const allSprints = new Set<number>()
-  tNormalCdf.forEach((_, sprints) => allSprints.add(sprints))
-  lognormalCdf.forEach((_, sprints) => allSprints.add(sprints))
-  gammaCdf.forEach((_, sprints) => allSprints.add(sprints))
-  if (bootstrapCdf) {
-    bootstrapCdf.forEach((_, sprints) => allSprints.add(sprints))
-  }
-
-  const sortedSprints = Array.from(allSprints).sort((a, b) => a - b)
-
-  // For each sprint value, find the cumulative probability
-  // by counting how many trials completed in that many sprints or fewer
-  return sortedSprints.map((sprints) => {
-    // Calculate finish date: startDate is when sprint 1 of remaining work begins
-    // sprints = how many more sprints needed, so sprint N starts at calculateSprintStartDate(startDate, N, cadence)
-    const sprintStart = calculateSprintStartDate(startDate, sprints, sprintCadenceWeeks)
-    const finishDate = calculateSprintFinishDate(sprintStart, sprintCadenceWeeks)
-    const point: CdfDataPoint = {
-      sprints,
-      dateLabel: formatDateCompact(finishDate),
-      tNormal: calculateCumulativePercentage(tNormal, sprints),
-      lognormal: calculateCumulativePercentage(lognormal, sprints),
-      gamma: calculateCumulativePercentage(gamma, sprints),
-    }
-    if (bootstrap) {
-      point.bootstrap = calculateCumulativePercentage(bootstrap, sprints)
-    }
-    return point
-  })
-}
-
-/**
- * Calculate cumulative percentage: what % of trials finished in <= sprints
- */
-function calculateCumulativePercentage(sortedData: number[], sprints: number): number {
-  // Binary search for the last index where value <= sprints
-  let low = 0
-  let high = sortedData.length
-  while (low < high) {
-    const mid = Math.floor((low + high) / 2)
-    if (sortedData[mid] <= sprints) {
-      low = mid + 1
-    } else {
-      high = mid
-    }
-  }
-  return (low / sortedData.length) * 100
-}
 
 export function DistributionChart({
   truncatedNormal,
@@ -159,17 +66,23 @@ export function DistributionChart({
     return map
   }, [chartData])
 
+  const panelId = 'cdf-chart-panel'
+
   return (
     <div className="rounded-lg border bg-card">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
+        aria-label="Cumulative Probability Distribution"
       >
         <span
           className={cn(
             'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
             isExpanded && 'rotate-90'
           )}
+          aria-hidden="true"
         >
           ▶
         </span>
@@ -179,7 +92,7 @@ export function DistributionChart({
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4 relative">
+        <div id={panelId} role="region" aria-label="Cumulative Probability Distribution" className="px-4 pb-4 relative">
           {/* Configuration row */}
           {onFontSizeChange && (
             <div className="flex items-center gap-2 mb-4 justify-end mr-10">

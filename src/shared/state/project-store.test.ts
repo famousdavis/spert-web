@@ -471,7 +471,7 @@ describe('validateImportData', () => {
         version: '0.10.0',
         exportedAt: '2026-01-01T00:00:00Z',
         projects: [{ id: 'p1', name: 'Test', unitOfMeasure: 'SP', createdAt: '', updatedAt: '' }],
-        sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 1, doneValue: 10, sprintStartDate: '', sprintFinishDate: '', includedInForecast: true, createdAt: '', updatedAt: '' }],
+        sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 1, doneValue: 10, sprintStartDate: '2026-01-06', sprintFinishDate: '2026-01-17', includedInForecast: true, createdAt: '', updatedAt: '' }],
       })
     ).toBe(true)
   })
@@ -536,6 +536,54 @@ describe('validateImportData', () => {
         projects: [],
         sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 1 }],
       })
-    ).toThrow('Sprint at index 0 is missing a valid "doneValue"')
+    ).toThrow('Sprint at index 0 has invalid doneValue')
+  })
+
+  it('rejects sprint with invalid sprintNumber', () => {
+    expect(() =>
+      validateImportData({
+        projects: [],
+        sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 0, doneValue: 10 }],
+      })
+    ).toThrow('Sprint at index 0 has invalid sprintNumber')
+  })
+
+  it('rejects sprint with negative doneValue', () => {
+    expect(() =>
+      validateImportData({
+        projects: [],
+        sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 1, doneValue: -5 }],
+      })
+    ).toThrow('Sprint at index 0 has invalid doneValue')
+  })
+
+  it('rejects sprint with invalid date', () => {
+    expect(() =>
+      validateImportData({
+        projects: [],
+        sprints: [{ id: 's1', projectId: 'p1', sprintNumber: 1, doneValue: 10, sprintStartDate: '2026-02-30' }],
+      })
+    ).toThrow('Sprint at index 0 has invalid sprintStartDate')
+  })
+
+  it('rejects project with name exceeding max length', () => {
+    expect(() =>
+      validateImportData({
+        projects: [{ id: 'p1', name: 'A'.repeat(201), unitOfMeasure: 'SP' }],
+        sprints: [],
+      })
+    ).toThrow('Project at index 0 has a name exceeding 200 characters')
+  })
+
+  it('rejects duplicate project IDs', () => {
+    expect(() =>
+      validateImportData({
+        projects: [
+          { id: 'p1', name: 'Test 1', unitOfMeasure: 'SP' },
+          { id: 'p1', name: 'Test 2', unitOfMeasure: 'SP' },
+        ],
+        sprints: [],
+      })
+    ).toThrow('Duplicate project ID "p1" found at index 1')
   })
 })

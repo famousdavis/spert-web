@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useProjectStore, selectActiveProject, type ExportData } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { today } from '@/shared/lib/dates'
 import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
@@ -27,6 +28,11 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; projectId: string | null; projectName: string }>({
+    isOpen: false,
+    projectId: null,
+    projectName: '',
+  })
 
   const handleEdit = (project: Project) => {
     setEditingProject(project)
@@ -64,26 +70,77 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     fileInputRef.current?.click()
   }
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setImportError(null)
+
+    // Validate file type
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+      setImportError('Import failed: Please select a JSON file (.json)')
+      e.target.value = ''
+      return
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setImportError(`Import failed: File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (event) => {
+      const content = event.target?.result as string
+
+      // Parse JSON with better error handling
+      let data: ExportData
       try {
-        const data = JSON.parse(event.target?.result as string) as ExportData
+        data = JSON.parse(content) as ExportData
+      } catch {
+        setImportError('Import failed: Invalid JSON format. Please check the file is a valid SPERT export.')
+        return
+      }
+
+      // Validate and import
+      try {
         importData(data)
         toast.success('Project data imported')
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
+        const message = err instanceof Error ? err.message : 'Unknown validation error'
         setImportError(`Import failed: ${message}`)
       }
+    }
+    reader.onerror = () => {
+      setImportError('Import failed: Could not read file')
     }
     reader.readAsText(file)
     // Reset input so same file can be selected again
     e.target.value = ''
   }
+
+  const handleDeleteRequest = useCallback((projectId: string) => {
+    const project = projects.find((p) => p.id === projectId)
+    setDeleteConfirm({
+      isOpen: true,
+      projectId,
+      projectName: project?.name ?? 'Unknown',
+    })
+  }, [projects])
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteConfirm.projectId) {
+      deleteProject(deleteConfirm.projectId)
+    }
+    setDeleteConfirm({ isOpen: false, projectId: null, projectName: '' })
+  }, [deleteConfirm.projectId, deleteProject])
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteConfirm({ isOpen: false, projectId: null, projectName: '' })
+  }, [])
 
   if (!isClient) {
     return <div className="text-muted-foreground">Loading...</div>
@@ -141,14 +198,20 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         projects={projects}
         activeProjectId={activeProject?.id}
         onEdit={handleEdit}
-        onDelete={(id) => {
-          const project = projects.find((p) => p.id === id)
-          if (window.confirm(`Delete project "${project?.name ?? 'Unknown'}"? This will also delete all its sprint history.`)) {
-            deleteProject(id)
-          }
-        }}
+        onDelete={handleDeleteRequest}
         onReorder={reorderProjects}
         onViewHistory={onViewHistory ?? (() => {})}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Project"
+        message={`Delete project "${deleteConfirm.projectName}"? This will also delete all its sprint history.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        variant="danger"
       />
     </div>
   )
