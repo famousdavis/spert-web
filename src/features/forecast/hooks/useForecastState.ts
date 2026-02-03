@@ -9,12 +9,12 @@ import {
 import { useIsClient } from '@/shared/hooks'
 import { calculateVelocityStats } from '../lib/statistics'
 import {
-  runQuadrupleForecast,
   calculateAllCustomPercentiles,
   type PercentileResults,
   type QuadSimulationData,
   type QuadCustomResults,
 } from '../lib/monte-carlo'
+import { useSimulationWorker } from './useSimulationWorker'
 import { preCalculateSprintFactors } from '../lib/productivity'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
@@ -32,6 +32,7 @@ interface QuadResults {
 
 export function useForecastState() {
   const isClient = useIsClient()
+  const { runSimulation, isSimulating } = useSimulationWorker()
   const projects = useProjectStore((state) => state.projects)
   const selectedProject = useProjectStore(selectViewingProject)
   const allSprints = useProjectStore((state) => state.sprints)
@@ -158,7 +159,7 @@ export function useForecastState() {
   const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
   const effectiveStdDev = velocityStdDev ? Number(velocityStdDev) : calculatedStats.standardDeviation
 
-  const handleRunForecast = () => {
+  const handleRunForecast = async () => {
     if (!selectedProject || !remainingBacklog || !selectedProject.sprintCadenceWeeks) return
     if (!selectedProject.firstSprintStartDate) return
 
@@ -189,40 +190,44 @@ export function useForecastState() {
       productivityFactors = factors
     }
 
-    // Run all simulations (bootstrap only if we have enough sprints)
-    const quadResults = runQuadrupleForecast(
-      config,
-      canUseBootstrap ? historicalVelocities : undefined,
-      productivityFactors
-    )
+    // Run all simulations off the main thread via Web Worker
+    try {
+      const quadResults = await runSimulation({
+        config,
+        historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
+        productivityFactors,
+      })
 
-    setSimulationData({
-      truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-      lognormal: quadResults.lognormal.sprintsRequired,
-      gamma: quadResults.gamma.sprintsRequired,
-      bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
-    })
+      setSimulationData({
+        truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+        lognormal: quadResults.lognormal.sprintsRequired,
+        gamma: quadResults.gamma.sprintsRequired,
+        bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+      })
 
-    setResults({
-      truncatedNormal: quadResults.truncatedNormal.results,
-      lognormal: quadResults.lognormal.results,
-      gamma: quadResults.gamma.results,
-      bootstrap: quadResults.bootstrap?.results ?? null,
-    })
+      setResults({
+        truncatedNormal: quadResults.truncatedNormal.results,
+        lognormal: quadResults.lognormal.results,
+        gamma: quadResults.gamma.results,
+        bootstrap: quadResults.bootstrap?.results ?? null,
+      })
 
-    // Calculate custom percentile results for the default value
-    const simData: QuadSimulationData = {
-      truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-      lognormal: quadResults.lognormal.sprintsRequired,
-      gamma: quadResults.gamma.sprintsRequired,
-      bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+      // Calculate custom percentile results for the default value
+      const simData: QuadSimulationData = {
+        truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+        lognormal: quadResults.lognormal.sprintsRequired,
+        gamma: quadResults.gamma.sprintsRequired,
+        bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+      }
+      setCustomResults(calculateAllCustomPercentiles(
+        simData,
+        customPercentile,
+        forecastStartDate,
+        selectedProject.sprintCadenceWeeks
+      ))
+    } catch {
+      // Aborted simulation (new run started) — ignore
     }
-    setCustomResults(calculateAllCustomPercentiles(
-      simData,
-      customPercentile,
-      forecastStartDate,
-      selectedProject.sprintCadenceWeeks
-    ))
   }
 
   const handleCustomPercentileChange = (percentile: number) => {
@@ -290,6 +295,9 @@ export function useForecastState() {
     setRemainingBacklog,
     setVelocityMean,
     setVelocityStdDev,
+
+    // Simulation state
+    isSimulating,
 
     // Results
     results,
