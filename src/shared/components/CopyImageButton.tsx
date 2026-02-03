@@ -2,6 +2,7 @@
 
 import { useState, useCallback, type RefObject } from 'react'
 import { copyElementAsImage } from '@/shared/lib/copy-image'
+import { COLORS } from '@/shared/lib/colors'
 
 type CopyStatus = 'idle' | 'copying' | 'success' | 'error'
 
@@ -75,7 +76,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
           height="18"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#10b981"
+          stroke={COLORS.copy.success}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -89,7 +90,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
           height="18"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#ef4444"
+          stroke={COLORS.copy.error}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

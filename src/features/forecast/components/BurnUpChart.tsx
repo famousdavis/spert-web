@@ -18,10 +18,11 @@ import { CHART_FONT_SIZES } from '../types'
 import { calculateBurnUpData, isBootstrapAvailable } from '../lib/burn-up'
 import { BurnUpConfigUI } from './BurnUpConfig'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
+import { COLORS } from '@/shared/lib/colors'
 
 // Fixed colors for backlog and done lines
-const BACKLOG_COLOR = '#22c55e' // Green
-const DONE_COLOR = '#8b5cf6' // Purple
+const BACKLOG_COLOR = COLORS.burnUp.backlog
+const DONE_COLOR = COLORS.burnUp.done
 
 interface BurnUpChartProps {
   sprints: Sprint[]
@@ -121,7 +122,7 @@ export function BurnUpChart({
             </p>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData} margin={{ top: 5, right: 30, left: 10, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.light} />
                 <XAxis
                   dataKey="sprintNumber"
                   tick={(props) => {
@@ -130,10 +131,10 @@ export function BurnUpChart({
                     const dateLabel = point?.dateLabel || ''
                     return (
                       <g transform={`translate(${x},${y})`}>
-                        <text x={0} y={0} dy={14} textAnchor="middle" fontSize={fontSizes.axisTick} fill="#333">
+                        <text x={0} y={0} dy={14} textAnchor="middle" fontSize={fontSizes.axisTick} fill={COLORS.text.primary}>
                           {payload.value}
                         </text>
-                        <text x={0} y={0} dy={30} textAnchor="middle" fontSize={fontSizes.dateLabel} fill="#555">
+                        <text x={0} y={0} dy={30} textAnchor="middle" fontSize={fontSizes.dateLabel} fill={COLORS.text.secondary}>
                           {dateLabel}
                         </text>
                       </g>

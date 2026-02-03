@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 import { calculateSprintStartDate, calculateSprintFinishDate, formatDateCompact } from '@/shared/lib/dates'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
+import { COLORS } from '@/shared/lib/colors'
 import { type ChartFontSize, CHART_FONT_SIZES, CHART_FONT_SIZE_LABELS } from '../types'
 
 const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
@@ -41,12 +42,7 @@ interface CdfDataPoint {
   bootstrap?: number
 }
 
-const COLORS = {
-  tNormal: '#0070f3',    // Brand blue
-  lognormal: '#10b981',  // Green
-  gamma: '#f59e0b',      // Amber
-  bootstrap: '#8b5cf6',  // Purple
-}
+const CHART_COLORS = COLORS.chart
 
 /**
  * Build CDF points from sorted simulation data.
@@ -222,7 +218,7 @@ export function DistributionChart({
             </p>
             <ResponsiveContainer width="100%" height={340}>
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 50 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.light} />
               <XAxis
                 dataKey="sprints"
                 tick={(props) => {
@@ -231,10 +227,10 @@ export function DistributionChart({
                   const absoluteSprint = payload.value + completedSprintCount
                   return (
                     <g transform={`translate(${x},${y})`}>
-                      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={fontSizes.axisTick} fill="#666">
+                      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={fontSizes.axisTick} fill={COLORS.text.muted}>
                         {absoluteSprint}
                       </text>
-                      <text x={0} y={0} dy={26} textAnchor="middle" fontSize={fontSizes.dateLabel} fill="#999">
+                      <text x={0} y={0} dy={26} textAnchor="middle" fontSize={fontSizes.dateLabel} fill={COLORS.text.light}>
                         {dateLabel}
                       </text>
                     </g>
@@ -264,7 +260,7 @@ export function DistributionChart({
               />
               <ReferenceLine
                 y={customPercentile}
-                stroke="#666"
+                stroke={COLORS.text.muted}
                 strokeDasharray="5 5"
                 label={{ value: `P${customPercentile}`, position: 'right', fontSize: fontSizes.axisTick }}
               />
@@ -272,7 +268,7 @@ export function DistributionChart({
                 type="stepAfter"
                 dataKey="tNormal"
                 name="T-Normal"
-                stroke={COLORS.tNormal}
+                stroke={CHART_COLORS.tNormal}
                 dot={false}
                 strokeWidth={2.5}
               />
@@ -280,7 +276,7 @@ export function DistributionChart({
                 type="stepAfter"
                 dataKey="lognormal"
                 name="Lognorm"
-                stroke={COLORS.lognormal}
+                stroke={CHART_COLORS.lognormal}
                 dot={false}
                 strokeWidth={2.5}
               />
@@ -288,7 +284,7 @@ export function DistributionChart({
                 type="stepAfter"
                 dataKey="gamma"
                 name="Gamma"
-                stroke={COLORS.gamma}
+                stroke={CHART_COLORS.gamma}
                 dot={false}
                 strokeWidth={2.5}
               />
@@ -297,7 +293,7 @@ export function DistributionChart({
                   type="stepAfter"
                   dataKey="bootstrap"
                   name="Bootstrap"
-                  stroke={COLORS.bootstrap}
+                  stroke={CHART_COLORS.bootstrap}
                   dot={false}
                   strokeWidth={2.5}
                 />

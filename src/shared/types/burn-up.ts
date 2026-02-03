@@ -1,6 +1,8 @@
 // Burn-up chart configuration types
 // Located in shared/types to avoid circular dependency with project-store
 
+import { COLORS } from '@/shared/lib/colors'
+
 export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
 
 export interface ForecastLineConfig {
@@ -17,9 +19,9 @@ export interface BurnUpConfig {
 export const DEFAULT_BURN_UP_CONFIG: BurnUpConfig = {
   distribution: 'truncatedNormal',
   lines: [
-    { label: 'Optimistic', percentile: 10, color: '#f97316' }, // Orange
-    { label: 'Expected', percentile: 50, color: '#eab308' }, // Yellow
-    { label: 'Conservative', percentile: 90, color: '#3b82f6' }, // Blue
+    { label: 'Optimistic', percentile: 10, color: COLORS.burnUp.optimistic },
+    { label: 'Expected', percentile: 50, color: COLORS.burnUp.expected },
+    { label: 'Conservative', percentile: 90, color: COLORS.burnUp.conservative },
   ],
 }
 
