@@ -13,6 +13,45 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.0',
+    date: '2026-02-02',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        items: [
+          'Fixed viewingProjectId not reset when deleting the viewed project',
+          'Fixed package.json version mismatch',
+          'Added missing viewport export for mobile rendering',
+          'Fixed changelog date formatting to use shared utility',
+        ],
+      },
+      {
+        title: 'Resilience',
+        items: [
+          'Added import data validation with descriptive error messages',
+          'Added clipboard API availability check before copy-to-image',
+          'Added delete confirmations for projects, sprints, and productivity adjustments',
+          'Added gamma distribution iteration limit to prevent infinite loops',
+          'Added truncated normal rejection sampling fallback warning',
+          'Added React error boundaries around all tab components',
+          'Added HTTP security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)',
+        ],
+      },
+      {
+        title: 'Refactoring',
+        items: [
+          'Extracted ForecastTab state and logic into useForecastState hook (410 → 186 LOC)',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          'Added 74 new tests (151 → 225 total) covering store selectors, mutations, import validation, math edge cases, date utilities, and simulation boundaries',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.9.0',
     date: '2026-02-02',
     sections: [
