@@ -127,6 +127,7 @@ export function randomTruncatedNormal(
 
   // Fallback: if we somehow can't sample (mean very close to or below lower bound),
   // return the lower bound plus a small positive value
+  console.warn(`Truncated normal: fallback after ${maxAttempts} rejections (mean=${mean}, stdDev=${stdDev}, bound=${lowerBound})`)
   return lowerBound + 0.1
 }
 
@@ -178,8 +179,9 @@ export function randomGamma(shape: number, scale: number): number {
   // Marsaglia and Tsang's method for shape >= 1
   const d = shape - 1 / 3
   const c = 1 / Math.sqrt(9 * d)
+  const MAX_ITERATIONS = 10000
 
-  while (true) {
+  for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     let x: number
     let v: number
 
@@ -203,6 +205,10 @@ export function randomGamma(shape: number, scale: number): number {
       return d * v * scale
     }
   }
+
+  // Fallback: return the distribution mean (shape * scale)
+  console.warn(`Gamma sampling: max iterations (${MAX_ITERATIONS}) reached for shape=${shape}, scale=${scale}`)
+  return shape * scale
 }
 
 /**

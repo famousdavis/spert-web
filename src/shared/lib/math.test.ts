@@ -216,3 +216,75 @@ describe('randomGammaFromMeanStdDev', () => {
     expect(avg).toBeCloseTo(20, 0)
   })
 })
+
+// --- Edge case tests added in v0.10.0 ---
+
+describe('mean edge cases', () => {
+  it('handles all identical values', () => {
+    expect(mean([7, 7, 7, 7, 7])).toBe(7)
+  })
+
+  it('handles very large arrays', () => {
+    const arr = Array.from({ length: 100000 }, () => 1)
+    expect(mean(arr)).toBe(1)
+  })
+})
+
+describe('standardDeviation edge cases', () => {
+  it('handles all negative values', () => {
+    const result = standardDeviation([-10, -20, -30])
+    expect(result).toBeCloseTo(10, 0)
+  })
+
+  it('handles two identical values', () => {
+    expect(standardDeviation([5, 5])).toBe(0)
+  })
+})
+
+describe('percentileFromSorted edge cases', () => {
+  it('handles two-element array at various percentiles', () => {
+    expect(percentileFromSorted([10, 20], 0)).toBe(10)
+    expect(percentileFromSorted([10, 20], 25)).toBe(12.5)
+    expect(percentileFromSorted([10, 20], 75)).toBe(17.5)
+    expect(percentileFromSorted([10, 20], 100)).toBe(20)
+  })
+})
+
+describe('randomNormal edge cases', () => {
+  it('returns exactly the mean when stdDev is 0', () => {
+    const samples = Array.from({ length: 100 }, () => randomNormal(42, 0))
+    expect(samples.every((s) => s === 42)).toBe(true)
+  })
+})
+
+describe('randomGamma edge cases', () => {
+  it('handles very large shape parameter', () => {
+    // shape=100, scale=0.1 → mean=10, very tight distribution
+    const samples = Array.from({ length: 1000 }, () => randomGamma(100, 0.1))
+    const avg = mean(samples)
+    expect(avg).toBeCloseTo(10, 0)
+    expect(samples.every((s) => s > 0)).toBe(true)
+  })
+
+  it('handles very small shape parameter', () => {
+    const samples = Array.from({ length: 1000 }, () => randomGamma(0.1, 1))
+    expect(samples.every((s) => s > 0)).toBe(true)
+  })
+})
+
+describe('normalToLognormalParams edge cases', () => {
+  it('handles negative mean with fallback', () => {
+    const result = normalToLognormalParams(-5, 3)
+    expect(result.muLn).toBeCloseTo(Math.log(0.1))
+    expect(result.sigmaLn).toBe(0.1)
+  })
+})
+
+describe('normalToGammaParams edge cases', () => {
+  it('handles negative stdDev with high-shape fallback', () => {
+    // normalToGammaParams treats stdDev <= 0 as deterministic (high-shape fallback)
+    const result = normalToGammaParams(10, -5)
+    expect(result.shape).toBe(100)
+    expect(result.scale).toBeCloseTo(0.1)
+  })
+})
