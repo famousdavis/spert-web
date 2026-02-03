@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { useForecastState } from '../hooks/useForecastState'
 import { ForecastForm } from './ForecastForm'
 import { ForecastResults } from './ForecastResults'
@@ -25,6 +26,7 @@ export function ForecastTab() {
     setRemainingBacklog,
     setVelocityMean,
     setVelocityStdDev,
+    isSimulating,
     results,
     simulationData,
     customPercentile,
@@ -101,9 +103,10 @@ export function ForecastTab() {
               onVelocityStdDevChange={setVelocityStdDev}
               onRunForecast={handleRunForecast}
               canRun={!!remainingBacklog && effectiveMean > 0}
+              isSimulating={isSimulating}
             />
             {hasResults && (
-              <div className="mt-6">
+              <div className={cn('mt-6 transition-opacity duration-300', isSimulating && 'opacity-50')}>
                 <ForecastResults
                   truncatedNormalResults={results.truncatedNormal}
                   lognormalResults={results.lognormal}

@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ForecastFormProps {
@@ -18,6 +17,7 @@ interface ForecastFormProps {
   onVelocityStdDevChange: (value: string) => void
   onRunForecast: () => void
   canRun: boolean
+  isSimulating: boolean
 }
 
 export function ForecastForm({
@@ -35,16 +35,8 @@ export function ForecastForm({
   onVelocityStdDevChange,
   onRunForecast,
   canRun,
+  isSimulating,
 }: ForecastFormProps) {
-  const [isRunning, setIsRunning] = useState(false)
-
-  const handleClick = useCallback(() => {
-    if (!canRun || isRunning) return
-    setIsRunning(true)
-    onRunForecast()
-    // Reset after a brief moment to show the feedback
-    setTimeout(() => setIsRunning(false), 400)
-  }, [canRun, isRunning, onRunForecast])
   return (
     <div className="rounded-lg border border-border p-4 bg-spert-bg-input">
       <div className="flex gap-4 items-start flex-wrap">
@@ -166,18 +158,18 @@ export function ForecastForm({
         {/* Run Forecast Button */}
         <div className="flex-[0_0_auto] self-end pb-5">
           <button
-            onClick={handleClick}
-            disabled={!canRun || isRunning}
+            onClick={onRunForecast}
+            disabled={!canRun || isSimulating}
             className={cn(
               'px-4 py-2 text-white border-none rounded text-[0.9rem] font-semibold h-[38px] w-[140px] transition-[background-color,transform] duration-150 ease-in-out',
-              isRunning
+              isSimulating
                 ? 'bg-spert-success cursor-not-allowed scale-[0.97]'
                 : canRun
                   ? 'bg-spert-blue cursor-pointer scale-100'
                   : 'bg-[#ccc] cursor-not-allowed scale-100'
             )}
           >
-            {isRunning ? 'Running…' : 'Run Forecast'}
+            {isSimulating ? 'Running…' : 'Run Forecast'}
           </button>
           {!canRun && remainingBacklog && effectiveMean <= 0 && (
             <p className="text-xs text-spert-error mt-1">
