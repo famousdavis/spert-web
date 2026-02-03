@@ -14,6 +14,29 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.11.0',
+    date: '2026-02-02',
+    sections: [
+      {
+        title: 'Enhancements',
+        items: [
+          'Toast notifications for export, import, and clipboard operations (Sonner)',
+          'Monte Carlo simulation moved to Web Worker for non-blocking UI',
+          'Real loading state feedback during simulation runs',
+          'Form validation tightened with max value constraints and NaN guards',
+        ],
+      },
+      {
+        title: 'Refactoring',
+        items: [
+          'Centralized 43 hardcoded colors into shared color constants',
+          'Added SPERT color palette to Tailwind CSS theme',
+          'Migrated 258 inline styles to Tailwind classes across 23 components',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.10.0',
     date: '2026-02-02',
     sections: [
