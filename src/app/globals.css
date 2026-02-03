@@ -44,6 +44,47 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* SPERT brand colors */
+  --color-spert-blue: #0070f3;
+  --color-spert-blue-light: #0099ff;
+  --color-spert-blue-dark: #0051cc;
+
+  /* SPERT text colors */
+  --color-spert-text: #333333;
+  --color-spert-text-secondary: #555555;
+  --color-spert-text-muted: #666666;
+  --color-spert-text-light: #999999;
+  --color-spert-text-helper: #888888;
+
+  /* SPERT border colors */
+  --color-spert-border: #dddddd;
+  --color-spert-border-light: #e5e7eb;
+  --color-spert-border-medium: #cccccc;
+
+  /* SPERT status colors */
+  --color-spert-error: #dc3545;
+  --color-spert-error-dark: #c53030;
+  --color-spert-error-border: #e53e3e;
+  --color-spert-success: #28a745;
+  --color-spert-warning: #ffc107;
+  --color-spert-warning-dark: #d97706;
+  --color-spert-warning-text: #856404;
+  --color-spert-info: #2563eb;
+
+  /* SPERT background colors */
+  --color-spert-bg-input: #f9f9f9;
+  --color-spert-bg-highlight: #f0f7ff;
+  --color-spert-bg-disabled: #e9ecef;
+  --color-spert-bg-hover: #f5f5f5;
+  --color-spert-bg-error-light: #f8d7da;
+  --color-spert-bg-error-very-light: #fff3f3;
+  --color-spert-bg-error-row: #fee2e2;
+  --color-spert-bg-warning-light: #fff3cd;
+  --color-spert-bg-warning-row: #fef3c7;
+  --color-spert-bg-info-light: #e7f3ff;
+  --color-spert-bg-info-row: #dbeafe;
+  --color-spert-bg-success-row: #d1fae5;
 }
 
 :root {
