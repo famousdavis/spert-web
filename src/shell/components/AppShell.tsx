@@ -27,13 +27,7 @@ export function AppShell() {
         <header className="mb-6">
           <h1 className="text-[2.1rem] mb-1">
             <span
-              className="font-bold"
-              style={{
-                background: 'linear-gradient(90deg, #0099ff 0%, #0051cc 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
+              className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
             >
               {APP_NAME}
             </span>

@@ -6,24 +6,24 @@ import { APP_VERSION, APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
 function TrademarkedName({ name, bold = false }: { name: string; bold?: boolean }) {
   return (
     <span>
-      {bold ? <strong>{name}</strong> : name}<span style={{ fontWeight: 'normal' }}>®</span>
+      {bold ? <strong>{name}</strong> : name}<span className="font-normal">&reg;</span>
     </span>
   )
 }
 
 export function AboutTab() {
   return (
-    <div style={{ maxWidth: '800px' }}>
-      <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#333' }}>
+    <div className="max-w-[800px]">
+      <h2 className="text-2xl mb-2 text-spert-text">
         About <TrademarkedName name={APP_NAME} />
       </h2>
-      <p style={{ color: '#666', fontStyle: 'italic', marginBottom: '2rem' }}>{APP_DESCRIPTION}</p>
+      <p className="text-spert-text-muted italic mb-8">{APP_DESCRIPTION}</p>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">
           What is <TrademarkedName name={APP_NAME} />?
         </h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>
+        <p className="leading-relaxed text-spert-text-secondary">
           <TrademarkedName name="Statistical PERT" bold /> (<TrademarkedName name="SPERT" />) makes
           statistical modeling accessible to project managers, Scrum Masters, students,
           businesspeople, and others who need to model uncertain outcomes using a lightweight,
@@ -32,9 +32,9 @@ export function AboutTab() {
         </p>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>How It Works</h3>
-        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555', listStyleType: 'disc' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">How It Works</h3>
+        <ul className="pl-8 leading-loose text-spert-text-secondary list-disc">
           <li>Create a project with your sprint cadence</li>
           <li>Record your sprint history with &quot;done&quot; values</li>
           <li>Enter your remaining backlog size</li>
@@ -42,9 +42,9 @@ export function AboutTab() {
         </ul>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>About the Simulation</h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">About the Simulation</h3>
+        <p className="leading-relaxed text-spert-text-secondary">
           The forecast runs 50,000 Monte Carlo trials using multiple probability distributions
           (Truncated Normal, Lognormal, Gamma, and Bootstrap). Each trial simulates completing
           the remaining backlog by drawing random velocities for each sprint until the work is done.
@@ -52,9 +52,9 @@ export function AboutTab() {
         </p>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>Your Data &amp; Privacy</h3>
-        <ul style={{ paddingLeft: '2rem', lineHeight: '1.8', color: '#555', listStyleType: 'disc' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">Your Data &amp; Privacy</h3>
+        <ul className="pl-8 leading-loose text-spert-text-secondary list-disc">
           <li>Stored locally in your <strong>browser</strong> (not in any cloud database)</li>
           <li><strong>Your data never leaves your device</strong></li>
           <li>No external database servers, no third-party access, no data governance concerns</li>
@@ -63,55 +63,46 @@ export function AboutTab() {
         </ul>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>Author &amp; Source Code</h3>
-        <p style={{ lineHeight: '1.6', color: '#555', marginBottom: '0.5rem' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">Author &amp; Source Code</h3>
+        <p className="leading-relaxed text-spert-text-secondary mb-2">
           Created by <strong>William W. Davis, MSPM, PMP</strong>
         </p>
         <a
           href="https://github.com/famousdavis/spert-web"
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            padding: '0.75rem 1.5rem',
-            background: '#0070f3',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '4px',
-            fontWeight: '600',
-            marginTop: '0.5rem',
-          }}
+          className="inline-block px-6 py-3 bg-spert-blue text-white no-underline rounded font-semibold mt-2"
         >
           View Source Code on GitHub
         </a>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>Version</h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>v{APP_VERSION}</p>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">Version</h3>
+        <p className="leading-relaxed text-spert-text-secondary">v{APP_VERSION}</p>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>Trademark</h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">Trademark</h3>
+        <p className="leading-relaxed text-spert-text-secondary">
           <TrademarkedName name="SPERT" /> and <TrademarkedName name="Statistical PERT" /> are
           registered trademarks with the United States Patent and Trademark Office.
         </p>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>License</h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">License</h3>
+        <p className="leading-relaxed text-spert-text-secondary">
           This software is licensed under the GNU General Public License v3.0 (GPL-3.0).
           You are free to use, modify, and distribute this software under the terms of the
           GPL-3.0 license.
         </p>
       </section>
 
-      <section style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#0070f3' }}>No Warranty Disclaimer</h3>
-        <p style={{ lineHeight: '1.6', color: '#555' }}>
+      <section className="mb-8">
+        <h3 className="text-xl mb-3 text-spert-blue">No Warranty Disclaimer</h3>
+        <p className="leading-relaxed text-spert-text-secondary">
           THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.
           EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
           PROVIDE THE PROGRAM &quot;AS IS&quot; WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED

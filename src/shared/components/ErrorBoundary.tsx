@@ -33,33 +33,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       return (
-        <div
-          style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            margin: '1rem 0',
-          }}
-        >
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+        <div className="p-8 text-center border border-spert-border-light rounded-lg my-4">
+          <h2 className="text-lg font-semibold mb-2">
             Something went wrong
           </h2>
-          <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          <p className="text-spert-text-muted text-sm mb-4">
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}
+            className="px-4 py-2 bg-spert-blue text-white border-0 rounded cursor-pointer text-sm font-medium"
           >
             Try again
           </button>

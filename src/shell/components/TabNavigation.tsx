@@ -1,5 +1,7 @@
 'use client'
 
+import { cn } from '@/lib/utils'
+
 export type TabId = 'projects' | 'sprint-history' | 'forecast' | 'about' | 'settings'
 
 interface Tab {
@@ -23,37 +25,17 @@ interface TabNavigationProps {
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div
-      className="flex gap-2 border-b-2 border-gray-100"
-      style={{ paddingLeft: '0.5rem' }}
-    >
+    <div className="flex gap-2 border-b-2 border-gray-100 pl-2">
       {TABS.filter((tab) => !tab.hidden).map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className="transition-all duration-200"
-          style={{
-            padding: '0.5rem 1.25rem',
-            background: activeTab === tab.id ? '#0070f3' : 'transparent',
-            color: activeTab === tab.id ? 'white' : '#666',
-            border: 'none',
-            borderBottom: activeTab === tab.id ? '3px solid #0070f3' : '3px solid transparent',
-            borderTopLeftRadius: '8px',
-            borderTopRightRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: '1rem',
-          }}
-          onMouseEnter={(e) => {
-            if (activeTab !== tab.id) {
-              e.currentTarget.style.background = '#f5f5f5'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (activeTab !== tab.id) {
-              e.currentTarget.style.background = 'transparent'
-            }
-          }}
+          className={cn(
+            'px-5 py-2 border-0 border-b-[3px] rounded-t-lg cursor-pointer font-semibold text-base transition-all duration-200',
+            activeTab === tab.id
+              ? 'bg-spert-blue text-white border-b-spert-blue'
+              : 'bg-transparent text-spert-text-muted border-b-transparent hover:bg-spert-bg-hover'
+          )}
         >
           {tab.label}
         </button>

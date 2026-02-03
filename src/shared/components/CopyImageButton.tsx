@@ -2,6 +2,7 @@
 
 import { useState, useCallback, type RefObject } from 'react'
 import { copyElementAsImage } from '@/shared/lib/copy-image'
+import { cn } from '@/lib/utils'
 import { COLORS } from '@/shared/lib/colors'
 
 type CopyStatus = 'idle' | 'copying' | 'success' | 'error'
@@ -34,25 +35,14 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
 
   return (
     <button
-      className="copy-image-button"
+      className={cn(
+        'copy-image-button bg-transparent border-0 p-1 shrink-0 transition-opacity duration-200',
+        status === 'copying' ? 'cursor-wait opacity-100' : 'cursor-pointer',
+        status === 'idle' ? 'opacity-50 hover:opacity-100' : 'opacity-100'
+      )}
       onClick={handleCopy}
       disabled={status === 'copying'}
       title={title}
-      style={{
-        background: 'transparent',
-        border: 'none',
-        cursor: status === 'copying' ? 'wait' : 'pointer',
-        padding: '0.25rem',
-        opacity: status === 'idle' ? 0.5 : 1,
-        transition: 'opacity 0.2s',
-        flexShrink: 0,
-      }}
-      onMouseEnter={(e) => {
-        if (status === 'idle') e.currentTarget.style.opacity = '1'
-      }}
-      onMouseLeave={(e) => {
-        if (status === 'idle') e.currentTarget.style.opacity = '0.5'
-      }}
     >
       {status === 'copying' && (
         <svg
@@ -64,7 +54,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ animation: 'spin 1s linear infinite' }}
+          className="animate-spin"
         >
           <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
           <path d="M12 2a10 10 0 0 1 10 10" />

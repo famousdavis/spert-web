@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
 import type { Sprint } from '@/shared/types'
 import { formatDateRange } from '@/shared/lib/dates'
 
@@ -102,14 +103,7 @@ export function SprintList({
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onEdit(sprint)}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      background: '#fff3cd',
-                      border: '1px solid #ffc107',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.85rem',
-                    }}
+                    className="px-3 py-1.5 bg-spert-bg-warning-light border border-spert-warning rounded cursor-pointer text-[0.85rem]"
                   >
                     Edit
                   </button>
@@ -117,16 +111,12 @@ export function SprintList({
                     onClick={() => canDelete && onDelete(sprint.id)}
                     disabled={!canDelete}
                     title={canDelete ? 'Delete sprint' : 'Only the most recent sprint can be deleted'}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      background: canDelete ? '#f8d7da' : '#e9ecef',
-                      border: canDelete ? '1px solid #dc3545' : '1px solid #ccc',
-                      borderRadius: '4px',
-                      cursor: canDelete ? 'pointer' : 'not-allowed',
-                      fontSize: '0.85rem',
-                      marginLeft: '0.5rem',
-                      opacity: canDelete ? 1 : 0.5,
-                    }}
+                    className={cn(
+                      'px-3 py-1.5 rounded text-[0.85rem] ml-2',
+                      canDelete
+                        ? 'bg-spert-bg-error-light border border-spert-error cursor-pointer opacity-100'
+                        : 'bg-spert-bg-disabled border border-spert-border-medium cursor-not-allowed opacity-50'
+                    )}
                   >
                     Delete
                   </button>

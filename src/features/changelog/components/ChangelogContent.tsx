@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { formatDateLong } from '@/shared/lib/dates'
 
 interface ChangelogEntry {
@@ -218,7 +219,7 @@ export function ChangelogContent() {
     <div className="space-y-10 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Changelog</h1>
-        <p className="text-muted-foreground" style={{ fontStyle: 'italic' }}>
+        <p className="text-muted-foreground italic">
           Release history for SPERT®
         </p>
       </div>
@@ -226,19 +227,14 @@ export function ChangelogContent() {
       {CHANGELOG.map((entry, entryIndex) => (
         <section
           key={entry.version}
-          className="space-y-4"
-          style={{
-            paddingBottom: entryIndex < CHANGELOG.length - 1 ? '1.5rem' : 0,
-            borderBottom: entryIndex < CHANGELOG.length - 1 ? '1px solid #e5e7eb' : 'none',
-          }}
+          className={cn(
+            'space-y-4',
+            entryIndex < CHANGELOG.length - 1 && 'pb-6 border-b border-spert-border-light'
+          )}
         >
           <div className="flex items-baseline gap-3">
             <h2
-              className="font-semibold"
-              style={{
-                fontSize: '1.125rem',
-                color: '#0070f3',
-              }}
+              className="font-semibold text-lg text-spert-blue"
             >
               v{entry.version}
             </h2>
@@ -248,12 +244,11 @@ export function ChangelogContent() {
           {entry.sections.map((section, sectionIndex) => (
             <div key={sectionIndex} className="space-y-2">
               <h3
-                className="font-medium"
-                style={{ fontSize: '0.925rem', color: '#333' }}
+                className="font-medium text-[0.925rem] text-spert-text"
               >
                 {section.title}
               </h3>
-              <ul className="list-disc text-sm text-muted-foreground space-y-1" style={{ paddingLeft: '1.25rem' }}>
+              <ul className="list-disc text-sm text-muted-foreground space-y-1 pl-5">
                 {section.items.map((item, itemIndex) => (
                   <li key={itemIndex}>{item}</li>
                 ))}
