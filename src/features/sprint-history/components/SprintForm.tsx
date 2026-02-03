@@ -123,6 +123,7 @@ export function SprintForm({
             id="doneValue"
             type="number"
             min="0"
+            max="999999"
             step="any"
             value={doneValue}
             onChange={(e) => setDoneValue(e.target.value)}
@@ -149,6 +150,7 @@ export function SprintForm({
             id="backlogAtSprintEnd"
             type="number"
             min="0"
+            max="999999"
             step="any"
             value={backlogAtSprintEnd}
             onChange={(e) => setBacklogAtSprintEnd(e.target.value)}

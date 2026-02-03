@@ -19,6 +19,7 @@ import { preCalculateSprintFactors } from '../lib/productivity'
 import { today, calculateSprintStartDate } from '@/shared/lib/dates'
 import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
+import { safeParseNumber } from '@/shared/lib/validation'
 import { DEFAULT_CHART_FONT_SIZE, type ChartFontSize } from '@/shared/types/burn-up'
 import { DEFAULT_BURN_UP_CONFIG, type BurnUpConfig } from '../types'
 
@@ -161,8 +162,13 @@ export function useForecastState() {
     if (!selectedProject || !remainingBacklog || !selectedProject.sprintCadenceWeeks) return
     if (!selectedProject.firstSprintStartDate) return
 
+    const parsedBacklog = safeParseNumber(remainingBacklog)
+    if (parsedBacklog === null || parsedBacklog <= 0) return
+    if (!Number.isFinite(effectiveMean) || effectiveMean <= 0) return
+    if (!Number.isFinite(effectiveStdDev) || effectiveStdDev < 0) return
+
     const config = {
-      remainingBacklog: Number(remainingBacklog),
+      remainingBacklog: parsedBacklog,
       velocityMean: effectiveMean,
       velocityStdDev: effectiveStdDev,
       startDate: forecastStartDate,
@@ -237,7 +243,7 @@ export function useForecastState() {
     const csvContent = generateForecastCsv({
       config: {
         projectName: selectedProject.name,
-        remainingBacklog: Number(remainingBacklog),
+        remainingBacklog: safeParseNumber(remainingBacklog) ?? 0,
         velocityMean: effectiveMean,
         velocityStdDev: effectiveStdDev,
         startDate: forecastStartDate,

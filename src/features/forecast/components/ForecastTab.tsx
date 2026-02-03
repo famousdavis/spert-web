@@ -94,6 +94,7 @@ export function ForecastTab() {
               sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
               calculatedMean={calculatedStats.mean}
               calculatedStdDev={calculatedStats.standardDeviation}
+              effectiveMean={effectiveMean}
               unitOfMeasure={selectedProject.unitOfMeasure}
               onRemainingBacklogChange={setRemainingBacklog}
               onVelocityMeanChange={setVelocityMean}

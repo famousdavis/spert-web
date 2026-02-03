@@ -11,6 +11,7 @@ interface ForecastFormProps {
   sprintCadenceWeeks: number | undefined
   calculatedMean: number
   calculatedStdDev: number
+  effectiveMean: number
   unitOfMeasure: string
   onRemainingBacklogChange: (value: string) => void
   onVelocityMeanChange: (value: string) => void
@@ -27,6 +28,7 @@ export function ForecastForm({
   sprintCadenceWeeks,
   calculatedMean,
   calculatedStdDev,
+  effectiveMean,
   unitOfMeasure,
   onRemainingBacklogChange,
   onVelocityMeanChange,
@@ -58,6 +60,7 @@ export function ForecastForm({
             id="remainingBacklog"
             type="number"
             min="0"
+            max="999999"
             step="any"
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
@@ -83,6 +86,7 @@ export function ForecastForm({
             id="velocityMean"
             type="number"
             min="0"
+            max="999999"
             step="any"
             value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
             onChange={(e) => onVelocityMeanChange(e.target.value)}
@@ -108,6 +112,7 @@ export function ForecastForm({
             id="velocityStdDev"
             type="number"
             min="0"
+            max="999999"
             step="any"
             value={velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')}
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
@@ -174,6 +179,11 @@ export function ForecastForm({
           >
             {isRunning ? 'Running…' : 'Run Forecast'}
           </button>
+          {!canRun && remainingBacklog && effectiveMean <= 0 && (
+            <p className="text-xs text-spert-error mt-1">
+              Velocity must be &gt; 0
+            </p>
+          )}
         </div>
       </div>
     </div>
