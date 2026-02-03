@@ -2,6 +2,7 @@
 
 import type { RefObject } from 'react'
 import type { ForecastResult } from '@/shared/types'
+import { cn } from '@/lib/utils'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { formatDate } from '@/shared/lib/dates'
@@ -31,8 +32,8 @@ export function PercentileSelector({
   const hasBootstrap = bootstrapResult !== null
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div ref={selectorRef} className="space-y-4 rounded-lg border border-border p-4" style={{ background: 'white' }}>
+    <div className="relative">
+      <div ref={selectorRef} className="space-y-4 rounded-lg border border-border p-4 bg-white">
         <h3 className="font-medium">Custom Percentile</h3>
 
       <div className="flex items-center gap-4">
@@ -77,21 +78,17 @@ export function PercentileSelector({
               Lognorm
             </p>
             <div
-              className="rounded-lg bg-muted/50 p-3"
-              style={{
-                borderLeft:
-                  truncatedNormalResult.finishDate !== lognormalResult.finishDate
-                    ? '3px solid #0070f3'
-                    : undefined,
-              }}
+              className={cn(
+                'rounded-lg bg-muted/50 p-3',
+                truncatedNormalResult.finishDate !== lognormalResult.finishDate && 'border-l-[3px] border-l-spert-blue'
+              )}
             >
               <p className="text-sm text-muted-foreground">Finish Date</p>
               <p
-                className="text-base font-semibold"
-                style={{
-                  color:
-                    truncatedNormalResult.finishDate !== lognormalResult.finishDate ? '#0070f3' : 'inherit',
-                }}
+                className={cn(
+                  'text-base font-semibold',
+                  truncatedNormalResult.finishDate !== lognormalResult.finishDate && 'text-spert-blue'
+                )}
               >
                 {formatDate(lognormalResult.finishDate)}
               </p>
@@ -107,21 +104,17 @@ export function PercentileSelector({
               Gamma
             </p>
             <div
-              className="rounded-lg bg-muted/50 p-3"
-              style={{
-                borderLeft:
-                  truncatedNormalResult.finishDate !== gammaResult.finishDate
-                    ? '3px solid #0070f3'
-                    : undefined,
-              }}
+              className={cn(
+                'rounded-lg bg-muted/50 p-3',
+                truncatedNormalResult.finishDate !== gammaResult.finishDate && 'border-l-[3px] border-l-spert-blue'
+              )}
             >
               <p className="text-sm text-muted-foreground">Finish Date</p>
               <p
-                className="text-base font-semibold"
-                style={{
-                  color:
-                    truncatedNormalResult.finishDate !== gammaResult.finishDate ? '#0070f3' : 'inherit',
-                }}
+                className={cn(
+                  'text-base font-semibold',
+                  truncatedNormalResult.finishDate !== gammaResult.finishDate && 'text-spert-blue'
+                )}
               >
                 {formatDate(gammaResult.finishDate)}
               </p>
@@ -138,21 +131,17 @@ export function PercentileSelector({
                 Bootstrap
               </p>
               <div
-                className="rounded-lg bg-muted/50 p-3"
-                style={{
-                  borderLeft:
-                    truncatedNormalResult.finishDate !== bootstrapResult.finishDate
-                      ? '3px solid #0070f3'
-                      : undefined,
-                }}
+                className={cn(
+                  'rounded-lg bg-muted/50 p-3',
+                  truncatedNormalResult.finishDate !== bootstrapResult.finishDate && 'border-l-[3px] border-l-spert-blue'
+                )}
               >
                 <p className="text-sm text-muted-foreground">Finish Date</p>
                 <p
-                  className="text-base font-semibold"
-                  style={{
-                    color:
-                      truncatedNormalResult.finishDate !== bootstrapResult.finishDate ? '#0070f3' : 'inherit',
-                  }}
+                  className={cn(
+                    'text-base font-semibold',
+                    truncatedNormalResult.finishDate !== bootstrapResult.finishDate && 'text-spert-blue'
+                  )}
                 >
                   {formatDate(bootstrapResult.finishDate)}
                 </p>
@@ -166,7 +155,7 @@ export function PercentileSelector({
       )}
       </div>
       {selectorRef && hasResults && (
-        <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+        <div className="absolute top-2 right-2">
           <CopyImageButton
             targetRef={selectorRef}
             title="Copy custom percentile as image"

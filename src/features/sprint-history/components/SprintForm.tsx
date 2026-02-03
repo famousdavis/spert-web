@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
 import type { Sprint, Project } from '@/shared/types'
 import {
   calculateSprintStartDate,
@@ -97,29 +98,26 @@ export function SprintForm({
       <h3 className="font-medium">{sprint ? 'Edit Sprint' : 'Add Sprint'}</h3>
 
       {/* Single row: Sprint dates, Done input, Include checkbox */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-4 flex-wrap">
         {/* Sprint dates display (read-only) */}
         <div
-          style={{
-            padding: '0.5rem 0.75rem',
-            background: needsFirstSprintDate ? '#fff3cd' : '#e9ecef',
-            border: needsFirstSprintDate ? '1px solid #ffc107' : '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '0.9rem',
-            fontWeight: 500,
-            color: needsFirstSprintDate ? '#856404' : '#333',
-          }}
+          className={cn(
+            'px-3 py-2 rounded text-[0.9rem] font-medium',
+            needsFirstSprintDate
+              ? 'bg-spert-bg-warning-light border border-spert-warning text-[#856404]'
+              : 'bg-spert-bg-disabled border border-spert-border text-spert-text'
+          )}
         >
           {dateLabel}
         </div>
 
         {/* Done input - compact width */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <label
             htmlFor="doneValue"
-            style={{ fontSize: '0.875rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}
+            className="text-sm font-semibold text-spert-text-secondary whitespace-nowrap"
           >
-            Done ({project.unitOfMeasure}) <span style={{ color: '#dc3545' }}>*</span>
+            Done ({project.unitOfMeasure}) <span className="text-spert-error">*</span>
           </label>
           <input
             id="doneValue"
@@ -128,24 +126,22 @@ export function SprintForm({
             step="any"
             value={doneValue}
             onChange={(e) => setDoneValue(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: doneValue ? '1px solid #ddd' : '2px solid #0070f3',
-              borderRadius: '4px',
-              width: '80px',
-              backgroundColor: doneValue ? 'white' : '#f0f7ff',
-            }}
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-[80px]',
+              doneValue
+                ? 'border border-spert-border bg-white'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+            )}
             placeholder="0"
             required
           />
         </div>
 
         {/* Backlog at sprint end input - optional */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <label
             htmlFor="backlogAtSprintEnd"
-            style={{ fontSize: '0.875rem', fontWeight: 600, color: '#555', whiteSpace: 'nowrap' }}
+            className="text-sm font-semibold text-spert-text-secondary whitespace-nowrap"
           >
             Backlog at End
           </label>
@@ -156,19 +152,13 @@ export function SprintForm({
             step="any"
             value={backlogAtSprintEnd}
             onChange={(e) => setBacklogAtSprintEnd(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '80px',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-[80px]"
             placeholder="—"
           />
         </div>
 
         {/* Include in forecast checkbox */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <input
             id="includedInForecast"
             type="checkbox"
@@ -176,7 +166,7 @@ export function SprintForm({
             onChange={(e) => setIncludedInForecast(e.target.checked)}
             className="h-4 w-4 rounded border-input"
           />
-          <label htmlFor="includedInForecast" style={{ fontSize: '0.875rem', color: '#555' }}>
+          <label htmlFor="includedInForecast" className="text-sm text-spert-text-secondary">
             Include in forecast
           </label>
         </div>
@@ -186,31 +176,19 @@ export function SprintForm({
         <button
           type="button"
           onClick={onCancel}
-          style={{
-            padding: '0.5rem 1rem',
-            background: '#999',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-          }}
+          className="px-4 py-2 bg-[#999] text-white border-none rounded cursor-pointer text-[0.9rem]"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!isValid}
-          style={{
-            padding: '0.5rem 1rem',
-            background: isValid ? '#0070f3' : '#ccc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isValid ? 'pointer' : 'not-allowed',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-          }}
+          className={cn(
+            'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white',
+            isValid
+              ? 'bg-spert-blue cursor-pointer'
+              : 'bg-[#ccc] cursor-not-allowed'
+          )}
         >
           {sprint ? 'Update' : 'Add'}
         </button>

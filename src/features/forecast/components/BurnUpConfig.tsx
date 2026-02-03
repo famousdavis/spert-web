@@ -31,14 +31,14 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
     : ['truncatedNormal', 'lognormal', 'gamma']
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className="mb-4">
       {/* All controls in a single horizontal row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-4 flex-wrap">
         {/* Distribution selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <label
             htmlFor="burnup-distribution"
-            style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
+            className="text-[0.8125rem] font-semibold text-spert-text-muted"
           >
             Dist:
           </label>
@@ -46,13 +46,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
             id="burnup-distribution"
             value={config.distribution}
             onChange={(e) => handleDistributionChange(e.target.value as DistributionType)}
-            style={{
-              padding: '0.25rem 0.375rem',
-              fontSize: '0.8125rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              background: 'white',
-            }}
+            className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
           >
             {availableDistributions.map((dist) => (
               <option key={dist} value={dist}>
@@ -74,10 +68,10 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
 
         {/* Font size selector */}
         {onFontSizeChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto', marginRight: '2.5rem' }}>
+          <div className="flex items-center gap-2 ml-auto mr-10">
             <label
               htmlFor="burnup-font-size"
-              style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
+              className="text-[0.8125rem] font-semibold text-spert-text-muted"
             >
               Text:
             </label>
@@ -85,13 +79,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
               id="burnup-font-size"
               value={fontSize}
               onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-              style={{
-                padding: '0.25rem 0.375rem',
-                fontSize: '0.8125rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                background: 'white',
-              }}
+              className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
             >
               {FONT_SIZES.map((size) => (
                 <option key={size} value={size}>
@@ -114,20 +102,13 @@ interface ForecastLineRowProps {
 
 function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+    <div className="flex items-center gap-1">
       {/* Color picker */}
       <input
         type="color"
         value={line.color}
         onChange={(e) => onChange({ color: e.target.value })}
-        style={{
-          width: '24px',
-          height: '24px',
-          padding: 0,
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
+        className="w-6 h-6 p-0 border border-spert-border rounded cursor-pointer"
         title={`Line ${lineNumber} color`}
       />
 
@@ -138,13 +119,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
         onChange={(e) => onChange({ label: e.target.value })}
         placeholder={`Line ${lineNumber}`}
         maxLength={16}
-        style={{
-          width: '105px',
-          padding: '0.25rem 0.375rem',
-          fontSize: '0.8125rem',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-        }}
+        className="w-[105px] px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded"
         title="Forecast line label"
       />
 
@@ -155,21 +130,13 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
         max={MAX_PERCENTILE}
         value={line.percentile}
         onChange={(e) => onChange({ percentile: Number(e.target.value) })}
-        style={{
-          width: '60px',
-          cursor: 'pointer',
-        }}
+        className="w-[60px] cursor-pointer"
         title={`Percentile: ${line.percentile}%`}
       />
 
       {/* Percentile value display */}
       <span
-        style={{
-          fontSize: '0.8125rem',
-          fontWeight: 600,
-          color: '#555',
-          minWidth: '32px',
-        }}
+        className="text-[0.8125rem] font-semibold text-spert-text-muted min-w-[32px]"
       >
         P{line.percentile}
       </span>

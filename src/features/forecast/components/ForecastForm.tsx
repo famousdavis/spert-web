@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { cn } from '@/lib/utils'
 
 interface ForecastFormProps {
   remainingBacklog: string
@@ -43,15 +44,15 @@ export function ForecastForm({
     setTimeout(() => setIsRunning(false), 400)
   }, [canRun, isRunning, onRunForecast])
   return (
-    <div className="rounded-lg border border-border p-4" style={{ background: '#f9f9f9' }}>
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div className="rounded-lg border border-border p-4 bg-spert-bg-input">
+      <div className="flex gap-4 items-start flex-wrap">
         {/* Remaining Backlog */}
-        <div style={{ flex: '1 1 150px', minWidth: '120px' }}>
+        <div className="flex-[1_1_150px] min-w-[120px]">
           <label
             htmlFor="remainingBacklog"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+            className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
-            Backlog ({unitOfMeasure}) <span style={{ color: '#dc3545' }}>*</span>
+            Backlog ({unitOfMeasure}) <span className="text-spert-error">*</span>
           </label>
           <input
             id="remainingBacklog"
@@ -60,23 +61,21 @@ export function ForecastForm({
             step="any"
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: remainingBacklog ? '1px solid #ddd' : '2px solid #0070f3',
-              borderRadius: '4px',
-              width: '100%',
-              backgroundColor: remainingBacklog ? 'white' : '#f0f7ff',
-            }}
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-full',
+              remainingBacklog
+                ? 'border border-spert-border bg-white'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+            )}
             placeholder="Required"
           />
         </div>
 
         {/* Velocity */}
-        <div style={{ flex: '1 1 150px', minWidth: '120px' }}>
+        <div className="flex-[1_1_150px] min-w-[120px]">
           <label
             htmlFor="velocityMean"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+            className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
             Velocity ({unitOfMeasure}/sprint)
           </label>
@@ -87,18 +86,10 @@ export function ForecastForm({
             step="any"
             value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
             onChange={(e) => onVelocityMeanChange(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '100%',
-              backgroundColor: 'white',
-              color: '#333',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-full bg-white text-spert-text"
             placeholder={calculatedMean > 0 ? '' : 'No data'}
           />
-          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+          <p className="text-xs text-spert-text-muted mt-1">
             {calculatedMean > 0
               ? `Calculated: ${calculatedMean.toFixed(1)}`
               : 'Add sprints to calculate'}
@@ -106,10 +97,10 @@ export function ForecastForm({
         </div>
 
         {/* Velocity Std Dev */}
-        <div style={{ flex: '1 1 130px', minWidth: '110px' }}>
+        <div className="flex-[1_1_130px] min-w-[110px]">
           <label
             htmlFor="velocityStdDev"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+            className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
             Std Dev
           </label>
@@ -120,18 +111,10 @@ export function ForecastForm({
             step="any"
             value={velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')}
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '100%',
-              backgroundColor: 'white',
-              color: '#333',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-full bg-white text-spert-text"
             placeholder={calculatedStdDev > 0 ? '' : 'No data'}
           />
-          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+          <p className="text-xs text-spert-text-muted mt-1">
             {calculatedStdDev > 0
               ? `Calculated: ${calculatedStdDev.toFixed(1)}`
               : 'Need 2+ sprints'}
@@ -139,10 +122,10 @@ export function ForecastForm({
         </div>
 
         {/* Forecast Start Date */}
-        <div style={{ flex: '0 0 150px' }}>
+        <div className="flex-[0_0_150px]">
           <label
             htmlFor="startDate"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+            className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
             Start Date
           </label>
@@ -151,66 +134,43 @@ export function ForecastForm({
             type="date"
             value={startDate}
             readOnly
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '150px',
-              backgroundColor: '#e9ecef',
-              cursor: 'not-allowed',
-              color: '#333',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-[150px] bg-spert-bg-disabled cursor-not-allowed text-spert-text"
           />
-          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+          <p className="text-xs text-spert-text-muted mt-1">
             Next sprint start
           </p>
         </div>
 
         {/* Sprint Cadence (display only) */}
-        <div style={{ flex: '0 0 80px' }}>
+        <div className="flex-[0_0_80px]">
           <label
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}
+            className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
             Cadence
           </label>
           <div
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: '#e9ecef',
-              color: '#333',
-              textAlign: 'center',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded bg-spert-bg-disabled text-spert-text text-center"
           >
             {sprintCadenceWeeks ? `${sprintCadenceWeeks} Week${sprintCadenceWeeks > 1 ? 's' : ''}` : '—'}
           </div>
-          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+          <p className="text-xs text-spert-text-muted mt-1">
             &nbsp;
           </p>
         </div>
 
         {/* Run Forecast Button */}
-        <div style={{ flex: '0 0 auto', alignSelf: 'flex-end', paddingBottom: '1.25rem' }}>
+        <div className="flex-[0_0_auto] self-end pb-5">
           <button
             onClick={handleClick}
             disabled={!canRun || isRunning}
-            style={{
-              padding: '0.5rem 1rem',
-              background: isRunning ? '#28a745' : canRun ? '#0070f3' : '#ccc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: canRun && !isRunning ? 'pointer' : 'not-allowed',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              height: '38px',
-              width: '140px',
-              transition: 'background-color 0.15s ease, transform 0.1s ease',
-              transform: isRunning ? 'scale(0.97)' : 'scale(1)',
-            }}
+            className={cn(
+              'px-4 py-2 text-white border-none rounded text-[0.9rem] font-semibold h-[38px] w-[140px] transition-[background-color,transform] duration-150 ease-in-out',
+              isRunning
+                ? 'bg-spert-success cursor-not-allowed scale-[0.97]'
+                : canRun
+                  ? 'bg-spert-blue cursor-pointer scale-100'
+                  : 'bg-[#ccc] cursor-not-allowed scale-100'
+            )}
           >
             {isRunning ? 'Running…' : 'Run Forecast'}
           </button>

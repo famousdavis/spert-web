@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import type { PercentileResults } from '../lib/monte-carlo'
 import { formatDate } from '@/shared/lib/dates'
 
@@ -156,58 +157,52 @@ export function ForecastResults({
                   <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
                   <td className="px-2 py-3 text-sm">{formatDate(truncatedNormal.finishDate)}</td>
                   <td
-                    className="px-2 py-3 text-right text-sm"
-                    style={{
-                      color: lognormalDiffSprints ? '#0070f3' : 'inherit',
-                      fontWeight: lognormalDiffSprints ? 500 : 'normal',
-                    }}
+                    className={cn(
+                      'px-2 py-3 text-right text-sm',
+                      lognormalDiffSprints && 'text-spert-blue font-medium'
+                    )}
                   >
                     {lognormal.sprintsRequired + completedSprintCount}
                   </td>
                   <td
-                    className="px-2 py-3 text-sm"
-                    style={{
-                      color: lognormalDiffDate ? '#0070f3' : 'inherit',
-                      fontWeight: lognormalDiffDate ? 500 : 'normal',
-                    }}
+                    className={cn(
+                      'px-2 py-3 text-sm',
+                      lognormalDiffDate && 'text-spert-blue font-medium'
+                    )}
                   >
                     {formatDate(lognormal.finishDate)}
                   </td>
                   <td
-                    className="px-2 py-3 text-right text-sm"
-                    style={{
-                      color: gammaDiffSprints ? '#0070f3' : 'inherit',
-                      fontWeight: gammaDiffSprints ? 500 : 'normal',
-                    }}
+                    className={cn(
+                      'px-2 py-3 text-right text-sm',
+                      gammaDiffSprints && 'text-spert-blue font-medium'
+                    )}
                   >
                     {gamma.sprintsRequired + completedSprintCount}
                   </td>
                   <td
-                    className="px-2 py-3 text-sm"
-                    style={{
-                      color: gammaDiffDate ? '#0070f3' : 'inherit',
-                      fontWeight: gammaDiffDate ? 500 : 'normal',
-                    }}
+                    className={cn(
+                      'px-2 py-3 text-sm',
+                      gammaDiffDate && 'text-spert-blue font-medium'
+                    )}
                   >
                     {formatDate(gamma.finishDate)}
                   </td>
                   {hasBootstrap && bootstrap && (
                     <>
                       <td
-                        className="px-2 py-3 text-right text-sm"
-                        style={{
-                          color: bootstrapDiffSprints ? '#0070f3' : 'inherit',
-                          fontWeight: bootstrapDiffSprints ? 500 : 'normal',
-                        }}
+                        className={cn(
+                          'px-2 py-3 text-right text-sm',
+                          bootstrapDiffSprints && 'text-spert-blue font-medium'
+                        )}
                       >
                         {bootstrap.sprintsRequired + completedSprintCount}
                       </td>
                       <td
-                        className="px-2 py-3 text-sm"
-                        style={{
-                          color: bootstrapDiffDate ? '#0070f3' : 'inherit',
-                          fontWeight: bootstrapDiffDate ? 500 : 'normal',
-                        }}
+                        className={cn(
+                          'px-2 py-3 text-sm',
+                          bootstrapDiffDate && 'text-spert-blue font-medium'
+                        )}
                       >
                         {formatDate(bootstrap.finishDate)}
                       </td>
@@ -219,7 +214,7 @@ export function ForecastResults({
           </tbody>
         </table>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="flex justify-between items-start">
         <div className="text-xs text-muted-foreground space-y-1">
           <p>
             P80 means there is an 80% chance of finishing by that date <em>or sooner</em>. Higher
@@ -240,17 +235,7 @@ export function ForecastResults({
           <button
             onClick={onExport}
             title="Export simulation data to CSV"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              opacity: 0.5,
-              transition: 'opacity 0.2s',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+            className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
           >
             <svg
               width="18"

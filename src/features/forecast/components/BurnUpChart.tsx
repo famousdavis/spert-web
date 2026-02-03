@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type RefObject } from 'react'
+import { cn } from '@/lib/utils'
 import {
   LineChart,
   Line,
@@ -92,12 +93,10 @@ export function BurnUpChart({
         className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
       >
         <span
-          className="text-muted-foreground transition-transform duration-200"
-          style={{
-            display: 'inline-block',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            fontSize: '10px',
-          }}
+          className={cn(
+            'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
+            isExpanded && 'rotate-90'
+          )}
         >
           ▶
         </span>
@@ -105,7 +104,7 @@ export function BurnUpChart({
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4" style={{ position: 'relative' }}>
+        <div className="px-4 pb-4 relative">
           {/* Configuration UI */}
           <BurnUpConfigUI
             config={config}
@@ -115,7 +114,7 @@ export function BurnUpChart({
             onFontSizeChange={onFontSizeChange}
           />
 
-          <div ref={chartRef} style={{ background: 'white', padding: '0.5rem' }}>
+          <div ref={chartRef} className="bg-white p-2">
             <p className="text-xs text-muted-foreground mb-4">
               Shows cumulative work completed (Done) vs total product scope (Scope). Forecast lines
               show projected completion at different confidence levels.
@@ -223,7 +222,7 @@ export function BurnUpChart({
             </ResponsiveContainer>
           </div>
           {chartRef && (
-            <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+            <div className="absolute top-2 right-2">
               <CopyImageButton targetRef={chartRef} title="Copy chart as image" />
             </div>
           )}

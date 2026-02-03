@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
 import {
   useProjectStore,
   selectViewingProject,
@@ -110,23 +111,12 @@ export function SprintHistoryTab() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 style={{ fontSize: '1.25rem', color: '#333', display: 'flex', alignItems: 'baseline' }}>
-          <span style={{ fontWeight: 600 }}>Sprint History for </span>
+        <h2 className="text-xl text-spert-text flex items-baseline">
+          <span className="font-semibold">Sprint History for </span>
           <select
             value={selectedProject?.id || ''}
             onChange={handleProjectChange}
-            style={{
-              fontSize: '1.25rem',
-              color: '#333',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontWeight: 600,
-              padding: 0,
-              outline: 'none',
-              marginLeft: 0,
-            }}
+            className="text-xl text-spert-text border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"
           >
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
@@ -140,17 +130,12 @@ export function SprintHistoryTab() {
             onClick={handleCreate}
             disabled={!isSprintConfigComplete}
             title={!isSprintConfigComplete ? 'Set sprint cadence and first sprint start date first' : undefined}
-            style={{
-              padding: '0.5rem 1rem',
-              background: isSprintConfigComplete ? '#0070f3' : '#ccc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isSprintConfigComplete ? 'pointer' : 'not-allowed',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              opacity: isSprintConfigComplete ? 1 : 0.6,
-            }}
+            className={cn(
+              'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white',
+              isSprintConfigComplete
+                ? 'bg-spert-blue cursor-pointer opacity-100'
+                : 'bg-[#ccc] cursor-not-allowed opacity-60'
+            )}
           >
             Add Sprint
           </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import type { Project } from '@/shared/types'
 import { formatDate } from '@/shared/lib/dates'
 
@@ -91,19 +92,18 @@ export function ProjectList({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, index)}
           onDragEnd={handleDragEnd}
-          className="rounded-lg border bg-white"
-          style={{
-            borderColor: dragOverIndex === index ? '#0070f3' : '#e5e7eb',
-            borderWidth: dragOverIndex === index ? '2px' : '1px',
-            opacity: draggedIndex === index ? 0.5 : 1,
-            cursor: 'default',
-          }}
+          className={cn(
+            'rounded-lg bg-white cursor-default',
+            dragOverIndex === index
+              ? 'border-2 border-spert-blue'
+              : 'border border-spert-border-light',
+            draggedIndex === index ? 'opacity-50' : 'opacity-100'
+          )}
         >
           <div className="flex items-center p-4">
             {/* Drag handle */}
             <div
-              className="mr-3 cursor-grab active:cursor-grabbing"
-              style={{ color: '#999' }}
+              className="mr-3 cursor-grab active:cursor-grabbing text-spert-text-light"
               title="Drag to reorder"
             >
               <svg
@@ -134,41 +134,19 @@ export function ProjectList({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onViewHistory(project.id)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#e7f3ff',
-                  border: '1px solid #0070f3',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  color: '#0070f3',
-                }}
+                className="px-4 py-2 bg-[#e7f3ff] border border-spert-blue rounded cursor-pointer text-[0.9rem] text-spert-blue"
               >
                 View History
               </button>
               <button
                 onClick={() => onEdit(project)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#fff3cd',
-                  border: '1px solid #ffc107',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                }}
+                className="px-4 py-2 bg-spert-bg-warning-light border border-spert-warning rounded cursor-pointer text-[0.9rem]"
               >
                 Edit
               </button>
               <button
                 onClick={() => onDelete(project.id)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#f8d7da',
-                  border: '1px solid #dc3545',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                }}
+                className="px-4 py-2 bg-spert-bg-error-light border border-spert-error rounded cursor-pointer text-[0.9rem]"
               >
                 Delete
               </button>

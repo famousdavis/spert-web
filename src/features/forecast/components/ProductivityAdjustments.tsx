@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
 import { useProjectStore } from '@/shared/state/project-store'
 import type { ProductivityAdjustment } from '@/shared/types'
 import { ProductivityAdjustmentForm } from './ProductivityAdjustmentForm'
@@ -70,12 +71,10 @@ export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsPr
         className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
       >
         <span
-          className="text-muted-foreground transition-transform duration-200"
-          style={{
-            display: 'inline-block',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            fontSize: '10px',
-          }}
+          className={cn(
+            'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
+            isExpanded && 'rotate-90'
+          )}
         >
           ▶
         </span>
@@ -83,15 +82,7 @@ export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsPr
           Productivity Adjustments
         </h3>
         {adjustments.length > 0 && (
-          <span
-            style={{
-              fontSize: '0.75rem',
-              color: '#666',
-              backgroundColor: '#e5e7eb',
-              padding: '0.125rem 0.5rem',
-              borderRadius: '10px',
-            }}
-          >
+          <span className="rounded-[10px] bg-spert-bg-disabled px-2 py-0.5 text-xs text-spert-text-muted">
             {adjustments.length}
           </span>
         )}
@@ -109,17 +100,7 @@ export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsPr
           {!showForm && (
             <button
               onClick={() => setIsAdding(true)}
-              style={{
-                padding: '0.5rem 1rem',
-                background: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                marginBottom: '1rem',
-              }}
+              className="mb-4 cursor-pointer rounded border-none bg-spert-blue px-4 py-2 text-sm font-medium text-white"
             >
               + Add Adjustment
             </button>
@@ -127,7 +108,7 @@ export function ProductivityAdjustments({ projectId }: ProductivityAdjustmentsPr
 
           {/* Form */}
           {showForm && (
-            <div style={{ marginBottom: '1rem' }}>
+            <div className="mb-4">
               <ProductivityAdjustmentForm
                 adjustment={editingAdjustment}
                 onSubmit={handleSubmit}

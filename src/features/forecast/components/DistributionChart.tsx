@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type RefObject } from 'react'
+import { cn } from '@/lib/utils'
 import {
   LineChart,
   Line,
@@ -165,12 +166,10 @@ export function DistributionChart({
         className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
       >
         <span
-          className="text-muted-foreground transition-transform duration-200"
-          style={{
-            display: 'inline-block',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            fontSize: '10px',
-          }}
+          className={cn(
+            'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
+            isExpanded && 'rotate-90'
+          )}
         >
           ▶
         </span>
@@ -180,13 +179,13 @@ export function DistributionChart({
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4" style={{ position: 'relative' }}>
+        <div className="px-4 pb-4 relative">
           {/* Configuration row */}
           {onFontSizeChange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'flex-end', marginRight: '2.5rem' }}>
+            <div className="flex items-center gap-2 mb-4 justify-end mr-10">
               <label
                 htmlFor="cdf-font-size"
-                style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#555' }}
+                className="text-[0.8125rem] font-semibold text-spert-text-muted"
               >
                 Text:
               </label>
@@ -194,13 +193,7 @@ export function DistributionChart({
                 id="cdf-font-size"
                 value={fontSize}
                 onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-                style={{
-                  padding: '0.25rem 0.375rem',
-                  fontSize: '0.8125rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  background: 'white',
-                }}
+                className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
               >
                 {FONT_SIZES.map((size) => (
                   <option key={size} value={size}>
@@ -211,7 +204,7 @@ export function DistributionChart({
             </div>
           )}
 
-          <div ref={chartRef} style={{ background: 'white', padding: '0.5rem' }}>
+          <div ref={chartRef} className="bg-white p-2">
             <p className="text-xs text-muted-foreground mb-4">
               Shows the probability of completing the backlog within a given number of sprints.
               The dashed line marks your selected P{customPercentile} confidence level.
@@ -302,7 +295,7 @@ export function DistributionChart({
           </ResponsiveContainer>
           </div>
           {chartRef && (
-            <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+            <div className="absolute top-2 right-2">
               <CopyImageButton
                 targetRef={chartRef}
                 title="Copy chart as image"

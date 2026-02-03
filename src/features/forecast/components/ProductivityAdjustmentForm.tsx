@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import type { ProductivityAdjustment } from '@/shared/types'
 import { isValidDateRange } from '@/shared/lib/dates'
 
@@ -70,19 +71,19 @@ export function ProductivityAdjustmentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border p-4">
-      <h4 className="font-medium" style={{ fontSize: '0.9rem' }}>
+      <h4 className="font-medium text-[0.9rem]">
         {adjustment ? 'Edit Adjustment' : 'Add Productivity Adjustment'}
       </h4>
 
       {/* Single row: All inputs */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div className="flex flex-wrap items-start gap-3">
         {/* Name */}
-        <div style={{ flex: '2 1 180px', minWidth: '150px' }}>
+        <div className="min-w-[150px] flex-[2_1_180px]">
           <label
             htmlFor="adjName"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', fontWeight: 600, color: '#555' }}
+            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
           >
-            Name <span style={{ color: '#dc3545' }}>*</span>
+            Name <span className="text-spert-error">*</span>
           </label>
           <input
             id="adjName"
@@ -90,25 +91,23 @@ export function ProductivityAdjustmentForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Holiday"
-            style={{
-              width: '100%',
-              padding: '0.4rem',
-              fontSize: '0.85rem',
-              border: name ? '1px solid #ddd' : '2px solid #0070f3',
-              borderRadius: '4px',
-              backgroundColor: name ? 'white' : '#f0f7ff',
-            }}
+            className={cn(
+              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              name
+                ? 'border border-spert-border bg-white'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+            )}
             required
           />
         </div>
 
         {/* Start Date */}
-        <div style={{ flex: '0 0 130px' }}>
+        <div className="flex-[0_0_130px]">
           <label
             htmlFor="adjStartDate"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', fontWeight: 600, color: '#555' }}
+            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
           >
-            Start <span style={{ color: '#dc3545' }}>*</span>
+            Start <span className="text-spert-error">*</span>
           </label>
           <input
             id="adjStartDate"
@@ -121,34 +120,30 @@ export function ProductivityAdjustmentForm({
             onBlur={validateStartDate}
             min="2000-01-01"
             max="2050-12-31"
-            style={{
-              width: '100%',
-              padding: '0.4rem',
-              fontSize: '0.85rem',
-              border: startDateError
-                ? '1px solid #dc3545'
+            className={cn(
+              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              startDateError
+                ? 'border border-spert-error bg-white'
                 : startDate
-                  ? '1px solid #ddd'
-                  : '2px solid #0070f3',
-              borderRadius: '4px',
-              backgroundColor: startDateError ? '#fff' : startDate ? 'white' : '#f0f7ff',
-            }}
+                  ? 'border border-spert-border bg-white'
+                  : 'border-2 border-spert-blue bg-spert-bg-highlight'
+            )}
             required
           />
           {startDateError && (
-            <div style={{ color: '#dc3545', fontSize: '0.7rem', marginTop: '0.2rem' }}>
+            <div className="mt-[0.2rem] text-[0.7rem] text-spert-error">
               {startDateError}
             </div>
           )}
         </div>
 
         {/* End Date */}
-        <div style={{ flex: '0 0 130px' }}>
+        <div className="flex-[0_0_130px]">
           <label
             htmlFor="adjEndDate"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', fontWeight: 600, color: '#555' }}
+            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
           >
-            End <span style={{ color: '#dc3545' }}>*</span>
+            End <span className="text-spert-error">*</span>
           </label>
           <input
             id="adjEndDate"
@@ -161,32 +156,28 @@ export function ProductivityAdjustmentForm({
             onBlur={validateEndDate}
             min="2000-01-01"
             max="2050-12-31"
-            style={{
-              width: '100%',
-              padding: '0.4rem',
-              fontSize: '0.85rem',
-              border: endDateError
-                ? '1px solid #dc3545'
+            className={cn(
+              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              endDateError
+                ? 'border border-spert-error bg-white'
                 : endDate
-                  ? '1px solid #ddd'
-                  : '2px solid #0070f3',
-              borderRadius: '4px',
-              backgroundColor: endDateError ? '#fff' : endDate ? 'white' : '#f0f7ff',
-            }}
+                  ? 'border border-spert-border bg-white'
+                  : 'border-2 border-spert-blue bg-spert-bg-highlight'
+            )}
             required
           />
           {endDateError && (
-            <div style={{ color: '#dc3545', fontSize: '0.7rem', marginTop: '0.2rem' }}>
+            <div className="mt-[0.2rem] text-[0.7rem] text-spert-error">
               {endDateError}
             </div>
           )}
         </div>
 
         {/* Factor */}
-        <div style={{ flex: '0 0 140px' }}>
+        <div className="flex-[0_0_140px]">
           <label
             htmlFor="adjFactor"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', fontWeight: 600, color: '#555' }}
+            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
           >
             Factor: {factorPercent}%
           </label>
@@ -198,19 +189,19 @@ export function ProductivityAdjustmentForm({
             step="5"
             value={factorPercent}
             onChange={(e) => setFactorPercent(Number(e.target.value))}
-            style={{ width: '100%', marginTop: '0.3rem' }}
+            className="mt-[0.3rem] w-full"
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#888' }}>
+          <div className="flex justify-between text-[0.65rem] text-spert-text-helper">
             <span>0%</span>
             <span>100%</span>
           </div>
         </div>
 
         {/* Memo */}
-        <div style={{ flex: '0 0 80px', minWidth: '60px' }}>
+        <div className="min-w-[60px] flex-[0_0_80px]">
           <label
             htmlFor="adjReason"
-            style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8rem', fontWeight: 600, color: '#555' }}
+            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
           >
             Memo
           </label>
@@ -220,13 +211,7 @@ export function ProductivityAdjustmentForm({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder=""
-            style={{
-              width: '100%',
-              padding: '0.4rem',
-              fontSize: '0.85rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-            }}
+            className="w-full rounded border border-spert-border p-[0.4rem] text-[0.85rem]"
           />
         </div>
       </div>
@@ -236,31 +221,19 @@ export function ProductivityAdjustmentForm({
         <button
           type="button"
           onClick={onCancel}
-          style={{
-            padding: '0.5rem 1rem',
-            background: '#999',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.9rem',
-          }}
+          className="cursor-pointer rounded border-none bg-spert-text-light px-4 py-2 text-[0.9rem] text-white"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!isValid}
-          style={{
-            padding: '0.5rem 1rem',
-            background: isValid ? '#0070f3' : '#ccc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isValid ? 'pointer' : 'not-allowed',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-          }}
+          className={cn(
+            'rounded border-none px-4 py-2 text-[0.9rem] font-semibold text-white',
+            isValid
+              ? 'cursor-pointer bg-spert-blue'
+              : 'cursor-not-allowed bg-spert-border-medium'
+          )}
         >
           {adjustment ? 'Update' : 'Add'}
         </button>

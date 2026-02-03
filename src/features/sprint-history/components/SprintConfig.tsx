@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { isValidDateRange } from '@/shared/lib/dates'
 import {
   SPRINT_CADENCE_OPTIONS,
@@ -43,26 +44,22 @@ export function SprintConfig({
   }
 
   return (
-    <div className="rounded-lg border border-border p-4" style={{ background: '#f9f9f9' }}>
+    <div className="rounded-lg border border-border p-4 bg-spert-bg-input">
       {canEdit && !isConfigComplete && (
-        <p style={{ fontSize: '0.875rem', color: '#555', marginBottom: '0.75rem' }}>
+        <p className="text-sm text-spert-text-secondary mb-3">
           Configure the sprint cadence and first sprint start date before adding sprints.
         </p>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-6 flex-wrap">
         {/* Sprint Cadence */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <label
             htmlFor="sprintCadence"
-            style={{
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: '#555',
-            }}
+            className="text-sm font-semibold text-spert-text-secondary"
           >
             Sprint Cadence
             {canEdit && !project.sprintCadenceWeeks && (
-              <span style={{ color: '#dc3545', marginLeft: '2px' }}>*</span>
+              <span className="text-spert-error ml-[2px]">*</span>
             )}
           </label>
           <select
@@ -70,21 +67,17 @@ export function SprintConfig({
             value={project.sprintCadenceWeeks ?? ''}
             onChange={(e) => onCadenceChange(Number(e.target.value) as SprintCadence)}
             disabled={!canEdit}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: canEdit && !project.sprintCadenceWeeks
-                ? '2px solid #0070f3'
-                : '1px solid #ddd',
-              borderRadius: '4px',
-              width: '90px',
-              backgroundColor: !canEdit
-                ? '#e9ecef'
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-[90px]',
+              canEdit && !project.sprintCadenceWeeks
+                ? 'border-2 border-spert-blue'
+                : 'border border-spert-border',
+              !canEdit
+                ? 'bg-spert-bg-disabled cursor-not-allowed'
                 : !project.sprintCadenceWeeks
-                  ? '#f0f7ff'
-                  : 'white',
-              cursor: canEdit ? 'pointer' : 'not-allowed',
-            }}
+                  ? 'bg-spert-bg-highlight cursor-pointer'
+                  : 'bg-white cursor-pointer'
+            )}
           >
             <option value="" disabled>
               Select
@@ -98,58 +91,49 @@ export function SprintConfig({
         </div>
 
         {/* First Sprint Start Date */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="flex items-center gap-2">
           <label
             htmlFor="firstSprintStartDate"
-            style={{
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: '#555',
-            }}
+            className="text-sm font-semibold text-spert-text-secondary"
           >
             First Sprint Start Date
             {canEdit && !project.firstSprintStartDate && (
-              <span style={{ color: '#dc3545', marginLeft: '2px' }}>*</span>
+              <span className="text-spert-error ml-[2px]">*</span>
             )}
           </label>
           <input
             id="firstSprintStartDate"
             type="date"
             value={project.firstSprintStartDate ?? ''}
-            className={project.firstSprintStartDate ? 'has-value' : ''}
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              project.firstSprintStartDate ? 'has-value' : '',
+              firstSprintDateError
+                ? 'border border-spert-error'
+                : canEdit && !project.firstSprintStartDate
+                  ? 'border-2 border-spert-blue'
+                  : 'border border-spert-border',
+              !canEdit
+                ? 'bg-spert-bg-disabled cursor-not-allowed'
+                : !project.firstSprintStartDate
+                  ? 'bg-spert-bg-highlight cursor-text'
+                  : 'bg-white cursor-text'
+            )}
             onChange={(e) => handleFirstSprintDateChange(e.target.value)}
             onBlur={(e) => validateFirstSprintDate(e.target.value)}
             disabled={!canEdit}
             min="2000-01-01"
             max="2050-12-31"
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: firstSprintDateError
-                ? '1px solid #dc3545'
-                : canEdit && !project.firstSprintStartDate
-                  ? '2px solid #0070f3'
-                  : '1px solid #ddd',
-              borderRadius: '4px',
-              width: '150px',
-              color: '#333',
-              backgroundColor: !canEdit
-                ? '#e9ecef'
-                : !project.firstSprintStartDate
-                  ? '#f0f7ff'
-                  : 'white',
-              cursor: canEdit ? 'text' : 'not-allowed',
-            }}
           />
           {firstSprintDateError && (
-            <span style={{ color: '#dc3545', fontSize: '0.75rem' }}>
+            <span className="text-spert-error text-xs">
               {firstSprintDateError}
             </span>
           )}
         </div>
 
         {!canEdit && (
-          <span style={{ fontSize: '0.75rem', color: '#666' }}>
+          <span className="text-xs text-spert-text-muted">
             (Delete all sprints to change)
           </span>
         )}

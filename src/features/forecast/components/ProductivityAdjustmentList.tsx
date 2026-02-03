@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import type { ProductivityAdjustment } from '@/shared/types'
 import { formatDate } from '@/shared/lib/dates'
 
@@ -18,7 +19,7 @@ export function ProductivityAdjustmentList({
 }: ProductivityAdjustmentListProps) {
   if (adjustments.length === 0) {
     return (
-      <p style={{ fontSize: '0.875rem', color: '#666', fontStyle: 'italic' }}>
+      <p className="text-sm italic text-spert-text-muted">
         No productivity adjustments defined.
       </p>
     )
@@ -30,26 +31,26 @@ export function ProductivityAdjustmentList({
   )
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
         <thead>
-          <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-            <th style={{ textAlign: 'center', padding: '0.5rem', color: '#555', fontWeight: 600, width: '50px' }}>
+          <tr className="border-b-2 border-spert-border-light">
+            <th className="w-[50px] p-2 text-center font-semibold text-spert-text-secondary">
               On
             </th>
-            <th style={{ textAlign: 'left', padding: '0.5rem', color: '#555', fontWeight: 600 }}>
+            <th className="p-2 text-left font-semibold text-spert-text-secondary">
               Name
             </th>
-            <th style={{ textAlign: 'left', padding: '0.5rem', color: '#555', fontWeight: 600 }}>
+            <th className="p-2 text-left font-semibold text-spert-text-secondary">
               Date Range
             </th>
-            <th style={{ textAlign: 'center', padding: '0.5rem', color: '#555', fontWeight: 600 }}>
+            <th className="p-2 text-center font-semibold text-spert-text-secondary">
               Factor
             </th>
-            <th style={{ textAlign: 'left', padding: '0.5rem', color: '#555', fontWeight: 600 }}>
+            <th className="p-2 text-left font-semibold text-spert-text-secondary">
               Memo
             </th>
-            <th style={{ textAlign: 'right', padding: '0.5rem', color: '#555', fontWeight: 600 }}>
+            <th className="p-2 text-right font-semibold text-spert-text-secondary">
               Actions
             </th>
           </tr>
@@ -60,80 +61,52 @@ export function ProductivityAdjustmentList({
             return (
               <tr
                 key={adj.id}
-                style={{
-                  borderBottom: '1px solid #e5e7eb',
-                  opacity: isEnabled ? 1 : 0.5,
-                }}
+                className={cn(
+                  'border-b border-spert-border-light',
+                  !isEnabled && 'opacity-50'
+                )}
               >
-                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                <td className="p-2 text-center">
                   <input
                     type="checkbox"
                     checked={isEnabled}
                     onChange={() => onToggleEnabled(adj.id)}
-                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                    className="size-4 cursor-pointer"
                     title={isEnabled ? 'Click to disable' : 'Click to enable'}
                   />
                 </td>
-                <td style={{ padding: '0.5rem', fontWeight: 500 }}>{adj.name}</td>
-                <td style={{ padding: '0.5rem', whiteSpace: 'nowrap' }}>
+                <td className="p-2 font-medium">{adj.name}</td>
+                <td className="whitespace-nowrap p-2">
                   {formatDate(adj.startDate)} – {formatDate(adj.endDate)}
                 </td>
-                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                <td className="p-2 text-center">
                   <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '0.125rem 0.5rem',
-                      borderRadius: '12px',
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                      backgroundColor:
-                        adj.factor === 0
-                          ? '#fee2e2'
-                          : adj.factor < 0.5
-                            ? '#fef3c7'
-                            : adj.factor < 1
-                              ? '#dbeafe'
-                              : '#d1fae5',
-                      color:
-                        adj.factor === 0
-                          ? '#dc2626'
-                          : adj.factor < 0.5
-                            ? '#d97706'
-                            : adj.factor < 1
-                              ? '#2563eb'
-                              : '#059669',
-                    }}
+                    className={cn(
+                      'inline-block rounded-xl px-2 py-0.5 text-[0.8rem] font-medium',
+                      adj.factor === 0
+                        ? 'bg-spert-bg-error-row text-red-600'
+                        : adj.factor < 0.5
+                          ? 'bg-spert-bg-warning-row text-spert-warning-dark'
+                          : adj.factor < 1
+                            ? 'bg-spert-bg-info-row text-blue-600'
+                            : 'bg-spert-bg-success-row text-emerald-600'
+                    )}
                   >
                     {Math.round(adj.factor * 100)}%
                   </span>
                 </td>
-                <td style={{ padding: '0.5rem', color: '#666' }}>{adj.reason || '—'}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <td className="p-2 text-spert-text-muted">{adj.reason || '—'}</td>
+                <td className="whitespace-nowrap p-2 text-right">
                   <button
                     onClick={() => onEdit(adj)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#fff3cd',
-                      border: '1px solid #ffc107',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      marginRight: '0.5rem',
-                    }}
+                    className="mr-2 cursor-pointer rounded border border-yellow-400 bg-spert-bg-warning-light px-2 py-1 text-[0.8rem]"
                     title="Edit"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => onDelete(adj.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      background: '#f8d7da',
-                      border: '1px solid #dc3545',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
+                    className="cursor-pointer rounded border border-spert-error bg-spert-bg-error-light px-2 py-1 text-[0.8rem]"
                     title="Delete"
                   >
                     Delete

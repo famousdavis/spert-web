@@ -63,23 +63,12 @@ export function ForecastTab() {
 
   return (
     <div className="space-y-6">
-      <h2 style={{ fontSize: '1.25rem', color: '#666', display: 'flex', alignItems: 'baseline' }}>
+      <h2 className="text-xl text-spert-text-muted flex items-baseline">
         <span>Monte Carlo simulation for: </span>
         <select
           value={selectedProject?.id || ''}
           onChange={handleProjectChange}
-          style={{
-            fontSize: '1.25rem',
-            color: '#333',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontWeight: 600,
-            padding: 0,
-            outline: 'none',
-            marginLeft: 0,
-          }}
+          className="text-xl text-spert-text border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"
         >
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
@@ -95,8 +84,8 @@ export function ForecastTab() {
       )}
 
       {selectedProject && (
-        <div style={{ position: 'relative' }}>
-          <div ref={forecastInputsResultsRef} style={{ background: 'white' }}>
+        <div className="relative">
+          <div ref={forecastInputsResultsRef} className="bg-white">
             <ForecastForm
               remainingBacklog={remainingBacklog}
               velocityMean={velocityMean}
@@ -113,7 +102,7 @@ export function ForecastTab() {
               canRun={!!remainingBacklog && effectiveMean > 0}
             />
             {hasResults && (
-              <div style={{ marginTop: '1.5rem' }}>
+              <div className="mt-6">
                 <ForecastResults
                   truncatedNormalResults={results.truncatedNormal}
                   lognormalResults={results.lognormal}
@@ -126,7 +115,7 @@ export function ForecastTab() {
             )}
           </div>
           {hasResults && (
-            <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}>
+            <div className="absolute top-2 right-2">
               <CopyImageButton
                 targetRef={forecastInputsResultsRef}
                 title="Copy inputs and results as image"

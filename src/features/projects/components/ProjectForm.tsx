@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 import type { Project } from '@/shared/types'
 import { DEFAULT_UNIT_OF_MEASURE } from '../constants'
 import { isValidDateRange } from '@/shared/lib/dates'
@@ -105,21 +106,10 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
 
   const isEditing = project !== null
 
-  // Shared date input styles
-  const dateInputStyle = {
-    padding: '0.5rem',
-    fontSize: '0.9rem',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    width: '150px',
-    color: '#333',
-  }
-
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-border p-4"
-      style={{ background: '#f9f9f9' }}
+      className="rounded-lg border border-border p-4 bg-spert-bg-input"
     >
       <style jsx>{`
         input[type="date"]::-webkit-datetime-edit-text,
@@ -136,10 +126,10 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         }
       `}</style>
 
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="flex gap-4 items-start flex-wrap">
         {/* Project Name - wider */}
-        <div style={{ flex: '1 1 300px', minWidth: '250px' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}>
+        <div className="flex-[1_1_300px] min-w-[250px]">
+          <label htmlFor="name" className="block mb-1 text-sm font-semibold text-spert-text-secondary">
             Project Name
           </label>
           <input
@@ -147,21 +137,15 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '100%',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-full"
             placeholder="Project name"
             required
           />
         </div>
 
         {/* Unit of Measure */}
-        <div style={{ flex: '0 0 130px' }}>
-          <label htmlFor="unitOfMeasure" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}>
+        <div className="flex-[0_0_130px]">
+          <label htmlFor="unitOfMeasure" className="block mb-1 text-sm font-semibold text-spert-text-secondary">
             Unit of Measure
           </label>
           <input
@@ -169,28 +153,26 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="text"
             value={unitOfMeasure}
             onChange={(e) => setUnitOfMeasure(e.target.value)}
-            style={{
-              padding: '0.5rem',
-              fontSize: '0.9rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              width: '100%',
-            }}
+            className="p-2 text-[0.9rem] border border-spert-border rounded w-full"
             placeholder="story points"
             required
           />
         </div>
 
         {/* Start Date */}
-        <div style={{ flex: '0 0 150px' }}>
-          <label htmlFor="projectStartDate" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}>
+        <div className="flex-[0_0_150px]">
+          <label htmlFor="projectStartDate" className="block mb-1 text-sm font-semibold text-spert-text-secondary">
             Start Date (Optional)
           </label>
           <input
             id="projectStartDate"
             type="date"
             value={projectStartDate}
-            className={projectStartDate ? 'has-value' : ''}
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              projectStartDate ? 'has-value' : '',
+              startDateError ? 'border border-spert-error' : 'border border-spert-border'
+            )}
             onChange={(e) => {
               setProjectStartDate(e.target.value)
               setStartDateError('') // Clear error while typing
@@ -199,28 +181,28 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             onBlur={(e) => validateProjectStartDate(e.target.value)}
             min="2000-01-01"
             max="2050-12-31"
-            style={{
-              ...dateInputStyle,
-              borderColor: startDateError ? '#dc3545' : '#ddd',
-            }}
           />
           {startDateError && (
-            <div style={{ color: '#dc3545', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            <div className="text-spert-error text-xs mt-1">
               {startDateError}
             </div>
           )}
         </div>
 
         {/* Finish Date - immediately after Start Date */}
-        <div style={{ flex: '0 0 150px' }}>
-          <label htmlFor="projectFinishDate" style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#555' }}>
+        <div className="flex-[0_0_150px]">
+          <label htmlFor="projectFinishDate" className="block mb-1 text-sm font-semibold text-spert-text-secondary">
             Finish Date (Optional)
           </label>
           <input
             id="projectFinishDate"
             type="date"
             value={projectFinishDate}
-            className={projectFinishDate ? 'has-value' : ''}
+            className={cn(
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              projectFinishDate ? 'has-value' : '',
+              finishDateError ? 'border border-spert-error' : 'border border-spert-border'
+            )}
             onChange={(e) => {
               setProjectFinishDate(e.target.value)
               setFinishDateError('') // Clear error while typing
@@ -229,35 +211,25 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             onBlur={(e) => validateProjectFinishDate(e.target.value)}
             min="2000-01-01"
             max="2050-12-31"
-            style={{
-              ...dateInputStyle,
-              borderColor: finishDateError ? '#dc3545' : '#ddd',
-            }}
           />
           {finishDateError && (
-            <div style={{ color: '#dc3545', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            <div className="text-spert-error text-xs mt-1">
               {finishDateError}
             </div>
           )}
         </div>
 
         {/* Buttons */}
-        <div style={{ flex: '0 0 auto', alignSelf: 'flex-end', display: 'flex', gap: '0.5rem' }}>
+        <div className="flex-[0_0_auto] self-end flex gap-2">
           <button
             type="submit"
             disabled={!isValid}
-            style={{
-              padding: '0.5rem 1rem',
-              background: isValid ? '#0070f3' : '#ccc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isValid ? 'pointer' : 'not-allowed',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              height: '38px',
-              opacity: isValid ? 1 : 0.6,
-            }}
+            className={cn(
+              'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white h-[38px]',
+              isValid
+                ? 'bg-spert-blue cursor-pointer opacity-100'
+                : 'bg-[#ccc] cursor-not-allowed opacity-60'
+            )}
           >
             {isEditing ? 'Update Project' : 'Add Project'}
           </button>
@@ -266,16 +238,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              style={{
-                padding: '0.5rem 1rem',
-                background: '#999',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                height: '38px',
-              }}
+              className="px-4 py-2 bg-[#999] text-white border-none rounded cursor-pointer text-[0.9rem] h-[38px]"
             >
               Cancel
             </button>
@@ -285,7 +248,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
 
       {/* Submit error message */}
       {submitError && (
-        <div style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '0.75rem' }}>
+        <div className="text-spert-error text-sm mt-3">
           {submitError}
         </div>
       )}

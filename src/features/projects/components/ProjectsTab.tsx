@@ -93,37 +93,13 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
+            className="flex items-center gap-2 rounded border-none bg-[#28a745] px-4 py-2 text-[0.9rem] font-semibold text-white cursor-pointer"
           >
             <span role="img" aria-label="export">📤</span> Export Data
           </button>
           <button
             onClick={handleImportClick}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
+            className="flex items-center gap-2 rounded border-none bg-spert-blue px-4 py-2 text-[0.9rem] font-semibold text-white cursor-pointer"
           >
             <span role="img" aria-label="import">📥</span> Import Data
           </button>
@@ -132,29 +108,19 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
             type="file"
             accept=".json"
             onChange={handleFileChange}
-            style={{ display: 'none' }}
+            className="hidden"
           />
         </div>
       </div>
 
       {importError && (
         <div
-          style={{
-            padding: '0.75rem 1rem',
-            background: '#fff3f3',
-            border: '1px solid #e53e3e',
-            borderRadius: '4px',
-            color: '#c53030',
-            fontSize: '0.9rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
+          className="flex items-center justify-between rounded border border-[#e53e3e] bg-[#fff3f3] px-4 py-3 text-[0.9rem] text-spert-error-dark"
         >
           <span>{importError}</span>
           <button
             onClick={() => setImportError(null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c53030', fontWeight: 'bold', fontSize: '1rem' }}
+            className="border-none bg-transparent cursor-pointer text-spert-error-dark font-bold text-base"
             aria-label="Dismiss error"
           >
             ×
