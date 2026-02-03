@@ -509,3 +509,60 @@ describe('edge cases', () => {
     expect(result.finishDate).toBeDefined()
   })
 })
+
+// --- Edge case tests added in v0.10.0 ---
+
+describe('runSimulation edge cases', () => {
+  it('handles trialCount of 1', () => {
+    const result = runSimulation({
+      remainingBacklog: 50,
+      velocityMean: 10,
+      velocityStdDev: 0,
+      startDate: '2024-01-01',
+      sprintCadenceWeeks: 2,
+      trialCount: 1,
+    })
+    expect(result.sprintsRequired).toHaveLength(1)
+    expect(result.sprintsRequired[0]).toBe(5)
+  })
+})
+
+describe('calculatePercentileResult edge cases', () => {
+  it('handles empty sorted array', () => {
+    const result = calculatePercentileResult([], 50, '2024-01-01', 2)
+    expect(result.sprintsRequired).toBe(0)
+  })
+})
+
+describe('runQuadrupleForecast edge cases', () => {
+  it('returns null for bootstrap when historical velocities is empty', () => {
+    const result = runQuadrupleForecast(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 5,
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 100,
+      },
+      [] // empty historical velocities
+    )
+    expect(result.bootstrap).toBeNull()
+  })
+
+  it('returns valid bootstrap with 5+ velocities', () => {
+    const result = runQuadrupleForecast(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 5,
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 100,
+      },
+      [10, 20, 30, 40, 50] // 5 velocities
+    )
+    expect(result.bootstrap).not.toBeNull()
+    expect(result.bootstrap!.sprintsRequired).toHaveLength(100)
+  })
+})

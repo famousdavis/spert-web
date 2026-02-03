@@ -9,6 +9,12 @@ import {
   countWorkingDays,
   calculateSprintProductivityFactor,
   isWeekend,
+  parseDate,
+  daysBetween,
+  formatDate,
+  formatDateLong,
+  formatDateRange,
+  isValidDateRange,
 } from './dates'
 
 describe('addDays', () => {
@@ -322,5 +328,100 @@ describe('calculateSprintProductivityFactor', () => {
       { startDate: '2025-12-25', endDate: '2025-12-26', factor: 0.0 },
     ])
     expect(factor).toBeCloseTo(0.75, 5)
+  })
+})
+
+// --- Edge case tests added in v0.10.0 ---
+
+describe('parseDate', () => {
+  it('returns a valid Date for an ISO string', () => {
+    const d = parseDate('2026-01-15')
+    expect(d).toBeInstanceOf(Date)
+    expect(d.getFullYear()).toBe(2026)
+  })
+
+  it('returns Invalid Date for garbage input', () => {
+    const d = parseDate('not-a-date')
+    expect(isNaN(d.getTime())).toBe(true)
+  })
+})
+
+describe('daysBetween', () => {
+  it('returns 0 for same date', () => {
+    expect(daysBetween('2026-01-15', '2026-01-15')).toBe(0)
+  })
+
+  it('returns positive for forward range', () => {
+    expect(daysBetween('2026-01-01', '2026-01-08')).toBe(7)
+  })
+
+  it('returns negative for reversed range', () => {
+    expect(daysBetween('2026-01-08', '2026-01-01')).toBe(-7)
+  })
+})
+
+describe('formatDate', () => {
+  it('formats date with short month', () => {
+    const result = formatDate('2026-01-15')
+    expect(result).toContain('Jan')
+    expect(result).toContain('15')
+    expect(result).toContain('2026')
+  })
+})
+
+describe('formatDateLong', () => {
+  it('formats date with long month name', () => {
+    const result = formatDateLong('2026-01-15')
+    expect(result).toContain('January')
+    expect(result).toContain('15')
+    expect(result).toContain('2026')
+  })
+})
+
+describe('formatDateRange', () => {
+  it('omits repeated month when start and end are same month', () => {
+    const result = formatDateRange('2026-01-06', '2026-01-17')
+    expect(result).toBe('January 6 - 17')
+  })
+
+  it('includes both months when they differ', () => {
+    const result = formatDateRange('2026-01-27', '2026-02-07')
+    expect(result).toBe('January 27 - February 7')
+  })
+})
+
+describe('isValidDateRange', () => {
+  it('returns true for valid date in range', () => {
+    expect(isValidDateRange('2026-01-15')).toBe(true)
+  })
+
+  it('returns false for date before 2000', () => {
+    expect(isValidDateRange('1999-12-31')).toBe(false)
+  })
+
+  it('returns false for date after 2050', () => {
+    expect(isValidDateRange('2051-01-01')).toBe(false)
+  })
+
+  it('returns false for invalid format', () => {
+    expect(isValidDateRange('2026/01/15')).toBe(false)
+  })
+
+  it('returns true for empty string with allowEmpty', () => {
+    expect(isValidDateRange('', true)).toBe(true)
+  })
+
+  it('returns false for empty string without allowEmpty', () => {
+    expect(isValidDateRange('')).toBe(false)
+  })
+})
+
+describe('countWorkingDays edge cases', () => {
+  it('returns 0 for reversed range (end before start)', () => {
+    expect(countWorkingDays('2026-01-10', '2026-01-06')).toBe(0)
+  })
+
+  it('returns 1 for single working day', () => {
+    expect(countWorkingDays('2026-01-05', '2026-01-05')).toBe(1) // Monday
   })
 })

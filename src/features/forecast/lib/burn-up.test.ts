@@ -206,3 +206,49 @@ describe('isBootstrapAvailable', () => {
     expect(isBootstrapAvailable({ ...simData, bootstrap: [] })).toBe(false)
   })
 })
+
+// --- Edge case tests added in v0.10.0 ---
+
+describe('calculateBurnUpData edge cases', () => {
+  it('handles zero forecastBacklog', () => {
+    const sprints = [makeSprint(1, 20)]
+    const result = calculateBurnUpData({
+      sprints,
+      forecastBacklog: 0,
+      simulationData: simData,
+      config: DEFAULT_CONFIG,
+      sprintCadenceWeeks: 2,
+      firstSprintStartDate: '2024-01-01',
+      completedSprintCount: 1,
+    })
+
+    // Should still have historical data
+    expect(result.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('handles bootstrap distribution when data is null', () => {
+    const sprints = [makeSprint(1, 20)]
+    const bootstrapConfig: BurnUpConfig = {
+      distribution: 'bootstrap',
+      lines: [
+        { label: 'Optimistic', percentile: 10, color: '#f97316' },
+        { label: 'Expected', percentile: 50, color: '#eab308' },
+        { label: 'Conservative', percentile: 90, color: '#3b82f6' },
+      ],
+    }
+
+    // simData has bootstrap: null, but distribution is set to bootstrap
+    const result = calculateBurnUpData({
+      sprints,
+      forecastBacklog: 80,
+      simulationData: simData,
+      config: bootstrapConfig,
+      sprintCadenceWeeks: 2,
+      firstSprintStartDate: '2024-01-01',
+      completedSprintCount: 1,
+    })
+
+    // Should still produce data (historical at minimum)
+    expect(result.length).toBeGreaterThanOrEqual(1)
+  })
+})
