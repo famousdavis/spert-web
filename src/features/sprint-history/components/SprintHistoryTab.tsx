@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import {
   useProjectStore,
   selectViewingProject,
 } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { SprintList } from './SprintList'
 import { SprintForm } from './SprintForm'
 import { SprintConfig } from './SprintConfig'
@@ -34,6 +35,10 @@ export function SprintHistoryTab() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
   const [sortAscending, setSortAscending] = useState(false) // Default: descending (most recent first)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; sprintId: string | null }>({
+    isOpen: false,
+    sprintId: null,
+  })
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectId = e.target.value
@@ -85,6 +90,21 @@ export function SprintHistoryTab() {
   const handleToggleSortOrder = () => {
     setSortAscending(!sortAscending)
   }
+
+  const handleDeleteRequest = useCallback((sprintId: string) => {
+    setDeleteConfirm({ isOpen: true, sprintId })
+  }, [])
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteConfirm.sprintId) {
+      deleteSprint(deleteConfirm.sprintId)
+    }
+    setDeleteConfirm({ isOpen: false, sprintId: null })
+  }, [deleteConfirm.sprintId, deleteSprint])
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteConfirm({ isOpen: false, sprintId: null })
+  }, [])
 
   // Check if firstSprintStartDate can be edited (only when no sprints exist)
   const canEditFirstSprintDate = sprints.length === 0
@@ -171,16 +191,22 @@ export function SprintHistoryTab() {
               sortAscending={sortAscending}
               onToggleSortOrder={handleToggleSortOrder}
               onEdit={handleEdit}
-              onDelete={(id) => {
-                if (window.confirm('Delete this sprint? This action cannot be undone.')) {
-                  deleteSprint(id)
-                }
-              }}
+              onDelete={handleDeleteRequest}
               onToggleIncluded={toggleSprintIncluded}
             />
           )}
         </>
       )}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Sprint"
+        message="Delete this sprint? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        variant="danger"
+      />
     </div>
   )
 }

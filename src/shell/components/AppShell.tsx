@@ -23,16 +23,16 @@ export function AppShell() {
   }, [setViewingProjectId])
 
   return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-[1200px] mx-auto px-8">
+    <div className="min-h-screen bg-white p-4 sm:p-6 md:p-8">
+      <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
         <header className="mb-6">
-          <h1 className="text-[2.1rem] mb-1">
+          <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem] mb-1">
             <span
               className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
             >
               {APP_NAME}
             </span>
-            <span className="text-gray-400 font-normal text-lg align-top">®</span>
+            <span className="text-gray-400 font-normal text-base sm:text-lg align-top">®</span>
           </h1>
           <p className="text-sm text-gray-500 italic">{APP_DESCRIPTION}</p>
         </header>

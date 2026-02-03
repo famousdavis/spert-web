@@ -18,7 +18,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
 
   const handleCopy = useCallback(async () => {
     if (!targetRef.current) {
-      console.error('Copy failed: targetRef.current is null')
+      toast.error('Failed to copy: element not found')
       return
     }
 
@@ -27,8 +27,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
       await copyElementAsImage(targetRef.current)
       setStatus('success')
       setTimeout(() => setStatus('idle'), 2000)
-    } catch (err) {
-      console.error('Copy failed:', err)
+    } catch {
       toast.error('Failed to copy image to clipboard')
       setStatus('error')
       setTimeout(() => setStatus('idle'), 2000)
@@ -45,6 +44,7 @@ export function CopyImageButton({ targetRef, title = 'Copy as image' }: CopyImag
       onClick={handleCopy}
       disabled={status === 'copying'}
       title={title}
+      aria-label={title}
     >
       {status === 'copying' && (
         <svg
