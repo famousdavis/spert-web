@@ -10,6 +10,7 @@ import { AboutTab } from '@/features/about'
 import { SettingsTab } from '@/features/settings'
 import { APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('projects')
@@ -44,11 +45,11 @@ export function AppShell() {
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
         <main className="mt-8">
-          {activeTab === 'projects' && <ProjectsTab onViewHistory={handleViewHistory} />}
-          {activeTab === 'sprint-history' && <SprintHistoryTab />}
-          {activeTab === 'forecast' && <ForecastTab />}
-          {activeTab === 'about' && <AboutTab />}
-          {activeTab === 'settings' && <SettingsTab />}
+          {activeTab === 'projects' && <ErrorBoundary><ProjectsTab onViewHistory={handleViewHistory} /></ErrorBoundary>}
+          {activeTab === 'sprint-history' && <ErrorBoundary><SprintHistoryTab /></ErrorBoundary>}
+          {activeTab === 'forecast' && <ErrorBoundary><ForecastTab /></ErrorBoundary>}
+          {activeTab === 'about' && <ErrorBoundary><AboutTab /></ErrorBoundary>}
+          {activeTab === 'settings' && <ErrorBoundary><SettingsTab /></ErrorBoundary>}
         </main>
 
         <Footer />
