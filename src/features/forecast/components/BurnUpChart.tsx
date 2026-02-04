@@ -3,8 +3,9 @@
 import { useMemo, useState, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
 import {
-  LineChart,
+  ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -120,13 +121,13 @@ export function BurnUpChart({
             onFontSizeChange={onFontSizeChange}
           />
 
-          <div ref={chartRef} className="bg-white p-2">
+          <div ref={chartRef} className="bg-white dark:bg-gray-800 p-2">
             <p className="text-xs text-muted-foreground mb-4">
               Shows cumulative work completed (Done) vs total product scope (Scope). Forecast lines
               show projected completion at different confidence levels.
             </p>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 10, bottom: 60 }}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 10, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.light} />
                 <XAxis
                   dataKey="sprintNumber"
@@ -166,6 +167,44 @@ export function BurnUpChart({
                   contentStyle={{ fontSize: fontSizes.axisTick }}
                 />
                 <Legend wrapperStyle={{ fontSize: fontSizes.legend, paddingTop: 20 }} verticalAlign="bottom" />
+
+                {/* Confidence interval areas (rendered first so lines appear on top) */}
+                {config.showConfidenceIntervals && (
+                  <>
+                    {/* Area between line1 (optimistic) and line2 (expected) */}
+                    <Area
+                      type="linear"
+                      dataKey="line1"
+                      stroke="none"
+                      fill={config.lines[0].color}
+                      fillOpacity={0.15}
+                      connectNulls={false}
+                      legendType="none"
+                      name=""
+                    />
+                    <Area
+                      type="linear"
+                      dataKey="line2"
+                      stroke="none"
+                      fill={config.lines[1].color}
+                      fillOpacity={0.15}
+                      connectNulls={false}
+                      legendType="none"
+                      name=""
+                    />
+                    {/* Area between line2 (expected) and line3 (conservative) */}
+                    <Area
+                      type="linear"
+                      dataKey="line3"
+                      stroke="none"
+                      fill={config.lines[2].color}
+                      fillOpacity={0.15}
+                      connectNulls={false}
+                      legendType="none"
+                      name=""
+                    />
+                  </>
+                )}
 
                 {/* Scope line (solid) - total product scope over time */}
                 <Line
@@ -224,7 +263,7 @@ export function BurnUpChart({
                   strokeWidth={3}
                   connectNulls={false}
                 />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
           {chartRef && (

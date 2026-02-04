@@ -19,6 +19,10 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
     onChange({ ...config, distribution })
   }
 
+  const handleConfidenceIntervalsChange = (showConfidenceIntervals: boolean) => {
+    onChange({ ...config, showConfidenceIntervals })
+  }
+
   const handleLineChange = (index: 0 | 1 | 2, updates: Partial<ForecastLineConfig>) => {
     const newLines = [...config.lines] as [ForecastLineConfig, ForecastLineConfig, ForecastLineConfig]
     newLines[index] = { ...newLines[index], ...updates }
@@ -46,7 +50,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
             id="burnup-distribution"
             value={config.distribution}
             onChange={(e) => handleDistributionChange(e.target.value as DistributionType)}
-            className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
+            className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
           >
             {availableDistributions.map((dist) => (
               <option key={dist} value={dist}>
@@ -54,6 +58,23 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Confidence intervals toggle */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="burnup-confidence-intervals"
+            checked={config.showConfidenceIntervals ?? false}
+            onChange={(e) => handleConfidenceIntervalsChange(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          <label
+            htmlFor="burnup-confidence-intervals"
+            className="text-[0.8125rem] font-semibold text-spert-text-muted cursor-pointer"
+          >
+            Show intervals
+          </label>
         </div>
 
         {/* Forecast line configuration - all inline */}
@@ -79,7 +100,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
               id="burnup-font-size"
               value={fontSize}
               onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-              className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
+              className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
             >
               {FONT_SIZES.map((size) => (
                 <option key={size} value={size}>
@@ -108,7 +129,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
         type="color"
         value={line.color}
         onChange={(e) => onChange({ color: e.target.value })}
-        className="w-6 h-6 p-0 border border-spert-border rounded cursor-pointer"
+        className="w-6 h-6 p-0 border border-spert-border dark:border-gray-600 rounded cursor-pointer"
         title={`Line ${lineNumber} color`}
       />
 
@@ -119,7 +140,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
         onChange={(e) => onChange({ label: e.target.value })}
         placeholder={`Line ${lineNumber}`}
         maxLength={16}
-        className="w-[105px] px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded"
+        className="w-[105px] px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
         title="Forecast line label"
       />
 

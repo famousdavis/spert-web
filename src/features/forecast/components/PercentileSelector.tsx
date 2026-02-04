@@ -33,8 +33,8 @@ export function PercentileSelector({
 
   return (
     <div className="relative">
-      <div ref={selectorRef} className="space-y-4 rounded-lg border border-border p-4 bg-white">
-        <h3 className="font-medium">Custom Percentile</h3>
+      <div ref={selectorRef} className="space-y-4 rounded-lg border border-border dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+        <h3 className="font-medium dark:text-gray-100">Custom Percentile</h3>
 
       <div className="flex items-center gap-4">
         <div className="flex-1 space-y-2">

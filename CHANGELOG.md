@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.13.0 - 2026-02-03
+
+### Visualization
+
+- Histogram chart showing probability density distribution across sprint ranges
+- Confidence interval shading on burn-up chart (toggleable)
+- Scope change trend analysis with sparkline on Sprint History tab
+
+### User Experience
+
+- Dark mode support with system preference detection and manual toggle
+- Keyboard shortcuts for tab navigation (1-4) and help modal (?)
+
+### Test Coverage
+
+- Added 22 new tests (242 → 264 total) for histogram binning and scope analysis
+
 ## v0.9.0 - 2026-02-02
 
 ### Dependencies

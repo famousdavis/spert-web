@@ -22,13 +22,28 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
+// Inline script to prevent flash of wrong theme on page load
+const themeScript = `
+(function() {
+  try {
+    const stored = localStorage.getItem('spert-theme');
+    const theme = stored || 'system';
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>

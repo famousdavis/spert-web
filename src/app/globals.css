@@ -154,6 +154,28 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* SPERT dark mode overrides */
+  --color-spert-text: #e5e5e5;
+  --color-spert-text-secondary: #cccccc;
+  --color-spert-text-muted: #a3a3a3;
+  --color-spert-text-light: #737373;
+  --color-spert-text-helper: #8b8b8b;
+  --color-spert-border: #404040;
+  --color-spert-border-light: #333333;
+  --color-spert-border-medium: #4d4d4d;
+  --color-spert-bg-input: #262626;
+  --color-spert-bg-highlight: #1a2e4a;
+  --color-spert-bg-disabled: #333333;
+  --color-spert-bg-hover: #262626;
+  --color-spert-bg-error-light: #3d1f1f;
+  --color-spert-bg-error-very-light: #2d1a1a;
+  --color-spert-bg-error-row: #3d1f1f;
+  --color-spert-bg-warning-light: #3d3d1a;
+  --color-spert-bg-warning-row: #3d3d1a;
+  --color-spert-bg-info-light: #1a2e4a;
+  --color-spert-bg-info-row: #1a2e4a;
+  --color-spert-bg-success-row: #1a3d2e;
 }
 
 @layer base {

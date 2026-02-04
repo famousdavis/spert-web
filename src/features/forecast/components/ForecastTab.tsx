@@ -5,6 +5,7 @@ import { useForecastState } from '../hooks/useForecastState'
 import { ForecastForm } from './ForecastForm'
 import { ForecastResults } from './ForecastResults'
 import { DistributionChart } from './DistributionChart'
+import { HistogramChart } from './HistogramChart'
 import { PercentileSelector } from './PercentileSelector'
 import { ProductivityAdjustments } from './ProductivityAdjustments'
 import { BurnUpChart } from './BurnUpChart'
@@ -37,8 +38,11 @@ export function ForecastTab() {
     setBurnUpFontSize,
     distributionFontSize,
     setDistributionFontSize,
+    histogramFontSize,
+    setHistogramFontSize,
     forecastInputsResultsRef,
     distributionChartRef,
+    histogramChartRef,
     percentileSelectorRef,
     burnUpChartRef,
     handleRunForecast,
@@ -70,7 +74,7 @@ export function ForecastTab() {
         <select
           value={selectedProject?.id || ''}
           onChange={handleProjectChange}
-          className="text-xl text-spert-text border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"
+          className="text-xl text-spert-text dark:text-gray-100 border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"
         >
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
@@ -87,7 +91,7 @@ export function ForecastTab() {
 
       {selectedProject && (
         <div className="relative">
-          <div ref={forecastInputsResultsRef} className="bg-white">
+          <div ref={forecastInputsResultsRef} className="bg-white dark:bg-gray-900">
             <ForecastForm
               remainingBacklog={remainingBacklog}
               velocityMean={velocityMean}
@@ -171,6 +175,20 @@ export function ForecastTab() {
             chartRef={distributionChartRef}
             fontSize={distributionFontSize}
             onFontSizeChange={setDistributionFontSize}
+          />
+
+          {/* Probability Distribution Histogram */}
+          <HistogramChart
+            truncatedNormal={simulationData.truncatedNormal}
+            lognormal={simulationData.lognormal}
+            gamma={simulationData.gamma}
+            bootstrap={simulationData.bootstrap}
+            startDate={forecastStartDate}
+            sprintCadenceWeeks={selectedProject!.sprintCadenceWeeks!}
+            completedSprintCount={completedSprintCount}
+            chartRef={histogramChartRef}
+            fontSize={histogramFontSize}
+            onFontSizeChange={setHistogramFontSize}
           />
         </>
       )}

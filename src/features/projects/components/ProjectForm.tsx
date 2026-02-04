@@ -109,7 +109,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-border p-4 bg-spert-bg-input"
+      className="rounded-lg border border-border dark:border-gray-700 p-4 bg-spert-bg-input dark:bg-gray-800"
     >
       <style jsx>{`
         input[type="date"]::-webkit-datetime-edit-text,
@@ -124,6 +124,18 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
         input[type="date"].has-value::-webkit-datetime-edit-year-field {
           color: #333;
         }
+        :global(.dark) input[type="date"]::-webkit-datetime-edit-text,
+        :global(.dark) input[type="date"]::-webkit-datetime-edit-month-field,
+        :global(.dark) input[type="date"]::-webkit-datetime-edit-day-field,
+        :global(.dark) input[type="date"]::-webkit-datetime-edit-year-field {
+          color: #737373;
+        }
+        :global(.dark) input[type="date"].has-value::-webkit-datetime-edit-text,
+        :global(.dark) input[type="date"].has-value::-webkit-datetime-edit-month-field,
+        :global(.dark) input[type="date"].has-value::-webkit-datetime-edit-day-field,
+        :global(.dark) input[type="date"].has-value::-webkit-datetime-edit-year-field {
+          color: #e5e5e5;
+        }
       `}</style>
 
       <div className="flex gap-4 items-start flex-wrap">
@@ -137,7 +149,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-full"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 dark:text-gray-100"
             placeholder="Project name"
             required
           />
@@ -153,7 +165,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="text"
             value={unitOfMeasure}
             onChange={(e) => setUnitOfMeasure(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-full"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 dark:text-gray-100"
             placeholder="story points"
             required
           />
@@ -169,9 +181,9 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="date"
             value={projectStartDate}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text dark:text-gray-100 bg-white dark:bg-gray-700',
               projectStartDate ? 'has-value' : '',
-              startDateError ? 'border border-spert-error' : 'border border-spert-border'
+              startDateError ? 'border border-spert-error' : 'border border-spert-border dark:border-gray-600'
             )}
             onChange={(e) => {
               setProjectStartDate(e.target.value)
@@ -199,9 +211,9 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             type="date"
             value={projectFinishDate}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text dark:text-gray-100 bg-white dark:bg-gray-700',
               projectFinishDate ? 'has-value' : '',
-              finishDateError ? 'border border-spert-error' : 'border border-spert-border'
+              finishDateError ? 'border border-spert-error' : 'border border-spert-border dark:border-gray-600'
             )}
             onChange={(e) => {
               setProjectFinishDate(e.target.value)
@@ -228,7 +240,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
               'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white h-[38px]',
               isValid
                 ? 'bg-spert-blue cursor-pointer opacity-100'
-                : 'bg-[#ccc] cursor-not-allowed opacity-60'
+                : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed opacity-60'
             )}
           >
             {isEditing ? 'Update Project' : 'Add Project'}
@@ -238,7 +250,7 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 bg-[#999] text-white border-none rounded cursor-pointer text-[0.9rem] h-[38px]"
+              className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white border-none rounded cursor-pointer text-[0.9rem] h-[38px]"
             >
               Cancel
             </button>

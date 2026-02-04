@@ -38,7 +38,7 @@ export function ForecastForm({
   isSimulating,
 }: ForecastFormProps) {
   return (
-    <div className="rounded-lg border border-border p-4 bg-spert-bg-input">
+    <div className="rounded-lg border border-border dark:border-gray-700 p-4 bg-spert-bg-input dark:bg-gray-800">
       <div className="flex gap-4 items-start flex-wrap">
         {/* Remaining Backlog */}
         <div className="flex-[1_1_150px] min-w-[120px]">
@@ -57,10 +57,10 @@ export function ForecastForm({
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-full',
+              'p-2 text-[0.9rem] rounded w-full dark:text-gray-100',
               remainingBacklog
-                ? 'border border-spert-border bg-white'
-                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+                ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
             )}
             placeholder="Required"
           />
@@ -82,7 +82,7 @@ export function ForecastForm({
             step="any"
             value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
             onChange={(e) => onVelocityMeanChange(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-full bg-white text-spert-text"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
             placeholder={calculatedMean > 0 ? '' : 'No data'}
           />
           <p className="text-xs text-spert-text-muted mt-1">
@@ -108,7 +108,7 @@ export function ForecastForm({
             step="any"
             value={velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')}
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-full bg-white text-spert-text"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
             placeholder={calculatedStdDev > 0 ? '' : 'No data'}
           />
           <p className="text-xs text-spert-text-muted mt-1">
@@ -131,7 +131,7 @@ export function ForecastForm({
             type="date"
             value={startDate}
             readOnly
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-[150px] bg-spert-bg-disabled cursor-not-allowed text-spert-text"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-[150px] bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed text-spert-text dark:text-gray-100"
           />
           <p className="text-xs text-spert-text-muted mt-1">
             Next sprint start
@@ -146,7 +146,7 @@ export function ForecastForm({
             Cadence
           </label>
           <div
-            className="p-2 text-[0.9rem] border border-spert-border rounded bg-spert-bg-disabled text-spert-text text-center"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded bg-spert-bg-disabled dark:bg-gray-700 text-spert-text dark:text-gray-100 text-center"
           >
             {sprintCadenceWeeks ? `${sprintCadenceWeeks} Week${sprintCadenceWeeks > 1 ? 's' : ''}` : '—'}
           </div>
@@ -166,7 +166,7 @@ export function ForecastForm({
                 ? 'bg-spert-success cursor-not-allowed scale-[0.97]'
                 : canRun
                   ? 'bg-spert-blue cursor-pointer scale-100'
-                  : 'bg-[#ccc] cursor-not-allowed scale-100'
+                  : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed scale-100'
             )}
           >
             {isSimulating ? 'Running…' : 'Run Forecast'}

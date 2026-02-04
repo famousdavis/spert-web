@@ -12,6 +12,7 @@ import { SprintList } from './SprintList'
 import { SprintForm } from './SprintForm'
 import { SprintConfig } from './SprintConfig'
 import { VelocityStats } from './VelocityStats'
+import { ScopeAnalysis } from './ScopeAnalysis'
 import type { Sprint } from '@/shared/types'
 import type { SprintCadence } from '@/features/projects/constants'
 
@@ -183,6 +184,8 @@ export function SprintHistoryTab() {
           />
 
           <VelocityStats sprints={sprints} unitOfMeasure={selectedProject.unitOfMeasure} />
+
+          <ScopeAnalysis sprints={sprints} unitOfMeasure={selectedProject.unitOfMeasure} />
 
           {!isFormOpen && (
             <SprintList

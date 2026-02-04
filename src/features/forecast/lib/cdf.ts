@@ -9,6 +9,17 @@ export interface CdfDataPoint {
   bootstrap?: number
 }
 
+export interface HistogramBin {
+  sprintMin: number
+  sprintMax: number
+  sprintLabel: string
+  dateLabel: string
+  tNormal: number
+  lognormal: number
+  gamma: number
+  bootstrap?: number
+}
+
 /**
  * Build CDF points from sorted simulation data.
  * Returns ~100 points for smooth curves without overwhelming the chart.
@@ -92,4 +103,96 @@ export function mergeDistributions(
     }
     return point
   })
+}
+
+/**
+ * Count how many values fall within the given range [min, max]
+ * Uses binary search for efficiency on sorted data.
+ */
+function countInRange(sortedData: number[], min: number, max: number): number {
+  // Find first index where value >= min
+  let low = 0
+  let high = sortedData.length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (sortedData[mid] < min) {
+      low = mid + 1
+    } else {
+      high = mid
+    }
+  }
+  const startIndex = low
+
+  // Find first index where value > max
+  low = 0
+  high = sortedData.length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (sortedData[mid] <= max) {
+      low = mid + 1
+    } else {
+      high = mid
+    }
+  }
+  const endIndex = low
+
+  return endIndex - startIndex
+}
+
+/**
+ * Build histogram bins from sorted simulation data.
+ * Bins are calculated as equal-width intervals across the range of sprints.
+ */
+export function buildHistogramBins(
+  tNormal: number[],
+  lognormal: number[],
+  gamma: number[],
+  bootstrap: number[] | null,
+  startDate: string,
+  sprintCadenceWeeks: number,
+  binCount: number = 15
+): HistogramBin[] {
+  // Find global min and max across all distributions
+  const allData = [tNormal, lognormal, gamma, ...(bootstrap ? [bootstrap] : [])]
+  const globalMin = Math.min(...allData.map(d => d[0]))
+  const globalMax = Math.max(...allData.map(d => d[d.length - 1]))
+
+  // Calculate bin width (minimum 1 sprint per bin)
+  const range = globalMax - globalMin
+  const rawBinWidth = Math.ceil(range / binCount)
+  const binWidth = Math.max(1, rawBinWidth)
+
+  // Adjust bin count based on actual width (minimum 1 bin for zero-range case)
+  const actualBinCount = range === 0 ? 1 : Math.ceil(range / binWidth)
+
+  const bins: HistogramBin[] = []
+  const trialCount = tNormal.length
+
+  for (let i = 0; i < actualBinCount; i++) {
+    const sprintMin = globalMin + i * binWidth
+    const sprintMax = sprintMin + binWidth - 1
+
+    // Calculate date label for bin midpoint
+    const midSprint = Math.round((sprintMin + sprintMax) / 2)
+    const sprintStart = calculateSprintStartDate(startDate, midSprint, sprintCadenceWeeks)
+    const finishDate = calculateSprintFinishDate(sprintStart, sprintCadenceWeeks)
+
+    const bin: HistogramBin = {
+      sprintMin,
+      sprintMax,
+      sprintLabel: sprintMin === sprintMax ? `${sprintMin}` : `${sprintMin}-${sprintMax}`,
+      dateLabel: formatDateCompact(finishDate),
+      tNormal: (countInRange(tNormal, sprintMin, sprintMax) / trialCount) * 100,
+      lognormal: (countInRange(lognormal, sprintMin, sprintMax) / trialCount) * 100,
+      gamma: (countInRange(gamma, sprintMin, sprintMax) / trialCount) * 100,
+    }
+
+    if (bootstrap) {
+      bin.bootstrap = (countInRange(bootstrap, sprintMin, sprintMax) / trialCount) * 100
+    }
+
+    bins.push(bin)
+  }
+
+  return bins
 }

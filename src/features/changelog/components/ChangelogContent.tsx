@@ -14,6 +14,33 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.13.0',
+    date: '2026-02-03',
+    sections: [
+      {
+        title: 'Visualization',
+        items: [
+          'Histogram chart showing probability density distribution across sprint ranges',
+          'Confidence interval shading on burn-up chart (toggleable)',
+          'Scope change trend analysis with sparkline on Sprint History tab',
+        ],
+      },
+      {
+        title: 'User Experience',
+        items: [
+          'Dark mode support with system preference detection and manual toggle',
+          'Keyboard shortcuts for tab navigation (1-4) and help modal (?)',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          'Added 22 new tests (242 → 264 total) for histogram binning and scope analysis',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-02-03',
     sections: [

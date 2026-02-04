@@ -101,10 +101,10 @@ export function SprintList({
                     aria-label={`Include Sprint ${sprint.sprintNumber} in forecast`}
                   />
                 </td>
-                <td className="px-4 py-3 text-sm">
+                <td className="px-4 py-3 text-sm dark:text-gray-100">
                   Sprint {sprint.sprintNumber}: {formatDateRange(sprint.sprintStartDate, sprint.sprintFinishDate)}
                 </td>
-                <td className="px-4 py-3 text-right text-sm font-medium">
+                <td className="px-4 py-3 text-right text-sm font-medium dark:text-gray-100">
                   {sprint.doneValue}
                 </td>
                 <td className="px-4 py-3 text-right text-sm text-muted-foreground">
@@ -113,7 +113,7 @@ export function SprintList({
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onEdit(sprint)}
-                    className="px-3 py-1.5 bg-spert-bg-warning-light border border-spert-warning rounded cursor-pointer text-[0.85rem]"
+                    className="px-3 py-1.5 bg-spert-bg-warning-light dark:bg-yellow-900/40 border border-spert-warning dark:border-yellow-600 rounded cursor-pointer text-[0.85rem] dark:text-yellow-200"
                   >
                     Edit
                   </button>
@@ -124,8 +124,8 @@ export function SprintList({
                     className={cn(
                       'px-3 py-1.5 rounded text-[0.85rem] ml-2',
                       canDelete
-                        ? 'bg-spert-bg-error-light border border-spert-error cursor-pointer opacity-100'
-                        : 'bg-spert-bg-disabled border border-spert-border-medium cursor-not-allowed opacity-50'
+                        ? 'bg-spert-bg-error-light dark:bg-red-900/40 border border-spert-error dark:border-red-600 cursor-pointer opacity-100 dark:text-red-200'
+                        : 'bg-spert-bg-disabled dark:bg-gray-700 border border-spert-border-medium dark:border-gray-600 cursor-not-allowed opacity-50 dark:text-gray-400'
                     )}
                   >
                     Delete

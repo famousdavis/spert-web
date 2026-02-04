@@ -93,10 +93,10 @@ export function ProjectList({
           onDrop={(e) => handleDrop(e, index)}
           onDragEnd={handleDragEnd}
           className={cn(
-            'rounded-lg bg-white cursor-default',
+            'rounded-lg bg-white dark:bg-gray-800 cursor-default',
             dragOverIndex === index
               ? 'border-2 border-spert-blue'
-              : 'border border-spert-border-light',
+              : 'border border-spert-border-light dark:border-gray-700',
             draggedIndex === index ? 'opacity-50' : 'opacity-100'
           )}
         >
@@ -124,8 +124,8 @@ export function ProjectList({
 
             {/* Project info */}
             <div className="flex-1">
-              <span className="font-semibold">{project.name}</span>
-              <span className="ml-3 text-sm text-gray-500">
+              <span className="font-semibold dark:text-gray-100">{project.name}</span>
+              <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
                 {getProjectSummary(project)}
               </span>
             </div>
@@ -134,19 +134,19 @@ export function ProjectList({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onViewHistory(project.id)}
-                className="px-4 py-2 bg-[#e7f3ff] border border-spert-blue rounded cursor-pointer text-[0.9rem] text-spert-blue"
+                className="px-4 py-2 bg-[#e7f3ff] dark:bg-blue-900/30 border border-spert-blue rounded cursor-pointer text-[0.9rem] text-spert-blue dark:text-blue-400"
               >
                 View History
               </button>
               <button
                 onClick={() => onEdit(project)}
-                className="px-4 py-2 bg-spert-bg-warning-light border border-spert-warning rounded cursor-pointer text-[0.9rem]"
+                className="px-4 py-2 bg-spert-bg-warning-light dark:bg-yellow-900/40 border border-spert-warning dark:border-yellow-600 rounded cursor-pointer text-[0.9rem] dark:text-yellow-200"
               >
                 Edit
               </button>
               <button
                 onClick={() => onDelete(project.id)}
-                className="px-4 py-2 bg-spert-bg-error-light border border-spert-error rounded cursor-pointer text-[0.9rem]"
+                className="px-4 py-2 bg-spert-bg-error-light dark:bg-red-900/40 border border-spert-error dark:border-red-600 rounded cursor-pointer text-[0.9rem] dark:text-red-200"
               >
                 Delete
               </button>

@@ -50,6 +50,7 @@ export function useForecastState() {
   // Refs for copy-to-clipboard functionality
   const forecastInputsResultsRef = useRef<HTMLDivElement>(null)
   const distributionChartRef = useRef<HTMLDivElement>(null)
+  const histogramChartRef = useRef<HTMLDivElement>(null)
   const percentileSelectorRef = useRef<HTMLDivElement>(null)
   const burnUpChartRef = useRef<HTMLDivElement>(null)
 
@@ -112,6 +113,7 @@ export function useForecastState() {
   // Chart font sizes (session only, not persisted)
   const [burnUpFontSize, setBurnUpFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
   const [distributionFontSize, setDistributionFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
+  const [histogramFontSize, setHistogramFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
 
   // Clear results when project changes
   useEffect(() => {
@@ -314,10 +316,13 @@ export function useForecastState() {
     setBurnUpFontSize,
     distributionFontSize,
     setDistributionFontSize,
+    histogramFontSize,
+    setHistogramFontSize,
 
     // Refs
     forecastInputsResultsRef,
     distributionChartRef,
+    histogramChartRef,
     percentileSelectorRef,
     burnUpChartRef,
 

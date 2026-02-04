@@ -44,7 +44,7 @@ export function SprintConfig({
   }
 
   return (
-    <div className="rounded-lg border border-border p-4 bg-spert-bg-input">
+    <div className="rounded-lg border border-border dark:border-gray-700 p-4 bg-spert-bg-input dark:bg-gray-800">
       {canEdit && !isConfigComplete && (
         <p className="text-sm text-spert-text-secondary mb-3">
           Configure the sprint cadence and first sprint start date before adding sprints.
@@ -68,15 +68,15 @@ export function SprintConfig({
             onChange={(e) => onCadenceChange(Number(e.target.value) as SprintCadence)}
             disabled={!canEdit}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-[90px]',
+              'p-2 text-[0.9rem] rounded w-[90px] dark:text-gray-100',
               canEdit && !project.sprintCadenceWeeks
                 ? 'border-2 border-spert-blue'
-                : 'border border-spert-border',
+                : 'border border-spert-border dark:border-gray-600',
               !canEdit
-                ? 'bg-spert-bg-disabled cursor-not-allowed'
+                ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
                 : !project.sprintCadenceWeeks
-                  ? 'bg-spert-bg-highlight cursor-pointer'
-                  : 'bg-white cursor-pointer'
+                  ? 'bg-spert-bg-highlight dark:bg-blue-900/30 cursor-pointer'
+                  : 'bg-white dark:bg-gray-700 cursor-pointer'
             )}
           >
             <option value="" disabled>
@@ -106,18 +106,18 @@ export function SprintConfig({
             type="date"
             value={project.firstSprintStartDate ?? ''}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text',
+              'p-2 text-[0.9rem] rounded w-[150px] text-spert-text dark:text-gray-100',
               project.firstSprintStartDate ? 'has-value' : '',
               firstSprintDateError
                 ? 'border border-spert-error'
                 : canEdit && !project.firstSprintStartDate
                   ? 'border-2 border-spert-blue'
-                  : 'border border-spert-border',
+                  : 'border border-spert-border dark:border-gray-600',
               !canEdit
-                ? 'bg-spert-bg-disabled cursor-not-allowed'
+                ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
                 : !project.firstSprintStartDate
-                  ? 'bg-spert-bg-highlight cursor-text'
-                  : 'bg-white cursor-text'
+                  ? 'bg-spert-bg-highlight dark:bg-blue-900/30 cursor-text'
+                  : 'bg-white dark:bg-gray-700 cursor-text'
             )}
             onChange={(e) => handleFirstSprintDateChange(e.target.value)}
             onBlur={(e) => validateFirstSprintDate(e.target.value)}

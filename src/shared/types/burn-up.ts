@@ -14,6 +14,7 @@ export interface ForecastLineConfig {
 export interface BurnUpConfig {
   distribution: DistributionType
   lines: [ForecastLineConfig, ForecastLineConfig, ForecastLineConfig]
+  showConfidenceIntervals?: boolean
 }
 
 export const DEFAULT_BURN_UP_CONFIG: BurnUpConfig = {
@@ -23,6 +24,7 @@ export const DEFAULT_BURN_UP_CONFIG: BurnUpConfig = {
     { label: 'Expected', percentile: 50, color: COLORS.burnUp.expected },
     { label: 'Conservative', percentile: 90, color: COLORS.burnUp.conservative },
   ],
+  showConfidenceIntervals: false,
 }
 
 // Distribution display names for dropdown

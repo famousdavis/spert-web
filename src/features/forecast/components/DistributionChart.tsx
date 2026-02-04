@@ -106,7 +106,7 @@ export function DistributionChart({
                 id="cdf-font-size"
                 value={fontSize}
                 onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-                className="px-1.5 py-1 text-[0.8125rem] border border-spert-border rounded bg-white"
+                className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
               >
                 {FONT_SIZES.map((size) => (
                   <option key={size} value={size}>
@@ -117,7 +117,7 @@ export function DistributionChart({
             </div>
           )}
 
-          <div ref={chartRef} className="bg-white p-2">
+          <div ref={chartRef} className="bg-white dark:bg-gray-800 p-2">
             <p className="text-xs text-muted-foreground mb-4">
               Shows the probability of completing the backlog within a given number of sprints.
               The dashed line marks your selected P{customPercentile} confidence level.

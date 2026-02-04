@@ -68,7 +68,7 @@ export function ForecastResults({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-medium">Forecast Results</h3>
+      <h3 className="font-medium dark:text-gray-100">Forecast Results</h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
@@ -153,12 +153,12 @@ export function ForecastResults({
 
               return (
                 <tr key={key} className="border-b border-border">
-                  <td className="px-2 py-3 text-sm font-medium">{label}</td>
-                  <td className="px-2 py-3 text-right text-sm">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
-                  <td className="px-2 py-3 text-sm">{formatDate(truncatedNormal.finishDate)}</td>
+                  <td className="px-2 py-3 text-sm font-medium dark:text-gray-100">{label}</td>
+                  <td className="px-2 py-3 text-right text-sm dark:text-gray-100">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
+                  <td className="px-2 py-3 text-sm dark:text-gray-100">{formatDate(truncatedNormal.finishDate)}</td>
                   <td
                     className={cn(
-                      'px-2 py-3 text-right text-sm',
+                      'px-2 py-3 text-right text-sm dark:text-gray-100',
                       lognormalDiffSprints && 'text-spert-blue font-medium'
                     )}
                   >
@@ -166,7 +166,7 @@ export function ForecastResults({
                   </td>
                   <td
                     className={cn(
-                      'px-2 py-3 text-sm',
+                      'px-2 py-3 text-sm dark:text-gray-100',
                       lognormalDiffDate && 'text-spert-blue font-medium'
                     )}
                   >
@@ -174,7 +174,7 @@ export function ForecastResults({
                   </td>
                   <td
                     className={cn(
-                      'px-2 py-3 text-right text-sm',
+                      'px-2 py-3 text-right text-sm dark:text-gray-100',
                       gammaDiffSprints && 'text-spert-blue font-medium'
                     )}
                   >
@@ -182,7 +182,7 @@ export function ForecastResults({
                   </td>
                   <td
                     className={cn(
-                      'px-2 py-3 text-sm',
+                      'px-2 py-3 text-sm dark:text-gray-100',
                       gammaDiffDate && 'text-spert-blue font-medium'
                     )}
                   >
@@ -192,7 +192,7 @@ export function ForecastResults({
                     <>
                       <td
                         className={cn(
-                          'px-2 py-3 text-right text-sm',
+                          'px-2 py-3 text-right text-sm dark:text-gray-100',
                           bootstrapDiffSprints && 'text-spert-blue font-medium'
                         )}
                       >
@@ -200,7 +200,7 @@ export function ForecastResults({
                       </td>
                       <td
                         className={cn(
-                          'px-2 py-3 text-sm',
+                          'px-2 py-3 text-sm dark:text-gray-100',
                           bootstrapDiffDate && 'text-spert-blue font-medium'
                         )}
                       >

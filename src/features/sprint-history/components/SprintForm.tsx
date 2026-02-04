@@ -94,8 +94,8 @@ export function SprintForm({
   const needsFirstSprintDate = !project.firstSprintStartDate && !sprint
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border p-4">
-      <h3 className="font-medium">{sprint ? 'Edit Sprint' : 'Add Sprint'}</h3>
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+      <h3 className="font-medium dark:text-gray-100">{sprint ? 'Edit Sprint' : 'Add Sprint'}</h3>
 
       {/* Single row: Sprint dates, Done input, Include checkbox */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -104,8 +104,8 @@ export function SprintForm({
           className={cn(
             'px-3 py-2 rounded text-[0.9rem] font-medium',
             needsFirstSprintDate
-              ? 'bg-spert-bg-warning-light border border-spert-warning text-[#856404]'
-              : 'bg-spert-bg-disabled border border-spert-border text-spert-text'
+              ? 'bg-spert-bg-warning-light dark:bg-yellow-900/30 border border-spert-warning text-[#856404] dark:text-yellow-400'
+              : 'bg-spert-bg-disabled dark:bg-gray-700 border border-spert-border dark:border-gray-600 text-spert-text dark:text-gray-200'
           )}
         >
           {dateLabel}
@@ -128,10 +128,10 @@ export function SprintForm({
             value={doneValue}
             onChange={(e) => setDoneValue(e.target.value)}
             className={cn(
-              'p-2 text-[0.9rem] rounded w-[80px]',
+              'p-2 text-[0.9rem] rounded w-[80px] dark:text-gray-100',
               doneValue
-                ? 'border border-spert-border bg-white'
-                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+                ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
             )}
             placeholder="0"
             required
@@ -154,7 +154,7 @@ export function SprintForm({
             step="any"
             value={backlogAtSprintEnd}
             onChange={(e) => setBacklogAtSprintEnd(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border rounded w-[80px]"
+            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-[80px] bg-white dark:bg-gray-700 dark:text-gray-100"
             placeholder="—"
           />
         </div>
@@ -178,7 +178,7 @@ export function SprintForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 bg-[#999] text-white border-none rounded cursor-pointer text-[0.9rem]"
+          className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white border-none rounded cursor-pointer text-[0.9rem]"
         >
           Cancel
         </button>
@@ -189,7 +189,7 @@ export function SprintForm({
             'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white',
             isValid
               ? 'bg-spert-blue cursor-pointer'
-              : 'bg-[#ccc] cursor-not-allowed'
+              : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
           )}
         >
           {sprint ? 'Update' : 'Add'}

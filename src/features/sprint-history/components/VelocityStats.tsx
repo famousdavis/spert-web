@@ -13,21 +13,21 @@ export function VelocityStats({ sprints, unitOfMeasure }: VelocityStatsProps) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <div className="rounded-lg border border-border p-4">
+      <div className="rounded-lg border border-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <p className="text-sm text-muted-foreground">Included Sprints</p>
-        <p className="text-2xl font-semibold">{stats.count}</p>
+        <p className="text-2xl font-semibold dark:text-gray-100">{stats.count}</p>
       </div>
-      <div className="rounded-lg border border-border p-4">
+      <div className="rounded-lg border border-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <p className="text-sm text-muted-foreground">
           Velocity ({unitOfMeasure}/sprint)
         </p>
-        <p className="text-2xl font-semibold">
+        <p className="text-2xl font-semibold dark:text-gray-100">
           {stats.count > 0 ? stats.mean.toFixed(1) : '—'}
         </p>
       </div>
-      <div className="rounded-lg border border-border p-4">
+      <div className="rounded-lg border border-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <p className="text-sm text-muted-foreground">Standard Deviation</p>
-        <p className="text-2xl font-semibold">
+        <p className="text-2xl font-semibold dark:text-gray-100">
           {stats.count > 1 ? stats.standardDeviation.toFixed(1) : '—'}
         </p>
       </div>

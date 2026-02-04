@@ -70,8 +70,8 @@ export function ProductivityAdjustmentForm({
     !endDateError
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border p-4">
-      <h4 className="font-medium text-[0.9rem]">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
+      <h4 className="font-medium text-[0.9rem] dark:text-gray-100">
         {adjustment ? 'Edit Adjustment' : 'Add Productivity Adjustment'}
       </h4>
 
@@ -92,10 +92,10 @@ export function ProductivityAdjustmentForm({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Holiday"
             className={cn(
-              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              'w-full rounded p-[0.4rem] text-[0.85rem] dark:text-gray-100',
               name
-                ? 'border border-spert-border bg-white'
-                : 'border-2 border-spert-blue bg-spert-bg-highlight'
+                ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-gray-700'
             )}
             required
           />
@@ -121,12 +121,12 @@ export function ProductivityAdjustmentForm({
             min="2000-01-01"
             max="2050-12-31"
             className={cn(
-              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              'w-full rounded p-[0.4rem] text-[0.85rem] dark:text-gray-100',
               startDateError
-                ? 'border border-spert-error bg-white'
+                ? 'border border-spert-error bg-white dark:bg-gray-700'
                 : startDate
-                  ? 'border border-spert-border bg-white'
-                  : 'border-2 border-spert-blue bg-spert-bg-highlight'
+                  ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                  : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-gray-700'
             )}
             required
           />
@@ -157,12 +157,12 @@ export function ProductivityAdjustmentForm({
             min="2000-01-01"
             max="2050-12-31"
             className={cn(
-              'w-full rounded p-[0.4rem] text-[0.85rem]',
+              'w-full rounded p-[0.4rem] text-[0.85rem] dark:text-gray-100',
               endDateError
-                ? 'border border-spert-error bg-white'
+                ? 'border border-spert-error bg-white dark:bg-gray-700'
                 : endDate
-                  ? 'border border-spert-border bg-white'
-                  : 'border-2 border-spert-blue bg-spert-bg-highlight'
+                  ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                  : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-gray-700'
             )}
             required
           />
@@ -211,7 +211,7 @@ export function ProductivityAdjustmentForm({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder=""
-            className="w-full rounded border border-spert-border p-[0.4rem] text-[0.85rem]"
+            className="w-full rounded border border-spert-border dark:border-gray-600 p-[0.4rem] text-[0.85rem] bg-white dark:bg-gray-700 dark:text-gray-100"
           />
         </div>
       </div>
