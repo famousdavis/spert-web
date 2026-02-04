@@ -18,11 +18,14 @@ if (!isDev) {
     value: [
       "default-src 'self'",
       // 'unsafe-inline' needed for theme script in layout.tsx to prevent flash
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+      // 'blob:' needed for Web Workers (Monte Carlo simulation)
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
       "connect-src 'self'",
+      // Web Workers are loaded as blob URLs
+      "worker-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join('; '),
   })
