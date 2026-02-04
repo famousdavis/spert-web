@@ -17,7 +17,8 @@ if (!isDev) {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'wasm-unsafe-eval'",
+      // 'unsafe-inline' needed for theme script in layout.tsx to prevent flash
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
