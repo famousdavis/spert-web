@@ -63,7 +63,7 @@ export function AppShell() {
   useKeyboardShortcuts(shortcuts)
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 md:p-8 transition-colors">
+    <div className="min-h-screen overflow-y-scroll bg-white dark:bg-gray-900 p-4 sm:p-6 md:p-8 transition-colors">
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
         <header className="mb-6">
           <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem] mb-1">

@@ -45,7 +45,7 @@ export function AboutTab() {
       <section className="mb-8">
         <h3 className="text-xl mb-3 text-spert-blue">About the Simulation</h3>
         <p className="leading-relaxed text-spert-text-secondary">
-          The forecast runs 50,000 Monte Carlo trials using multiple probability distributions
+          The forecast runs thousands of Monte Carlo trials using multiple probability distributions
           (Truncated Normal, Lognormal, Gamma, and Bootstrap). Each trial simulates completing
           the remaining backlog by drawing random velocities for each sprint until the work is done.
           The percentile results show the likelihood of finishing by each date.
