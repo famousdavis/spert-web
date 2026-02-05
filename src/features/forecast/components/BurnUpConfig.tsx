@@ -19,10 +19,6 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
     onChange({ ...config, distribution })
   }
 
-  const handleConfidenceIntervalsChange = (showConfidenceIntervals: boolean) => {
-    onChange({ ...config, showConfidenceIntervals })
-  }
-
   const handleLineChange = (index: 0 | 1 | 2, updates: Partial<ForecastLineConfig>) => {
     const newLines = [...config.lines] as [ForecastLineConfig, ForecastLineConfig, ForecastLineConfig]
     newLines[index] = { ...newLines[index], ...updates }
@@ -60,20 +56,20 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
           </select>
         </div>
 
-        {/* Confidence intervals toggle */}
+        {/* Scope line toggle */}
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
-            id="burnup-confidence-intervals"
-            checked={config.showConfidenceIntervals ?? false}
-            onChange={(e) => handleConfidenceIntervalsChange(e.target.checked)}
+            id="burnup-scope-line"
+            checked={config.showScopeLine !== false}
+            onChange={(e) => onChange({ ...config, showScopeLine: e.target.checked })}
             className="h-4 w-4 cursor-pointer"
           />
           <label
-            htmlFor="burnup-confidence-intervals"
+            htmlFor="burnup-scope-line"
             className="text-[0.8125rem] font-semibold text-spert-text-muted cursor-pointer"
           >
-            Show intervals
+            Show scope
           </label>
         </div>
 

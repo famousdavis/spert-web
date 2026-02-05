@@ -8,6 +8,7 @@ import { DistributionChart } from './DistributionChart'
 import { HistogramChart } from './HistogramChart'
 import { PercentileSelector } from './PercentileSelector'
 import { ProductivityAdjustments } from './ProductivityAdjustments'
+import { Milestones } from './Milestones'
 import { BurnUpChart } from './BurnUpChart'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
@@ -20,6 +21,9 @@ export function ForecastTab() {
     completedSprintCount,
     forecastStartDate,
     calculatedStats,
+    milestones,
+    hasMilestones,
+    cumulativeThresholds,
     remainingBacklog,
     velocityMean,
     velocityStdDev,
@@ -30,8 +34,10 @@ export function ForecastTab() {
     isSimulating,
     results,
     simulationData,
+    milestoneResultsState,
     customPercentile,
     customResults,
+    selectedMilestoneIndex,
     burnUpConfig,
     handleBurnUpConfigChange,
     burnUpFontSize,
@@ -47,6 +53,7 @@ export function ForecastTab() {
     burnUpChartRef,
     handleRunForecast,
     handleCustomPercentileChange,
+    handleMilestoneIndexChange,
     handleExportCsv,
     handleProjectChange,
   } = useForecastState()
@@ -89,6 +96,14 @@ export function ForecastTab() {
         <ProductivityAdjustments projectId={selectedProject.id} />
       )}
 
+      {/* Milestones - show when project is selected */}
+      {selectedProject && (
+        <Milestones
+          projectId={selectedProject.id}
+          unitOfMeasure={selectedProject.unitOfMeasure}
+        />
+      )}
+
       {selectedProject && (
         <div className="relative">
           <div ref={forecastInputsResultsRef} className="bg-white dark:bg-gray-900">
@@ -102,6 +117,7 @@ export function ForecastTab() {
               calculatedStdDev={calculatedStats.standardDeviation}
               effectiveMean={effectiveMean}
               unitOfMeasure={selectedProject.unitOfMeasure}
+              backlogReadOnly={hasMilestones}
               onRemainingBacklogChange={setRemainingBacklog}
               onVelocityMeanChange={setVelocityMean}
               onVelocityStdDevChange={setVelocityStdDev}
@@ -118,6 +134,10 @@ export function ForecastTab() {
                   bootstrapResults={results.bootstrap}
                   completedSprintCount={completedSprintCount}
                   onExport={handleExportCsv}
+                  milestones={milestones}
+                  milestoneResultsState={milestoneResultsState}
+                  cumulativeThresholds={cumulativeThresholds}
+                  unitOfMeasure={selectedProject.unitOfMeasure}
                 />
               </div>
             )}
@@ -145,6 +165,9 @@ export function ForecastTab() {
             completedSprintCount={completedSprintCount}
             onPercentileChange={handleCustomPercentileChange}
             selectorRef={percentileSelectorRef}
+            milestones={milestones}
+            selectedMilestoneIndex={selectedMilestoneIndex}
+            onMilestoneIndexChange={handleMilestoneIndexChange}
           />
 
           {/* Burn-Up Chart */}
@@ -160,6 +183,8 @@ export function ForecastTab() {
             chartRef={burnUpChartRef}
             fontSize={burnUpFontSize}
             onFontSizeChange={setBurnUpFontSize}
+            milestones={milestones}
+            cumulativeThresholds={cumulativeThresholds}
           />
 
           {/* Cumulative Probability Distribution */}
@@ -175,6 +200,10 @@ export function ForecastTab() {
             chartRef={distributionChartRef}
             fontSize={distributionFontSize}
             onFontSizeChange={setDistributionFontSize}
+            milestones={milestones}
+
+            selectedMilestoneIndex={selectedMilestoneIndex}
+            onMilestoneIndexChange={handleMilestoneIndexChange}
           />
 
           {/* Probability Distribution Histogram */}
@@ -189,6 +218,10 @@ export function ForecastTab() {
             chartRef={histogramChartRef}
             fontSize={histogramFontSize}
             onFontSizeChange={setHistogramFontSize}
+            milestones={milestones}
+
+            selectedMilestoneIndex={selectedMilestoneIndex}
+            onMilestoneIndexChange={handleMilestoneIndexChange}
           />
         </>
       )}

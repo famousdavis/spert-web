@@ -12,6 +12,16 @@ export interface ProductivityAdjustment {
   updatedAt: string
 }
 
+export interface Milestone {
+  id: string
+  name: string // e.g., "MVP", "Beta Release", "GA"
+  backlogSize: number // Incremental work for this milestone (in project's unit of measure)
+  color: string // Hex color for chart visualization
+  showOnChart?: boolean // Whether to show reference line on burn-up chart (default true)
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -21,6 +31,7 @@ export interface Project {
   firstSprintStartDate?: string // ISO date string (YYYY-MM-DD) - when the team started their first sprint
   unitOfMeasure: string
   productivityAdjustments?: ProductivityAdjustment[] // Periods of reduced productivity for forecasting
+  milestones?: Milestone[] // Ordered release milestones (first ships first)
   createdAt: string
   updatedAt: string
 }

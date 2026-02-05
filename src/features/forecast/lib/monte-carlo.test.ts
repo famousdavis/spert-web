@@ -1,143 +1,140 @@
 import { describe, it, expect } from 'vitest'
 import {
-  runSingleTrialTruncatedNormal,
-  runSingleTrialLognormal,
-  runSingleTrialGamma,
-  runSingleTrialBootstrap,
+  runTrial,
+  createSampler,
+  createBootstrapSampler,
   runSimulation,
   calculatePercentileResult,
   runForecast,
-  runTripleForecast,
   runQuadrupleForecast,
-  runBootstrapSimulation,
+  runQuadrupleForecastWithMilestones,
 } from './monte-carlo'
 
-describe('runSingleTrialTruncatedNormal', () => {
+// Shared base config for milestone tests
+const milestoneBaseConfig = {
+  remainingBacklog: 500,
+  velocityMean: 20,
+  velocityStdDev: 0, // deterministic for predictable assertions
+  startDate: '2024-01-01',
+  sprintCadenceWeeks: 2,
+  trialCount: 100,
+}
+
+describe('runTrial with truncated normal sampler', () => {
   it('returns a positive number of sprints', () => {
-    const sprints = runSingleTrialTruncatedNormal(100, 20, 5)
+    const sampler = createSampler('truncatedNormal', 20, 5)
+    const sprints = runTrial(100, sampler)
     expect(sprints).toBeGreaterThan(0)
   })
 
   it('handles zero standard deviation (deterministic)', () => {
-    // With stdDev = 0, velocity is always the mean
+    const sampler = createSampler('truncatedNormal', 20, 0)
     // 100 backlog / 20 velocity = 5 sprints
-    const sprints = runSingleTrialTruncatedNormal(100, 20, 0)
+    const sprints = runTrial(100, sampler)
     expect(sprints).toBe(5)
   })
 
   it('handles small remaining backlog', () => {
-    const sprints = runSingleTrialTruncatedNormal(10, 20, 5)
+    const sampler = createSampler('truncatedNormal', 20, 5)
+    const sprints = runTrial(10, sampler)
     expect(sprints).toBeGreaterThanOrEqual(1)
   })
 
   it('never produces negative velocity (truncation works)', () => {
     // Run many trials with high stdDev relative to mean
-    // Without truncation, many samples would be negative
+    const sampler = createSampler('truncatedNormal', 10, 8)
     for (let i = 0; i < 100; i++) {
-      const sprints = runSingleTrialTruncatedNormal(100, 10, 8)
+      const sprints = runTrial(100, sampler)
       expect(sprints).toBeGreaterThan(0)
-      expect(sprints).toBeLessThan(1000) // Should complete reasonably
+      expect(sprints).toBeLessThan(1000)
     }
   })
 })
 
-describe('runSingleTrialLognormal', () => {
+describe('runTrial with lognormal sampler', () => {
   it('returns a positive number of sprints', () => {
-    const sprints = runSingleTrialLognormal(100, 20, 5)
-    expect(sprints).toBeGreaterThan(0)
-  })
-
-  it('handles zero standard deviation (deterministic)', () => {
-    // With stdDev = 0, lognormal approaches deterministic behavior
-    // The result should still be reasonable
-    const sprints = runSingleTrialLognormal(100, 20, 0.1) // Small stdDev
-    expect(sprints).toBeGreaterThanOrEqual(4)
-    expect(sprints).toBeLessThanOrEqual(6)
-  })
-
-  it('handles small remaining backlog', () => {
-    const sprints = runSingleTrialLognormal(10, 20, 5)
-    expect(sprints).toBeGreaterThanOrEqual(1)
-  })
-})
-
-describe('runSingleTrialGamma', () => {
-  it('returns a positive number of sprints', () => {
-    const sprints = runSingleTrialGamma(100, 20, 5)
+    const sampler = createSampler('lognormal', 20, 5)
+    const sprints = runTrial(100, sampler)
     expect(sprints).toBeGreaterThan(0)
   })
 
   it('handles small standard deviation', () => {
-    // With small stdDev, gamma approaches deterministic behavior
-    const sprints = runSingleTrialGamma(100, 20, 0.1) // Small stdDev
+    const sampler = createSampler('lognormal', 20, 0.1)
+    const sprints = runTrial(100, sampler)
     expect(sprints).toBeGreaterThanOrEqual(4)
     expect(sprints).toBeLessThanOrEqual(6)
   })
 
   it('handles small remaining backlog', () => {
-    const sprints = runSingleTrialGamma(10, 20, 5)
+    const sampler = createSampler('lognormal', 20, 5)
+    const sprints = runTrial(10, sampler)
+    expect(sprints).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('runTrial with gamma sampler', () => {
+  it('returns a positive number of sprints', () => {
+    const sampler = createSampler('gamma', 20, 5)
+    const sprints = runTrial(100, sampler)
+    expect(sprints).toBeGreaterThan(0)
+  })
+
+  it('handles small standard deviation', () => {
+    const sampler = createSampler('gamma', 20, 0.1)
+    const sprints = runTrial(100, sampler)
+    expect(sprints).toBeGreaterThanOrEqual(4)
+    expect(sprints).toBeLessThanOrEqual(6)
+  })
+
+  it('handles small remaining backlog', () => {
+    const sampler = createSampler('gamma', 20, 5)
+    const sprints = runTrial(10, sampler)
     expect(sprints).toBeGreaterThanOrEqual(1)
   })
 
   it('always produces positive velocity', () => {
-    // Gamma distribution is always positive
+    const sampler = createSampler('gamma', 10, 8)
     for (let i = 0; i < 100; i++) {
-      const sprints = runSingleTrialGamma(100, 10, 8)
+      const sprints = runTrial(100, sampler)
       expect(sprints).toBeGreaterThan(0)
-      expect(sprints).toBeLessThan(1000) // Should complete reasonably
+      expect(sprints).toBeLessThan(1000)
     }
   })
 })
 
-describe('runSingleTrialBootstrap', () => {
+describe('runTrial with bootstrap sampler', () => {
   it('returns a positive number of sprints', () => {
-    const historicalVelocities = [15, 20, 25, 18, 22]
-    const sprints = runSingleTrialBootstrap(100, historicalVelocities)
+    const sampler = createBootstrapSampler([15, 20, 25, 18, 22])
+    const sprints = runTrial(100, sampler)
     expect(sprints).toBeGreaterThan(0)
   })
 
   it('throws error with empty historical data', () => {
-    expect(() => runSingleTrialBootstrap(100, [])).toThrow('Bootstrap requires historical velocity data')
+    expect(() => createBootstrapSampler([])).toThrow('Bootstrap requires historical velocity data')
   })
 
   it('handles small remaining backlog', () => {
-    const historicalVelocities = [15, 20, 25, 18, 22]
-    const sprints = runSingleTrialBootstrap(10, historicalVelocities)
+    const sampler = createBootstrapSampler([15, 20, 25, 18, 22])
+    const sprints = runTrial(10, sampler)
     expect(sprints).toBeGreaterThanOrEqual(1)
   })
 
   it('uses only values from historical data', () => {
     // With only one value, every sprint should use that value
-    const historicalVelocities = [20]
+    const sampler = createBootstrapSampler([20])
     // 100 / 20 = 5 sprints exactly
     for (let i = 0; i < 10; i++) {
-      const sprints = runSingleTrialBootstrap(100, historicalVelocities)
+      const sprints = runTrial(100, sampler)
       expect(sprints).toBe(5)
     }
   })
 
   it('produces reasonable results with varied history', () => {
-    const historicalVelocities = [10, 15, 20, 25, 30] // mean ~20
+    const sampler = createBootstrapSampler([10, 15, 20, 25, 30]) // mean ~20
     for (let i = 0; i < 100; i++) {
-      const sprints = runSingleTrialBootstrap(100, historicalVelocities)
+      const sprints = runTrial(100, sampler)
       expect(sprints).toBeGreaterThan(0)
-      expect(sprints).toBeLessThan(20) // Should complete in reasonable sprints
-    }
-  })
-})
-
-describe('runBootstrapSimulation', () => {
-  it('returns the correct number of trials', () => {
-    const historicalVelocities = [15, 20, 25, 18, 22]
-    const result = runBootstrapSimulation(100, historicalVelocities, 100)
-    expect(result).toHaveLength(100)
-  })
-
-  it('returns sorted sprint counts', () => {
-    const historicalVelocities = [15, 20, 25, 18, 22]
-    const result = runBootstrapSimulation(100, historicalVelocities, 1000)
-    for (let i = 1; i < result.length; i++) {
-      expect(result[i]).toBeGreaterThanOrEqual(result[i - 1])
+      expect(sprints).toBeLessThan(20)
     }
   })
 })
@@ -266,59 +263,6 @@ describe('runForecast', () => {
   })
 })
 
-describe('runTripleForecast', () => {
-  it('returns results for all three distributions', () => {
-    const result = runTripleForecast({
-      remainingBacklog: 100,
-      velocityMean: 20,
-      velocityStdDev: 5,
-      startDate: '2024-01-01',
-      trialCount: 1000,
-      sprintCadenceWeeks: 2,
-    })
-
-    expect(result.truncatedNormal).toBeDefined()
-    expect(result.lognormal).toBeDefined()
-    expect(result.gamma).toBeDefined()
-    expect(result.truncatedNormal.results.p50).toBeDefined()
-    expect(result.lognormal.results.p50).toBeDefined()
-    expect(result.gamma.results.p50).toBeDefined()
-    expect(result.truncatedNormal.sprintsRequired).toHaveLength(1000)
-    expect(result.lognormal.sprintsRequired).toHaveLength(1000)
-    expect(result.gamma.sprintsRequired).toHaveLength(1000)
-  })
-
-  it('all three distributions produce reasonable results', () => {
-    const result = runTripleForecast({
-      remainingBacklog: 100,
-      velocityMean: 20,
-      velocityStdDev: 5,
-      startDate: '2024-01-01',
-      trialCount: 10000,
-      sprintCadenceWeeks: 2,
-    })
-
-    // All should have P50 around 5 sprints (100/20)
-    expect(result.truncatedNormal.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
-    expect(result.truncatedNormal.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
-    expect(result.lognormal.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
-    expect(result.lognormal.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
-    expect(result.gamma.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
-    expect(result.gamma.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
-
-    // Higher percentiles should require at least as many sprints
-    expect(result.truncatedNormal.results.p90.sprintsRequired).toBeGreaterThanOrEqual(
-      result.truncatedNormal.results.p50.sprintsRequired
-    )
-    expect(result.lognormal.results.p90.sprintsRequired).toBeGreaterThanOrEqual(
-      result.lognormal.results.p50.sprintsRequired
-    )
-    expect(result.gamma.results.p90.sprintsRequired).toBeGreaterThanOrEqual(
-      result.gamma.results.p50.sprintsRequired
-    )
-  })
-})
-
 describe('runQuadrupleForecast', () => {
   it('returns results for all four distributions when historical data provided', () => {
     const historicalVelocities = [15, 20, 25, 18, 22]
@@ -402,6 +346,56 @@ describe('runQuadrupleForecast', () => {
 
     // With factor 0.5, effective velocity = 10, so 100/10 = 10 sprints
     expect(result.truncatedNormal.results.p50.sprintsRequired).toBe(10)
+  })
+
+  it('all distributions produce reasonable P50 results', () => {
+    const result = runQuadrupleForecast({
+      remainingBacklog: 100,
+      velocityMean: 20,
+      velocityStdDev: 5,
+      startDate: '2024-01-01',
+      trialCount: 10000,
+      sprintCadenceWeeks: 2,
+    })
+
+    // All should have P50 around 5 sprints (100/20)
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+      expect(dist.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
+      expect(dist.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
+      // Higher percentiles require at least as many sprints
+      expect(dist.results.p90.sprintsRequired).toBeGreaterThanOrEqual(dist.results.p50.sprintsRequired)
+    }
+  })
+
+  it('returns null for bootstrap when historical velocities is empty', () => {
+    const result = runQuadrupleForecast(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 5,
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 100,
+      },
+      [] // empty historical velocities
+    )
+    expect(result.bootstrap).toBeNull()
+  })
+
+  it('returns valid bootstrap with 5+ velocities', () => {
+    const result = runQuadrupleForecast(
+      {
+        remainingBacklog: 100,
+        velocityMean: 20,
+        velocityStdDev: 5,
+        startDate: '2024-01-01',
+        sprintCadenceWeeks: 2,
+        trialCount: 100,
+      },
+      [10, 20, 30, 40, 50] // 5 velocities
+    )
+    expect(result.bootstrap).not.toBeNull()
+    expect(result.bootstrap!.sprintsRequired).toHaveLength(100)
   })
 })
 
@@ -510,8 +504,6 @@ describe('edge cases', () => {
   })
 })
 
-// --- Edge case tests added in v0.10.0 ---
-
 describe('runSimulation edge cases', () => {
   it('handles trialCount of 1', () => {
     const result = runSimulation({
@@ -534,35 +526,145 @@ describe('calculatePercentileResult edge cases', () => {
   })
 })
 
-describe('runQuadrupleForecast edge cases', () => {
-  it('returns null for bootstrap when historical velocities is empty', () => {
-    const result = runQuadrupleForecast(
-      {
-        remainingBacklog: 100,
-        velocityMean: 20,
-        velocityStdDev: 5,
-        startDate: '2024-01-01',
-        sprintCadenceWeeks: 2,
-        trialCount: 100,
-      },
-      [] // empty historical velocities
-    )
+// ============================================================================
+// Milestone-aware simulation tests
+// ============================================================================
+
+describe('runQuadrupleForecastWithMilestones', () => {
+  it('returns per-milestone results for all three parametric distributions', () => {
+    const thresholds = [200, 350, 500] // cumulative: MVP=200, Beta=350, GA=500
+    const result = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds)
+
+    expect(result.truncatedNormal.milestoneResults).toHaveLength(3)
+    expect(result.lognormal.milestoneResults).toHaveLength(3)
+    expect(result.gamma.milestoneResults).toHaveLength(3)
+    expect(result.bootstrap).toBeNull()
+
+    // Each milestone should have percentile results
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+      for (const ms of dist.milestoneResults) {
+        expect(ms.results.p50).toBeDefined()
+        expect(ms.results.p90).toBeDefined()
+        expect(ms.sprintsRequired).toHaveLength(100)
+      }
+    }
+  })
+
+  it('milestone sprint counts are non-decreasing (deterministic)', () => {
+    // With stdDev=0, velocity = 20 each sprint
+    // Milestone 1 at 200: 200/20 = 10 sprints
+    // Milestone 2 at 350: 350/20 = 17.5 => 18 sprints
+    // Milestone 3 at 500: 500/20 = 25 sprints
+    const thresholds = [200, 350, 500]
+    const result = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds)
+
+    const tn = result.truncatedNormal.milestoneResults
+    expect(tn[0].results.p50.sprintsRequired).toBe(10)
+    expect(tn[1].results.p50.sprintsRequired).toBe(18)
+    expect(tn[2].results.p50.sprintsRequired).toBe(25)
+
+    // Earlier milestones always complete before later ones
+    expect(tn[0].results.p50.sprintsRequired).toBeLessThanOrEqual(tn[1].results.p50.sprintsRequired)
+    expect(tn[1].results.p50.sprintsRequired).toBeLessThanOrEqual(tn[2].results.p50.sprintsRequired)
+  })
+
+  it('last milestone matches simple forecast for total backlog', () => {
+    const thresholds = [200, 350, 500]
+    const milestoneResult = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds)
+    const simpleResult = runQuadrupleForecast(milestoneBaseConfig)
+
+    // Last milestone (500 total) should match simple forecast (500 backlog)
+    const lastMilestoneSprints = milestoneResult.truncatedNormal.milestoneResults[2].results.p50.sprintsRequired
+    const simpleSprints = simpleResult.truncatedNormal.results.p50.sprintsRequired
+    expect(lastMilestoneSprints).toBe(simpleSprints)
+  })
+
+  it('handles single milestone (equivalent to simple mode)', () => {
+    const thresholds = [500]
+    const milestoneResult = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds)
+    const simpleResult = runQuadrupleForecast(milestoneBaseConfig)
+
+    expect(milestoneResult.truncatedNormal.milestoneResults).toHaveLength(1)
+    expect(milestoneResult.truncatedNormal.milestoneResults[0].results.p50.sprintsRequired)
+      .toBe(simpleResult.truncatedNormal.results.p50.sprintsRequired)
+  })
+
+  it('includes bootstrap when historical velocities provided', () => {
+    const thresholds = [200, 500]
+    const historicalVelocities = [18, 19, 20, 21, 22]
+    const result = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds, historicalVelocities)
+
+    expect(result.bootstrap).not.toBeNull()
+    expect(result.bootstrap!.milestoneResults).toHaveLength(2)
+    expect(result.bootstrap!.milestoneResults[0].sprintsRequired).toHaveLength(100)
+    expect(result.bootstrap!.milestoneResults[1].sprintsRequired).toHaveLength(100)
+
+    // Bootstrap milestone sprint counts should also be non-decreasing per trial
+    for (let i = 0; i < 100; i++) {
+      expect(result.bootstrap!.milestoneResults[0].sprintsRequired[i])
+        .toBeLessThanOrEqual(result.bootstrap!.milestoneResults[1].sprintsRequired[i] + 1)
+      // +1 tolerance because arrays are independently sorted
+    }
+  })
+
+  it('returns null bootstrap when no historical velocities', () => {
+    const thresholds = [200, 500]
+    const result = runQuadrupleForecastWithMilestones(milestoneBaseConfig, thresholds)
     expect(result.bootstrap).toBeNull()
   })
 
-  it('returns valid bootstrap with 5+ velocities', () => {
-    const result = runQuadrupleForecast(
-      {
-        remainingBacklog: 100,
-        velocityMean: 20,
-        velocityStdDev: 5,
-        startDate: '2024-01-01',
-        sprintCadenceWeeks: 2,
-        trialCount: 100,
-      },
-      [10, 20, 30, 40, 50] // 5 velocities
-    )
-    expect(result.bootstrap).not.toBeNull()
-    expect(result.bootstrap!.sprintsRequired).toHaveLength(100)
+  it('applies productivity factors correctly', () => {
+    // Factor 0.5 for all sprints: effective velocity = 10
+    // Milestone 1 at 100: 100/10 = 10 sprints
+    // Milestone 2 at 200: 200/10 = 20 sprints
+    const config = { ...milestoneBaseConfig, remainingBacklog: 200 }
+    const thresholds = [100, 200]
+    const factors = new Array(1000).fill(0.5)
+    const result = runQuadrupleForecastWithMilestones(config, thresholds, undefined, factors)
+
+    const tn = result.truncatedNormal.milestoneResults
+    expect(tn[0].results.p50.sprintsRequired).toBe(10)
+    expect(tn[1].results.p50.sprintsRequired).toBe(20)
+  })
+
+  it('each milestone sprint array is sorted', () => {
+    const thresholds = [200, 350, 500]
+    const config = { ...milestoneBaseConfig, velocityStdDev: 5, trialCount: 1000 }
+    const result = runQuadrupleForecastWithMilestones(config, thresholds)
+
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+      for (const ms of dist.milestoneResults) {
+        for (let i = 1; i < ms.sprintsRequired.length; i++) {
+          expect(ms.sprintsRequired[i]).toBeGreaterThanOrEqual(ms.sprintsRequired[i - 1])
+        }
+      }
+    }
+  })
+
+  it('produces reasonable P50 values with variance', () => {
+    const config = { ...milestoneBaseConfig, velocityStdDev: 5, trialCount: 10000 }
+    const thresholds = [200, 500]
+    const result = runQuadrupleForecastWithMilestones(config, thresholds)
+
+    // Milestone 1 (200 backlog, mean velocity 20): ~10 sprints
+    // Milestone 2 (500 backlog, mean velocity 20): ~25 sprints
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+      expect(dist.milestoneResults[0].results.p50.sprintsRequired).toBeGreaterThanOrEqual(8)
+      expect(dist.milestoneResults[0].results.p50.sprintsRequired).toBeLessThanOrEqual(13)
+      expect(dist.milestoneResults[1].results.p50.sprintsRequired).toBeGreaterThanOrEqual(22)
+      expect(dist.milestoneResults[1].results.p50.sprintsRequired).toBeLessThanOrEqual(30)
+    }
+  })
+
+  it('P90 >= P50 for all milestones and distributions', () => {
+    const config = { ...milestoneBaseConfig, velocityStdDev: 5, trialCount: 10000 }
+    const thresholds = [200, 350, 500]
+    const result = runQuadrupleForecastWithMilestones(config, thresholds)
+
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+      for (const ms of dist.milestoneResults) {
+        expect(ms.results.p90.sprintsRequired).toBeGreaterThanOrEqual(ms.results.p50.sprintsRequired)
+      }
+    }
   })
 })

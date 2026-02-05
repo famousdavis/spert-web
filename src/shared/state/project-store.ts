@@ -1,16 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Project, Sprint, ProductivityAdjustment } from '@/shared/types'
+import type { Project, Sprint, ProductivityAdjustment, Milestone } from '@/shared/types'
 import { storage, STORAGE_KEY } from './storage'
 import { APP_VERSION } from '@/shared/constants'
 import { type BurnUpConfig, DEFAULT_BURN_UP_CONFIG } from '@/shared/types/burn-up'
-
-export interface ExportData {
-  version: string
-  exportedAt: string
-  projects: Project[]
-  sprints: Sprint[]
-}
+import { validateImportData, type ExportData } from './import-validation'
+export { validateImportData, type ExportData } from './import-validation'
 
 // Session-only forecast inputs (per project, not persisted to localStorage)
 interface ForecastInputs {
@@ -51,6 +46,19 @@ interface ProjectState {
   ) => void
   deleteProductivityAdjustment: (projectId: string, adjustmentId: string) => void
 
+  // Milestone actions
+  addMilestone: (
+    projectId: string,
+    milestone: Omit<Milestone, 'id' | 'createdAt' | 'updatedAt'>
+  ) => void
+  updateMilestone: (
+    projectId: string,
+    milestoneId: string,
+    updates: Partial<Omit<Milestone, 'id' | 'createdAt'>>
+  ) => void
+  deleteMilestone: (projectId: string, milestoneId: string) => void
+  reorderMilestones: (projectId: string, milestoneIds: string[]) => void
+
   // Import/Export actions
   exportData: () => ExportData
   importData: (data: ExportData) => void
@@ -66,145 +74,6 @@ interface ProjectState {
 
 const generateId = () => crypto.randomUUID()
 const now = () => new Date().toISOString()
-
-// Validation constants
-const MAX_STRING_LENGTH = 200
-const MAX_NUMERIC_VALUE = 999999
-const MIN_SPRINT_NUMBER = 1
-const MAX_SPRINT_NUMBER = 10000
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
-
-/**
- * Validate ISO date string format (YYYY-MM-DD) and check if it's a valid date
- */
-function isValidIsoDate(dateStr: unknown): boolean {
-  if (typeof dateStr !== 'string') return false
-  if (!DATE_REGEX.test(dateStr)) return false
-
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return false
-
-  // Verify the date wasn't auto-corrected (e.g., "2026-02-30" -> "2026-03-02")
-  const [year, month, day] = dateStr.split('-').map(Number)
-  return date.getUTCFullYear() === year &&
-         date.getUTCMonth() === month - 1 &&
-         date.getUTCDate() === day
-}
-
-/**
- * Validate a number is finite and within bounds
- */
-function isValidNumber(value: unknown, min: number, max: number): boolean {
-  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
-}
-
-/**
- * Validate that imported data has the expected shape before loading it into the store.
- * Throws a descriptive error if validation fails.
- */
-export function validateImportData(data: unknown): data is ExportData {
-  if (!data || typeof data !== 'object') {
-    throw new Error('Import data must be a JSON object.')
-  }
-
-  const d = data as Record<string, unknown>
-
-  if (!Array.isArray(d.projects)) {
-    throw new Error('Import data is missing a valid "projects" array.')
-  }
-  if (!Array.isArray(d.sprints)) {
-    throw new Error('Import data is missing a valid "sprints" array.')
-  }
-
-  // Track project IDs to detect duplicates
-  const projectIds = new Set<string>()
-
-  for (let i = 0; i < d.projects.length; i++) {
-    const p = d.projects[i] as Record<string, unknown> | null
-    if (!p || typeof p !== 'object') {
-      throw new Error(`Project at index ${i} is not a valid object.`)
-    }
-    if (typeof p.id !== 'string' || !p.id) {
-      throw new Error(`Project at index ${i} is missing a valid "id".`)
-    }
-    if (projectIds.has(p.id)) {
-      throw new Error(`Duplicate project ID "${p.id}" found at index ${i}.`)
-    }
-    projectIds.add(p.id)
-
-    if (typeof p.name !== 'string' || !p.name) {
-      throw new Error(`Project at index ${i} is missing a valid "name".`)
-    }
-    if (p.name.length > MAX_STRING_LENGTH) {
-      throw new Error(`Project at index ${i} has a name exceeding ${MAX_STRING_LENGTH} characters.`)
-    }
-    if (typeof p.unitOfMeasure !== 'string') {
-      throw new Error(`Project at index ${i} is missing a valid "unitOfMeasure".`)
-    }
-    if (p.unitOfMeasure.length > MAX_STRING_LENGTH) {
-      throw new Error(`Project at index ${i} has a unitOfMeasure exceeding ${MAX_STRING_LENGTH} characters.`)
-    }
-
-    // Validate optional sprintCadenceWeeks
-    if (p.sprintCadenceWeeks !== undefined && !isValidNumber(p.sprintCadenceWeeks, 1, 52)) {
-      throw new Error(`Project at index ${i} has invalid sprintCadenceWeeks (must be 1-52).`)
-    }
-
-    // Validate optional firstSprintStartDate
-    if (p.firstSprintStartDate !== undefined && !isValidIsoDate(p.firstSprintStartDate)) {
-      throw new Error(`Project at index ${i} has invalid firstSprintStartDate (must be YYYY-MM-DD format).`)
-    }
-  }
-
-  // Track sprint IDs to detect duplicates
-  const sprintIds = new Set<string>()
-
-  for (let i = 0; i < d.sprints.length; i++) {
-    const s = d.sprints[i] as Record<string, unknown> | null
-    if (!s || typeof s !== 'object') {
-      throw new Error(`Sprint at index ${i} is not a valid object.`)
-    }
-    if (typeof s.id !== 'string' || !s.id) {
-      throw new Error(`Sprint at index ${i} is missing a valid "id".`)
-    }
-    if (sprintIds.has(s.id)) {
-      throw new Error(`Duplicate sprint ID "${s.id}" found at index ${i}.`)
-    }
-    sprintIds.add(s.id)
-
-    if (typeof s.projectId !== 'string' || !s.projectId) {
-      throw new Error(`Sprint at index ${i} is missing a valid "projectId".`)
-    }
-
-    // Validate sprintNumber is a positive integer within range
-    if (!isValidNumber(s.sprintNumber, MIN_SPRINT_NUMBER, MAX_SPRINT_NUMBER)) {
-      throw new Error(`Sprint at index ${i} has invalid sprintNumber (must be ${MIN_SPRINT_NUMBER}-${MAX_SPRINT_NUMBER}).`)
-    }
-    if (!Number.isInteger(s.sprintNumber)) {
-      throw new Error(`Sprint at index ${i} has non-integer sprintNumber.`)
-    }
-
-    // Validate doneValue is non-negative and within range
-    if (!isValidNumber(s.doneValue, 0, MAX_NUMERIC_VALUE)) {
-      throw new Error(`Sprint at index ${i} has invalid doneValue (must be 0-${MAX_NUMERIC_VALUE}).`)
-    }
-
-    // Validate optional backlogAtSprintEnd
-    if (s.backlogAtSprintEnd !== undefined && !isValidNumber(s.backlogAtSprintEnd, 0, MAX_NUMERIC_VALUE)) {
-      throw new Error(`Sprint at index ${i} has invalid backlogAtSprintEnd (must be 0-${MAX_NUMERIC_VALUE}).`)
-    }
-
-    // Validate sprint dates
-    if (s.sprintStartDate !== undefined && !isValidIsoDate(s.sprintStartDate)) {
-      throw new Error(`Sprint at index ${i} has invalid sprintStartDate (must be YYYY-MM-DD format).`)
-    }
-    if (s.sprintFinishDate !== undefined && !isValidIsoDate(s.sprintFinishDate)) {
-      throw new Error(`Sprint at index ${i} has invalid sprintFinishDate (must be YYYY-MM-DD format).`)
-    }
-  }
-
-  return true
-}
 
 export const useProjectStore = create<ProjectState>()(
   persist(
@@ -351,6 +220,74 @@ export const useProjectStore = create<ProjectState>()(
           ),
         })),
 
+      addMilestone: (projectId, milestoneData) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  milestones: [
+                    ...(p.milestones || []),
+                    {
+                      ...milestoneData,
+                      id: generateId(),
+                      createdAt: now(),
+                      updatedAt: now(),
+                    },
+                  ],
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
+      updateMilestone: (projectId, milestoneId, updates) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  milestones: (p.milestones || []).map((m) =>
+                    m.id === milestoneId
+                      ? { ...m, ...updates, updatedAt: now() }
+                      : m
+                  ),
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
+      deleteMilestone: (projectId, milestoneId) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  milestones: (p.milestones || []).filter(
+                    (m) => m.id !== milestoneId
+                  ),
+                  updatedAt: now(),
+                }
+              : p
+          ),
+        })),
+
+      reorderMilestones: (projectId, milestoneIds) =>
+        set((state) => ({
+          projects: state.projects.map((p) => {
+            if (p.id !== projectId) return p
+            const milestoneMap = new Map((p.milestones || []).map((m) => [m.id, m]))
+            return {
+              ...p,
+              milestones: milestoneIds
+                .map((id) => milestoneMap.get(id))
+                .filter((m): m is Milestone => m !== undefined),
+              updatedAt: now(),
+            }
+          }),
+        })),
+
       exportData: (): ExportData => {
         const state = get()
         return {
@@ -446,4 +383,11 @@ export const selectProjectAdjustments =
   (state: ProjectState): ProductivityAdjustment[] => {
     const project = state.projects.find((p) => p.id === projectId)
     return project?.productivityAdjustments || []
+  }
+
+export const selectProjectMilestones =
+  (projectId: string) =>
+  (state: ProjectState): Milestone[] => {
+    const project = state.projects.find((p) => p.id === projectId)
+    return project?.milestones || []
   }

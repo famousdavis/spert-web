@@ -12,3 +12,16 @@ export const MIN_SPRINTS_FOR_BOOTSTRAP = 5
 // Safety limit for maximum sprints in a single trial
 // Prevents infinite loops when velocity is near zero
 export const MAX_TRIAL_SPRINTS = 1000
+
+// Milestone limits
+export const MAX_MILESTONES = 10
+export const MILESTONE_SOFT_LIMIT = 5
+
+// Default colors for milestones (cycled through on creation)
+export const DEFAULT_MILESTONE_COLORS = [
+  '#10b981', // emerald
+  '#3b82f6', // blue
+  '#f59e0b', // amber
+  '#8b5cf6', // purple
+  '#ef4444', // red
+] as const

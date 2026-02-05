@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, type RefObject } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   useProjectStore,
@@ -30,9 +30,17 @@ interface QuadResults {
   bootstrap: PercentileResults | null
 }
 
+/** Per-milestone QuadResults and QuadSimulationData */
+export interface MilestoneResults {
+  /** milestoneResults[milestoneIdx] = QuadResults for that milestone */
+  milestoneResults: QuadResults[]
+  /** milestoneSimulationData[milestoneIdx] = QuadSimulationData for that milestone */
+  milestoneSimulationData: QuadSimulationData[]
+}
+
 export function useForecastState() {
   const isClient = useIsClient()
-  const { runSimulation, isSimulating } = useSimulationWorker()
+  const { runSimulation, runMilestoneSimulation, isSimulating } = useSimulationWorker()
   const projects = useProjectStore((state) => state.projects)
   const selectedProject = useProjectStore(selectViewingProject)
   const allSprints = useProjectStore((state) => state.sprints)
@@ -43,6 +51,28 @@ export function useForecastState() {
     () => selectedProject?.productivityAdjustments ?? [],
     [selectedProject?.productivityAdjustments]
   )
+
+  // Get milestones for the selected project
+  const milestones = useMemo(
+    () => selectedProject?.milestones ?? [],
+    [selectedProject?.milestones]
+  )
+
+  const hasMilestones = milestones.length > 0
+
+  // Compute cumulative thresholds from milestone order
+  const cumulativeThresholds = useMemo(() => {
+    let cumulative = 0
+    return milestones.map((m) => {
+      cumulative += m.backlogSize
+      return cumulative
+    })
+  }, [milestones])
+
+  // Total backlog from milestones (sum of incremental sizes)
+  const milestoneTotal = cumulativeThresholds.length > 0
+    ? cumulativeThresholds[cumulativeThresholds.length - 1]
+    : 0
 
   // Track previous project to clear results when project changes
   const prevProjectIdRef = useRef<string | undefined>(selectedProject?.id)
@@ -102,6 +132,7 @@ export function useForecastState() {
   // Results state
   const [results, setResults] = useState<QuadResults | null>(null)
   const [simulationData, setSimulationData] = useState<QuadSimulationData | null>(null)
+  const [milestoneResultsState, setMilestoneResultsState] = useState<MilestoneResults | null>(null)
   const [customPercentile, setCustomPercentile] = useState(85)
   const [customResults, setCustomResults] = useState<QuadCustomResults>({
     truncatedNormal: null,
@@ -109,6 +140,9 @@ export function useForecastState() {
     gamma: null,
     bootstrap: null,
   })
+
+  // Milestone chart selector (which milestone to show on CDF/histogram)
+  const [selectedMilestoneIndex, setSelectedMilestoneIndex] = useState(0)
 
   // Chart font sizes (session only, not persisted)
   const [burnUpFontSize, setBurnUpFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
@@ -120,7 +154,9 @@ export function useForecastState() {
     if (prevProjectIdRef.current !== selectedProject?.id) {
       setResults(null)
       setSimulationData(null)
+      setMilestoneResultsState(null)
       setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
+      setSelectedMilestoneIndex(0)
       prevProjectIdRef.current = selectedProject?.id
     }
   }, [selectedProject?.id])
@@ -130,12 +166,14 @@ export function useForecastState() {
   const forecastInputs = useProjectStore((state) =>
     selectedProject ? state.forecastInputs[selectedProject.id] : undefined
   )
-  const remainingBacklog = forecastInputs?.remainingBacklog ?? ''
+  const remainingBacklog = hasMilestones
+    ? String(milestoneTotal)
+    : (forecastInputs?.remainingBacklog ?? '')
   const velocityMean = forecastInputs?.velocityMean ?? ''
   const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
 
   const setRemainingBacklog = (value: string) => {
-    if (selectedProject) setForecastInput(selectedProject.id, 'remainingBacklog', value)
+    if (selectedProject && !hasMilestones) setForecastInput(selectedProject.id, 'remainingBacklog', value)
   }
   const setVelocityMean = (value: string) => {
     if (selectedProject) setForecastInput(selectedProject.id, 'velocityMean', value)
@@ -192,41 +230,90 @@ export function useForecastState() {
       productivityFactors = factors
     }
 
-    // Run all simulations off the main thread via Web Worker
     try {
-      const quadResults = await runSimulation({
-        config,
-        historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
-        productivityFactors,
-      })
+      if (hasMilestones && cumulativeThresholds.length > 0) {
+        // Milestone mode: run simulation with checkpoints
+        const milestoneResult = await runMilestoneSimulation({
+          config,
+          historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
+          productivityFactors,
+          milestoneThresholds: cumulativeThresholds,
+        })
 
-      setSimulationData({
-        truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-        lognormal: quadResults.lognormal.sprintsRequired,
-        gamma: quadResults.gamma.sprintsRequired,
-        bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
-      })
+        // Extract per-milestone results and simulation data
+        const milestoneCount = cumulativeThresholds.length
+        const perMilestoneResults: QuadResults[] = []
+        const perMilestoneSimData: QuadSimulationData[] = []
 
-      setResults({
-        truncatedNormal: quadResults.truncatedNormal.results,
-        lognormal: quadResults.lognormal.results,
-        gamma: quadResults.gamma.results,
-        bootstrap: quadResults.bootstrap?.results ?? null,
-      })
+        for (let m = 0; m < milestoneCount; m++) {
+          perMilestoneResults.push({
+            truncatedNormal: milestoneResult.truncatedNormal.milestoneResults[m].results,
+            lognormal: milestoneResult.lognormal.milestoneResults[m].results,
+            gamma: milestoneResult.gamma.milestoneResults[m].results,
+            bootstrap: milestoneResult.bootstrap?.milestoneResults[m].results ?? null,
+          })
+          perMilestoneSimData.push({
+            truncatedNormal: milestoneResult.truncatedNormal.milestoneResults[m].sprintsRequired,
+            lognormal: milestoneResult.lognormal.milestoneResults[m].sprintsRequired,
+            gamma: milestoneResult.gamma.milestoneResults[m].sprintsRequired,
+            bootstrap: milestoneResult.bootstrap?.milestoneResults[m].sprintsRequired ?? null,
+          })
+        }
 
-      // Calculate custom percentile results for the default value
-      const simData: QuadSimulationData = {
-        truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-        lognormal: quadResults.lognormal.sprintsRequired,
-        gamma: quadResults.gamma.sprintsRequired,
-        bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+        setMilestoneResultsState({ milestoneResults: perMilestoneResults, milestoneSimulationData: perMilestoneSimData })
+
+        // Set the "total" (last milestone) as the primary results for backward compatibility
+        const lastIdx = milestoneCount - 1
+        const totalSimData = perMilestoneSimData[lastIdx]
+        const totalResults = perMilestoneResults[lastIdx]
+
+        setSimulationData(totalSimData)
+        setResults(totalResults)
+        setSelectedMilestoneIndex(lastIdx)
+
+        setCustomResults(calculateAllCustomPercentiles(
+          totalSimData,
+          customPercentile,
+          forecastStartDate,
+          selectedProject.sprintCadenceWeeks
+        ))
+      } else {
+        // Simple mode: run standard simulation
+        const quadResults = await runSimulation({
+          config,
+          historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
+          productivityFactors,
+        })
+
+        setMilestoneResultsState(null)
+
+        setSimulationData({
+          truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+          lognormal: quadResults.lognormal.sprintsRequired,
+          gamma: quadResults.gamma.sprintsRequired,
+          bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+        })
+
+        setResults({
+          truncatedNormal: quadResults.truncatedNormal.results,
+          lognormal: quadResults.lognormal.results,
+          gamma: quadResults.gamma.results,
+          bootstrap: quadResults.bootstrap?.results ?? null,
+        })
+
+        const simData: QuadSimulationData = {
+          truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
+          lognormal: quadResults.lognormal.sprintsRequired,
+          gamma: quadResults.gamma.sprintsRequired,
+          bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
+        }
+        setCustomResults(calculateAllCustomPercentiles(
+          simData,
+          customPercentile,
+          forecastStartDate,
+          selectedProject.sprintCadenceWeeks
+        ))
       }
-      setCustomResults(calculateAllCustomPercentiles(
-        simData,
-        customPercentile,
-        forecastStartDate,
-        selectedProject.sprintCadenceWeeks
-      ))
     } catch {
       // Aborted simulation (new run started) — ignore
     }
@@ -234,9 +321,15 @@ export function useForecastState() {
 
   const handleCustomPercentileChange = (percentile: number) => {
     setCustomPercentile(percentile)
-    if (simulationData && selectedProject?.sprintCadenceWeeks) {
+
+    // Determine which simulation data to use for custom percentile
+    const activeSimData = milestoneResultsState && selectedMilestoneIndex < milestoneResultsState.milestoneSimulationData.length
+      ? milestoneResultsState.milestoneSimulationData[selectedMilestoneIndex]
+      : simulationData
+
+    if (activeSimData && selectedProject?.sprintCadenceWeeks) {
       setCustomResults(calculateAllCustomPercentiles(
-        simulationData,
+        activeSimData,
         percentile,
         forecastStartDate,
         selectedProject.sprintCadenceWeeks
@@ -244,8 +337,48 @@ export function useForecastState() {
     }
   }
 
+  const handleMilestoneIndexChange = (index: number) => {
+    setSelectedMilestoneIndex(index)
+
+    if (milestoneResultsState && index < milestoneResultsState.milestoneSimulationData.length) {
+      const simData = milestoneResultsState.milestoneSimulationData[index]
+      setSimulationData(simData)
+      setResults(milestoneResultsState.milestoneResults[index])
+
+      if (selectedProject?.sprintCadenceWeeks) {
+        setCustomResults(calculateAllCustomPercentiles(
+          simData,
+          customPercentile,
+          forecastStartDate,
+          selectedProject.sprintCadenceWeeks
+        ))
+      }
+    }
+  }
+
   const handleExportCsv = () => {
     if (!selectedProject || !results || !simulationData || !selectedProject.sprintCadenceWeeks) return
+
+    // Build milestone export data if milestones exist
+    let milestoneExportData: Parameters<typeof generateForecastCsv>[0]['milestoneData']
+    if (hasMilestones && milestoneResultsState) {
+      let cumulative = 0
+      const msExport = milestones.map((m) => {
+        cumulative += m.backlogSize
+        return { name: m.name, backlogSize: m.backlogSize, cumulativeBacklog: cumulative }
+      })
+      milestoneExportData = {
+        milestones: msExport,
+        distributions: {
+          truncatedNormal: milestoneResultsState.milestoneResults.map((r) => r.truncatedNormal),
+          lognormal: milestoneResultsState.milestoneResults.map((r) => r.lognormal),
+          gamma: milestoneResultsState.milestoneResults.map((r) => r.gamma),
+          bootstrap: milestoneResultsState.milestoneResults[0]?.bootstrap
+            ? milestoneResultsState.milestoneResults.map((r) => r.bootstrap!)
+            : null,
+        },
+      }
+    }
 
     const csvContent = generateForecastCsv({
       config: {
@@ -257,6 +390,7 @@ export function useForecastState() {
         sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
         trialCount: TRIAL_COUNT,
         productivityAdjustments: productivityAdjustments.filter((a) => a.enabled !== false),
+        milestones: hasMilestones ? milestones : undefined,
       },
       truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
@@ -266,6 +400,7 @@ export function useForecastState() {
       lognormalSprintsRequired: simulationData.lognormal,
       gammaSprintsRequired: simulationData.gamma,
       bootstrapSprintsRequired: simulationData.bootstrap,
+      milestoneData: milestoneExportData,
     })
 
     downloadCsv(csvContent, generateFilename(selectedProject.name))
@@ -289,6 +424,12 @@ export function useForecastState() {
     forecastStartDate,
     calculatedStats,
 
+    // Milestone data
+    milestones,
+    hasMilestones,
+    cumulativeThresholds,
+    milestoneTotal,
+
     // Form state
     remainingBacklog,
     velocityMean,
@@ -304,8 +445,10 @@ export function useForecastState() {
     // Results
     results,
     simulationData,
+    milestoneResultsState,
     customPercentile,
     customResults,
+    selectedMilestoneIndex,
 
     // Burn-up config
     burnUpConfig,
@@ -329,6 +472,7 @@ export function useForecastState() {
     // Handlers
     handleRunForecast,
     handleCustomPercentileChange,
+    handleMilestoneIndexChange,
     handleExportCsv,
     handleProjectChange,
   }

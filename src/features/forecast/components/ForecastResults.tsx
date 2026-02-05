@@ -2,15 +2,116 @@
 
 import { cn } from '@/lib/utils'
 import type { PercentileResults } from '../lib/monte-carlo'
+import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDate } from '@/shared/lib/dates'
+import type { Milestone } from '@/shared/types'
 
 interface ForecastResultsProps {
   truncatedNormalResults: PercentileResults
   lognormalResults: PercentileResults
   gammaResults: PercentileResults
   bootstrapResults: PercentileResults | null
-  completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
+  completedSprintCount: number
   onExport?: () => void
+  milestones?: Milestone[]
+  milestoneResultsState?: MilestoneResults | null
+  cumulativeThresholds?: number[]
+  unitOfMeasure?: string
+}
+
+function buildPercentileRows(
+  truncatedNormalResults: PercentileResults,
+  lognormalResults: PercentileResults,
+  gammaResults: PercentileResults,
+  bootstrapResults: PercentileResults | null
+) {
+  return [
+    { key: 'p50', label: 'P50', truncatedNormal: truncatedNormalResults.p50, lognormal: lognormalResults.p50, gamma: gammaResults.p50, bootstrap: bootstrapResults?.p50 ?? null },
+    { key: 'p60', label: 'P60', truncatedNormal: truncatedNormalResults.p60, lognormal: lognormalResults.p60, gamma: gammaResults.p60, bootstrap: bootstrapResults?.p60 ?? null },
+    { key: 'p70', label: 'P70', truncatedNormal: truncatedNormalResults.p70, lognormal: lognormalResults.p70, gamma: gammaResults.p70, bootstrap: bootstrapResults?.p70 ?? null },
+    { key: 'p80', label: 'P80', truncatedNormal: truncatedNormalResults.p80, lognormal: lognormalResults.p80, gamma: gammaResults.p80, bootstrap: bootstrapResults?.p80 ?? null },
+    { key: 'p90', label: 'P90', truncatedNormal: truncatedNormalResults.p90, lognormal: lognormalResults.p90, gamma: gammaResults.p90, bootstrap: bootstrapResults?.p90 ?? null },
+  ]
+}
+
+function ResultsTable({
+  percentiles,
+  hasBootstrap,
+  completedSprintCount,
+}: {
+  percentiles: ReturnType<typeof buildPercentileRows>
+  hasBootstrap: boolean
+  completedSprintCount: number
+}) {
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="border-b border-border">
+          <th rowSpan={2} className="px-2 py-3 text-left text-sm font-medium text-muted-foreground align-bottom">Conf.</th>
+          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">T-Normal</th>
+          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Lognorm</th>
+          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Gamma</th>
+          {hasBootstrap && (
+            <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Bootstrap</th>
+          )}
+        </tr>
+        <tr className="border-b border-border">
+          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
+          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
+          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
+          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
+          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
+          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
+          {hasBootstrap && (
+            <>
+              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
+              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
+            </>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {percentiles.map(({ key, label, truncatedNormal, lognormal, gamma, bootstrap }) => {
+          const lognormalDiffSprints = truncatedNormal.sprintsRequired !== lognormal.sprintsRequired
+          const lognormalDiffDate = truncatedNormal.finishDate !== lognormal.finishDate
+          const gammaDiffSprints = truncatedNormal.sprintsRequired !== gamma.sprintsRequired
+          const gammaDiffDate = truncatedNormal.finishDate !== gamma.finishDate
+          const bootstrapDiffSprints = bootstrap && truncatedNormal.sprintsRequired !== bootstrap.sprintsRequired
+          const bootstrapDiffDate = bootstrap && truncatedNormal.finishDate !== bootstrap.finishDate
+
+          return (
+            <tr key={key} className="border-b border-border">
+              <td className="px-2 py-3 text-sm font-medium dark:text-gray-100">{label}</td>
+              <td className="px-2 py-3 text-right text-sm dark:text-gray-100">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
+              <td className="px-2 py-3 text-sm dark:text-gray-100">{formatDate(truncatedNormal.finishDate)}</td>
+              <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', lognormalDiffSprints && 'text-spert-blue font-medium')}>
+                {lognormal.sprintsRequired + completedSprintCount}
+              </td>
+              <td className={cn('px-2 py-3 text-sm dark:text-gray-100', lognormalDiffDate && 'text-spert-blue font-medium')}>
+                {formatDate(lognormal.finishDate)}
+              </td>
+              <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', gammaDiffSprints && 'text-spert-blue font-medium')}>
+                {gamma.sprintsRequired + completedSprintCount}
+              </td>
+              <td className={cn('px-2 py-3 text-sm dark:text-gray-100', gammaDiffDate && 'text-spert-blue font-medium')}>
+                {formatDate(gamma.finishDate)}
+              </td>
+              {hasBootstrap && bootstrap && (
+                <>
+                  <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', bootstrapDiffSprints && 'text-spert-blue font-medium')}>
+                    {bootstrap.sprintsRequired + completedSprintCount}
+                  </td>
+                  <td className={cn('px-2 py-3 text-sm dark:text-gray-100', bootstrapDiffDate && 'text-spert-blue font-medium')}>
+                    {formatDate(bootstrap.finishDate)}
+                  </td>
+                </>
+              )}
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
 }
 
 export function ForecastResults({
@@ -20,200 +121,76 @@ export function ForecastResults({
   bootstrapResults,
   completedSprintCount,
   onExport,
+  milestones = [],
+  milestoneResultsState,
+  cumulativeThresholds = [],
+  unitOfMeasure = '',
 }: ForecastResultsProps) {
   const hasBootstrap = bootstrapResults !== null
-
-  const percentiles = [
-    {
-      key: 'p50',
-      label: 'P50',
-      truncatedNormal: truncatedNormalResults.p50,
-      lognormal: lognormalResults.p50,
-      gamma: gammaResults.p50,
-      bootstrap: bootstrapResults?.p50 ?? null,
-    },
-    {
-      key: 'p60',
-      label: 'P60',
-      truncatedNormal: truncatedNormalResults.p60,
-      lognormal: lognormalResults.p60,
-      gamma: gammaResults.p60,
-      bootstrap: bootstrapResults?.p60 ?? null,
-    },
-    {
-      key: 'p70',
-      label: 'P70',
-      truncatedNormal: truncatedNormalResults.p70,
-      lognormal: lognormalResults.p70,
-      gamma: gammaResults.p70,
-      bootstrap: bootstrapResults?.p70 ?? null,
-    },
-    {
-      key: 'p80',
-      label: 'P80',
-      truncatedNormal: truncatedNormalResults.p80,
-      lognormal: lognormalResults.p80,
-      gamma: gammaResults.p80,
-      bootstrap: bootstrapResults?.p80 ?? null,
-    },
-    {
-      key: 'p90',
-      label: 'P90',
-      truncatedNormal: truncatedNormalResults.p90,
-      lognormal: lognormalResults.p90,
-      gamma: gammaResults.p90,
-      bootstrap: bootstrapResults?.p90 ?? null,
-    },
-  ]
+  const hasMilestones = milestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
 
   return (
     <div className="space-y-4">
       <h3 className="font-medium dark:text-gray-100">Forecast Results</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-border">
-              <th
-                rowSpan={2}
-                className="px-2 py-3 text-left text-sm font-medium text-muted-foreground align-bottom"
-              >
-                Conf.
-              </th>
-              <th
-                colSpan={2}
-                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
-              >
-                T-Normal
-              </th>
-              <th
-                colSpan={2}
-                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
-              >
-                Lognorm
-              </th>
-              <th
-                colSpan={2}
-                className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
-              >
-                Gamma
-              </th>
-              {hasBootstrap && (
-                <th
-                  colSpan={2}
-                  className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
-                >
-                  Bootstrap
-                </th>
-              )}
-            </tr>
-            <tr className="border-b border-border">
-              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Sprint
-              </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                Date
-              </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Sprint
-              </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                Date
-              </th>
-              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                Sprint
-              </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                Date
-              </th>
-              {hasBootstrap && (
-                <>
-                  <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
-                    Sprint
-                  </th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
-                    Date
-                  </th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {percentiles.map(({ key, label, truncatedNormal, lognormal, gamma, bootstrap }) => {
-              // Check if lognormal differs from truncatedNormal
-              const lognormalDiffSprints = truncatedNormal.sprintsRequired !== lognormal.sprintsRequired
-              const lognormalDiffDate = truncatedNormal.finishDate !== lognormal.finishDate
 
-              // Check if gamma differs from truncatedNormal
-              const gammaDiffSprints = truncatedNormal.sprintsRequired !== gamma.sprintsRequired
-              const gammaDiffDate = truncatedNormal.finishDate !== gamma.finishDate
+      {hasMilestones ? (
+        // Milestone-grouped results
+        <div className="space-y-6">
+          {milestones.map((milestone, idx) => {
+            const milestoneResult = milestoneResultsState.milestoneResults[idx]
+            if (!milestoneResult) return null
 
-              // Check if bootstrap differs from truncatedNormal
-              const bootstrapDiffSprints = bootstrap && truncatedNormal.sprintsRequired !== bootstrap.sprintsRequired
-              const bootstrapDiffDate = bootstrap && truncatedNormal.finishDate !== bootstrap.finishDate
+            const isLast = idx === milestones.length - 1
+            const cumulativeBacklog = cumulativeThresholds[idx] ?? 0
+            const percentiles = buildPercentileRows(
+              milestoneResult.truncatedNormal,
+              milestoneResult.lognormal,
+              milestoneResult.gamma,
+              milestoneResult.bootstrap
+            )
 
-              return (
-                <tr key={key} className="border-b border-border">
-                  <td className="px-2 py-3 text-sm font-medium dark:text-gray-100">{label}</td>
-                  <td className="px-2 py-3 text-right text-sm dark:text-gray-100">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
-                  <td className="px-2 py-3 text-sm dark:text-gray-100">{formatDate(truncatedNormal.finishDate)}</td>
-                  <td
-                    className={cn(
-                      'px-2 py-3 text-right text-sm dark:text-gray-100',
-                      lognormalDiffSprints && 'text-spert-blue font-medium'
+            return (
+              <div key={milestone.id}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="inline-block size-3 rounded-full"
+                    style={{ backgroundColor: milestone.color }}
+                  />
+                  <h4 className="text-sm font-semibold dark:text-gray-100">
+                    {milestone.name}
+                    <span className="ml-2 font-normal text-spert-text-muted">
+                      ({milestone.backlogSize.toLocaleString()} {unitOfMeasure} remaining
+                      {!isLast && ` \u2022 ${cumulativeBacklog.toLocaleString()} cumulative`})
+                    </span>
+                    {isLast && (
+                      <span className="ml-2 text-xs font-normal text-spert-text-muted italic">
+                        Total
+                      </span>
                     )}
-                  >
-                    {lognormal.sprintsRequired + completedSprintCount}
-                  </td>
-                  <td
-                    className={cn(
-                      'px-2 py-3 text-sm dark:text-gray-100',
-                      lognormalDiffDate && 'text-spert-blue font-medium'
-                    )}
-                  >
-                    {formatDate(lognormal.finishDate)}
-                  </td>
-                  <td
-                    className={cn(
-                      'px-2 py-3 text-right text-sm dark:text-gray-100',
-                      gammaDiffSprints && 'text-spert-blue font-medium'
-                    )}
-                  >
-                    {gamma.sprintsRequired + completedSprintCount}
-                  </td>
-                  <td
-                    className={cn(
-                      'px-2 py-3 text-sm dark:text-gray-100',
-                      gammaDiffDate && 'text-spert-blue font-medium'
-                    )}
-                  >
-                    {formatDate(gamma.finishDate)}
-                  </td>
-                  {hasBootstrap && bootstrap && (
-                    <>
-                      <td
-                        className={cn(
-                          'px-2 py-3 text-right text-sm dark:text-gray-100',
-                          bootstrapDiffSprints && 'text-spert-blue font-medium'
-                        )}
-                      >
-                        {bootstrap.sprintsRequired + completedSprintCount}
-                      </td>
-                      <td
-                        className={cn(
-                          'px-2 py-3 text-sm dark:text-gray-100',
-                          bootstrapDiffDate && 'text-spert-blue font-medium'
-                        )}
-                      >
-                        {formatDate(bootstrap.finishDate)}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <ResultsTable
+                    percentiles={percentiles}
+                    hasBootstrap={hasBootstrap}
+                    completedSprintCount={completedSprintCount}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        // Simple mode — single table
+        <div className="overflow-x-auto">
+          <ResultsTable
+            percentiles={buildPercentileRows(truncatedNormalResults, lognormalResults, gammaResults, bootstrapResults)}
+            hasBootstrap={hasBootstrap}
+            completedSprintCount={completedSprintCount}
+          />
+        </div>
+      )}
+
       <div className="flex justify-between items-start">
         <div className="text-xs text-muted-foreground space-y-1">
           <p>

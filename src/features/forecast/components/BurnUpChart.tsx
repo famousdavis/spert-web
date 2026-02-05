@@ -12,8 +12,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
-import type { Sprint } from '@/shared/types'
+import type { Sprint, Milestone } from '@/shared/types'
 import type { QuadSimulationData } from '../lib/monte-carlo'
 import type { BurnUpConfig, ChartFontSize } from '../types'
 import { CHART_FONT_SIZES } from '../types'
@@ -39,6 +40,8 @@ interface BurnUpChartProps {
   chartRef?: RefObject<HTMLDivElement | null>
   fontSize?: ChartFontSize
   onFontSizeChange?: (size: ChartFontSize) => void
+  milestones?: Milestone[]
+  cumulativeThresholds?: number[]
 }
 
 export function BurnUpChart({
@@ -53,24 +56,72 @@ export function BurnUpChart({
   chartRef,
   fontSize = 'small',
   onFontSizeChange,
+  milestones = [],
+  cumulativeThresholds = [],
 }: BurnUpChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
 
   const hasBootstrap = isBootstrapAvailable(simulationData)
 
+  // Compute total done for milestone reference line positioning
+  const totalDone = useMemo(
+    () => sprints.reduce((sum, s) => sum + s.doneValue, 0),
+    [sprints]
+  )
+
+  const scopeHidden = config.showScopeLine === false
+
+  // When scope is hidden, find the top-most visible milestone to cap the chart
+  const topVisibleMilestoneThreshold = useMemo(() => {
+    if (!scopeHidden || milestones.length === 0 || cumulativeThresholds.length === 0) return null
+    const visibleMilestones = milestones
+      .map((m, idx) => ({ milestone: m, threshold: cumulativeThresholds[idx] }))
+      .filter(({ milestone: m }) => m.showOnChart !== false)
+    if (visibleMilestones.length === 0) return null
+    return Math.max(...visibleMilestones.map((v) => v.threshold))
+  }, [scopeHidden, milestones, cumulativeThresholds])
+
+  // Effective forecast backlog: capped to top visible milestone when scope is hidden
+  const effectiveBacklog = useMemo(() => {
+    if (topVisibleMilestoneThreshold !== null && topVisibleMilestoneThreshold < forecastBacklog) {
+      return topVisibleMilestoneThreshold
+    }
+    return forecastBacklog
+  }, [forecastBacklog, topVisibleMilestoneThreshold])
+
+  // Milestone reference lines on Y-axis
+  // When scope is shown: exclude last milestone (it equals the scope line)
+  // When scope is hidden: include all visible milestones (last one becomes the ceiling)
+  const milestoneRefLines = useMemo(() => {
+    if (milestones.length === 0 || cumulativeThresholds.length === 0) return []
+    const candidates = scopeHidden ? milestones : milestones.slice(0, -1)
+    if (candidates.length === 0) return []
+    return candidates
+      .filter((m) => m.showOnChart !== false)
+      .map((m) => {
+        const idx = milestones.indexOf(m)
+        return {
+          id: m.id,
+          name: m.name,
+          color: m.color,
+          yValue: totalDone + cumulativeThresholds[idx],
+        }
+      })
+  }, [milestones, cumulativeThresholds, totalDone, scopeHidden])
+
   const chartData = useMemo(
     () =>
       calculateBurnUpData({
         sprints,
-        forecastBacklog,
+        forecastBacklog: effectiveBacklog,
         simulationData,
         config,
         sprintCadenceWeeks,
         firstSprintStartDate,
         completedSprintCount,
       }),
-    [sprints, forecastBacklog, simulationData, config, sprintCadenceWeeks, firstSprintStartDate, completedSprintCount]
+    [sprints, effectiveBacklog, simulationData, config, sprintCadenceWeeks, firstSprintStartDate, completedSprintCount]
   )
 
   // Calculate Y-axis domain based on data
@@ -207,15 +258,17 @@ export function BurnUpChart({
                 )}
 
                 {/* Scope line (solid) - total product scope over time */}
-                <Line
-                  type="stepAfter"
-                  dataKey="backlog"
-                  name="Scope"
-                  stroke={BACKLOG_COLOR}
-                  dot={false}
-                  strokeWidth={3.5}
-                  connectNulls={false}
-                />
+                {config.showScopeLine !== false && (
+                  <Line
+                    type="stepAfter"
+                    dataKey="backlog"
+                    name="Scope"
+                    stroke={BACKLOG_COLOR}
+                    dot={false}
+                    strokeWidth={3.5}
+                    connectNulls={false}
+                  />
+                )}
 
                 {/* Cumulative done line (solid) - stops at history end (nulls are not connected) */}
                 <Line
@@ -263,6 +316,23 @@ export function BurnUpChart({
                   strokeWidth={3}
                   connectNulls={false}
                 />
+
+                {/* Milestone reference lines (horizontal dashed lines at cumulative scope levels) */}
+                {milestoneRefLines.map((ref) => (
+                  <ReferenceLine
+                    key={ref.id}
+                    y={ref.yValue}
+                    stroke={ref.color}
+                    strokeDasharray="8 4"
+                    strokeWidth={1.5}
+                    label={{
+                      value: ref.name,
+                      position: 'insideTopLeft',
+                      fontSize: fontSizes.axisTick,
+                      fill: ref.color,
+                    }}
+                  />
+                ))}
               </ComposedChart>
             </ResponsiveContainer>
           </div>

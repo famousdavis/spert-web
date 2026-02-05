@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import type { ForecastResult } from '@/shared/types'
+import type { ForecastResult, Milestone } from '@/shared/types'
 import { cn } from '@/lib/utils'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
@@ -13,9 +13,12 @@ interface PercentileSelectorProps {
   lognormalResult: ForecastResult | null
   gammaResult: ForecastResult | null
   bootstrapResult: ForecastResult | null
-  completedSprintCount: number // Number of sprints already completed (to show absolute sprint numbers)
+  completedSprintCount: number
   onPercentileChange: (percentile: number) => void
   selectorRef?: RefObject<HTMLDivElement | null>
+  milestones?: Milestone[]
+  selectedMilestoneIndex?: number
+  onMilestoneIndexChange?: (index: number) => void
 }
 
 export function PercentileSelector({
@@ -27,6 +30,9 @@ export function PercentileSelector({
   completedSprintCount,
   onPercentileChange,
   selectorRef,
+  milestones = [],
+  selectedMilestoneIndex = 0,
+  onMilestoneIndexChange,
 }: PercentileSelectorProps) {
   const hasResults = truncatedNormalResult && lognormalResult && gammaResult
   const hasBootstrap = bootstrapResult !== null
@@ -34,7 +40,23 @@ export function PercentileSelector({
   return (
     <div className="relative">
       <div ref={selectorRef} className="space-y-4 rounded-lg border border-border dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
-        <h3 className="font-medium dark:text-gray-100">Custom Percentile</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-medium dark:text-gray-100">Custom Percentile</h3>
+          {milestones.length > 0 && onMilestoneIndexChange && (
+            <select
+              value={selectedMilestoneIndex}
+              onChange={(e) => onMilestoneIndexChange(Number(e.target.value))}
+              className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
+              aria-label="Select milestone for custom percentile"
+            >
+              {milestones.map((m, idx) => (
+                <option key={m.id} value={idx}>
+                  {m.name}{idx === milestones.length - 1 ? ' (Total)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
       <div className="flex items-center gap-4">
         <div className="flex-1 space-y-2">

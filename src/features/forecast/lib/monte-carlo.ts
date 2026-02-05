@@ -38,17 +38,47 @@ export interface PercentileResults {
  * Velocity sampler function type.
  * Each distribution provides a sampler that returns a raw velocity sample.
  */
-type VelocitySampler = () => number
+export type VelocitySampler = () => number
+
+// ============================================================================
+// Sampler factories
+// ============================================================================
+
+/**
+ * Create a velocity sampler for a parametric distribution type.
+ */
+export function createSampler(distributionType: DistributionType, mean: number, stdDev: number): VelocitySampler {
+  switch (distributionType) {
+    case 'lognormal':
+      return () => randomLognormalFromMeanStdDev(mean, stdDev)
+    case 'gamma':
+      return () => randomGammaFromMeanStdDev(mean, stdDev)
+    case 'truncatedNormal':
+    default:
+      return () => randomTruncatedNormal(mean, stdDev, 0)
+  }
+}
+
+/**
+ * Create a velocity sampler that randomly selects from historical velocities.
+ */
+export function createBootstrapSampler(velocities: number[]): VelocitySampler {
+  if (velocities.length === 0) throw new Error('Bootstrap requires historical velocity data')
+  return () => velocities[Math.floor(Math.random() * velocities.length)]
+}
+
+// ============================================================================
+// Core trial runners
+// ============================================================================
 
 /**
  * Core trial runner: simulates sprints until backlog is exhausted.
- * All distribution-specific trial functions delegate to this.
  *
  * @param remainingBacklog - Work remaining
  * @param sampler - Function that returns a velocity sample from the chosen distribution
  * @param productivityFactors - Optional per-sprint multipliers (index 0 = first sprint)
  */
-function runTrial(
+export function runTrial(
   remainingBacklog: number,
   sampler: VelocitySampler,
   productivityFactors?: number[]
@@ -66,79 +96,60 @@ function runTrial(
   return sprints
 }
 
-// ============================================================================
-// Distribution-specific trial functions (thin wrappers around runTrial)
-// ============================================================================
-
-export function runSingleTrialTruncatedNormal(backlog: number, mean: number, stdDev: number): number {
-  return runTrial(backlog, () => randomTruncatedNormal(mean, stdDev, 0))
-}
-
-export function runSingleTrialLognormal(backlog: number, mean: number, stdDev: number): number {
-  return runTrial(backlog, () => randomLognormalFromMeanStdDev(mean, stdDev))
-}
-
-export function runSingleTrialGamma(backlog: number, mean: number, stdDev: number): number {
-  return runTrial(backlog, () => randomGammaFromMeanStdDev(mean, stdDev))
-}
-
-export function runSingleTrialBootstrap(backlog: number, velocities: number[]): number {
-  if (velocities.length === 0) throw new Error('Bootstrap requires historical velocity data')
-  return runTrial(backlog, () => velocities[Math.floor(Math.random() * velocities.length)])
-}
-
-export function runSingleTrialTruncatedNormalWithProductivity(
-  backlog: number, mean: number, stdDev: number, factors: number[]
-): number {
-  return runTrial(backlog, () => randomTruncatedNormal(mean, stdDev, 0), factors)
-}
-
-export function runSingleTrialLognormalWithProductivity(
-  backlog: number, mean: number, stdDev: number, factors: number[]
-): number {
-  return runTrial(backlog, () => randomLognormalFromMeanStdDev(mean, stdDev), factors)
-}
-
-export function runSingleTrialGammaWithProductivity(
-  backlog: number, mean: number, stdDev: number, factors: number[]
-): number {
-  return runTrial(backlog, () => randomGammaFromMeanStdDev(mean, stdDev), factors)
-}
-
-export function runSingleTrialBootstrapWithProductivity(
-  backlog: number, velocities: number[], factors: number[]
-): number {
-  if (velocities.length === 0) throw new Error('Bootstrap requires historical velocity data')
-  return runTrial(backlog, () => velocities[Math.floor(Math.random() * velocities.length)], factors)
-}
-
 /**
- * Select the trial function for a given distribution type
+ * Core trial runner with milestone checkpoints: records the sprint number
+ * at which each cumulative backlog threshold is reached.
+ *
+ * @param remainingBacklog - Total work remaining (sum of all milestones)
+ * @param cumulativeThresholds - Ascending cumulative backlog values for each milestone
+ * @param sampler - Function that returns a velocity sample from the chosen distribution
+ * @param productivityFactors - Optional per-sprint multipliers (index 0 = first sprint)
+ * @returns Array of sprint counts, one per milestone
  */
-function getTrialFn(distributionType: DistributionType): (backlog: number, mean: number, stdDev: number) => number {
-  switch (distributionType) {
-    case 'lognormal': return runSingleTrialLognormal
-    case 'gamma': return runSingleTrialGamma
-    case 'truncatedNormal': default: return runSingleTrialTruncatedNormal
+function runTrialWithMilestones(
+  remainingBacklog: number,
+  cumulativeThresholds: number[],
+  sampler: VelocitySampler,
+  productivityFactors?: number[]
+): number[] {
+  let remaining = remainingBacklog
+  let completed = 0
+  let sprints = 0
+  let nextIdx = 0
+  const results = new Array<number>(cumulativeThresholds.length).fill(MAX_TRIAL_SPRINTS)
+
+  while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
+    const baseVelocity = Math.max(0.1, sampler())
+    const factor = productivityFactors?.[sprints] ?? 1.0
+    const work = baseVelocity * factor
+    remaining -= work
+    completed += work
+    sprints++
+
+    // Check milestones (ascending order, pointer advances monotonically)
+    while (nextIdx < cumulativeThresholds.length &&
+           completed >= cumulativeThresholds[nextIdx]) {
+      results[nextIdx] = sprints
+      nextIdx++
+    }
   }
+
+  // Mark any remaining milestones as reached at the final sprint
+  while (nextIdx < cumulativeThresholds.length) {
+    results[nextIdx] = sprints
+    nextIdx++
+  }
+
+  return results
 }
 
-/**
- * Select the productivity-adjusted trial function for a given distribution type
- */
-function getTrialWithProductivityFn(
-  distributionType: DistributionType
-): (backlog: number, mean: number, stdDev: number, factors: number[]) => number {
-  switch (distributionType) {
-    case 'lognormal': return runSingleTrialLognormalWithProductivity
-    case 'gamma': return runSingleTrialGammaWithProductivity
-    case 'truncatedNormal': default: return runSingleTrialTruncatedNormalWithProductivity
-  }
-}
+// ============================================================================
+// Simulation functions
+// ============================================================================
 
 /**
- * Run a Monte Carlo simulation, optionally with productivity adjustments
- * Returns the distribution of sprint counts across all trials
+ * Run a Monte Carlo simulation, optionally with productivity adjustments.
+ * Returns the distribution of sprint counts across all trials.
  */
 export function runSimulation(input: SimulationInput, productivityFactors?: number[]): SimulationOutput {
   const {
@@ -149,19 +160,12 @@ export function runSimulation(input: SimulationInput, productivityFactors?: numb
     distributionType = 'truncatedNormal',
   } = input
 
-  const sprintsRequired: number[] = []
-  const useProductivity = productivityFactors && productivityFactors.length > 0
+  const sampler = createSampler(distributionType, velocityMean, velocityStdDev)
+  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
 
-  if (useProductivity) {
-    const trialFn = getTrialWithProductivityFn(distributionType)
-    for (let i = 0; i < trialCount; i++) {
-      sprintsRequired.push(trialFn(remainingBacklog, velocityMean, velocityStdDev, productivityFactors))
-    }
-  } else {
-    const trialFn = getTrialFn(distributionType)
-    for (let i = 0; i < trialCount; i++) {
-      sprintsRequired.push(trialFn(remainingBacklog, velocityMean, velocityStdDev))
-    }
+  const sprintsRequired: number[] = []
+  for (let i = 0; i < trialCount; i++) {
+    sprintsRequired.push(runTrial(remainingBacklog, sampler, factors))
   }
 
   sprintsRequired.sort((a, b) => a - b)
@@ -174,7 +178,7 @@ export function runSimulation(input: SimulationInput, productivityFactors?: numb
 }
 
 /**
- * Run bootstrap simulation, optionally with productivity adjustments
+ * Run bootstrap simulation, optionally with productivity adjustments.
  */
 function runBootstrapSimulationInternal(
   remainingBacklog: number,
@@ -182,20 +186,21 @@ function runBootstrapSimulationInternal(
   trialCount: number,
   productivityFactors?: number[]
 ): number[] {
-  const sprintsRequired: number[] = []
-  const useProductivity = productivityFactors && productivityFactors.length > 0
+  const sampler = createBootstrapSampler(historicalVelocities)
+  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
 
+  const sprintsRequired: number[] = []
   for (let i = 0; i < trialCount; i++) {
-    sprintsRequired.push(
-      useProductivity
-        ? runSingleTrialBootstrapWithProductivity(remainingBacklog, historicalVelocities, productivityFactors)
-        : runSingleTrialBootstrap(remainingBacklog, historicalVelocities)
-    )
+    sprintsRequired.push(runTrial(remainingBacklog, sampler, factors))
   }
 
   sprintsRequired.sort((a, b) => a - b)
   return sprintsRequired
 }
+
+// ============================================================================
+// Percentile calculation
+// ============================================================================
 
 /**
  * Calculate the finish date for a given percentile
@@ -256,73 +261,9 @@ export function runForecast(config: ForecastConfig & { sprintCadenceWeeks: numbe
   return extractPercentileResults(simulation.sprintsRequired, config.startDate, config.sprintCadenceWeeks)
 }
 
-/**
- * Run triple forecasts using truncated normal, lognormal, and gamma distributions
- * Returns results from all three simulations for comparison
- */
-export function runTripleForecast(
-  config: ForecastConfig & { sprintCadenceWeeks: number }
-): {
-  truncatedNormal: { results: PercentileResults; sprintsRequired: number[] }
-  lognormal: { results: PercentileResults; sprintsRequired: number[] }
-  gamma: { results: PercentileResults; sprintsRequired: number[] }
-} {
-  const baseInput = {
-    remainingBacklog: config.remainingBacklog,
-    velocityMean: config.velocityMean,
-    velocityStdDev: config.velocityStdDev,
-    startDate: config.startDate,
-    sprintCadenceWeeks: config.sprintCadenceWeeks,
-    trialCount: config.trialCount,
-  }
-
-  // Run truncated normal distribution simulation
-  const truncatedNormalSimulation = runSimulation({ ...baseInput, distributionType: 'truncatedNormal' })
-  const truncatedNormalResults = extractPercentileResults(
-    truncatedNormalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run lognormal distribution simulation
-  const lognormalSimulation = runSimulation({ ...baseInput, distributionType: 'lognormal' })
-  const lognormalResults = extractPercentileResults(
-    lognormalSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  // Run gamma distribution simulation
-  const gammaSimulation = runSimulation({ ...baseInput, distributionType: 'gamma' })
-  const gammaResults = extractPercentileResults(
-    gammaSimulation.sprintsRequired,
-    config.startDate,
-    config.sprintCadenceWeeks
-  )
-
-  return {
-    truncatedNormal: { results: truncatedNormalResults, sprintsRequired: truncatedNormalSimulation.sprintsRequired },
-    lognormal: { results: lognormalResults, sprintsRequired: lognormalSimulation.sprintsRequired },
-    gamma: { results: gammaResults, sprintsRequired: gammaSimulation.sprintsRequired },
-  }
-}
-
-/**
- * Calculate a custom percentile result from existing simulation data
- */
-export function calculateCustomPercentile(
-  sortedSprintsRequired: number[],
-  percentile: number,
-  startDate: string,
-  sprintCadenceWeeks: number
-): ForecastResult {
-  return calculatePercentileResult(
-    sortedSprintsRequired,
-    percentile,
-    startDate,
-    sprintCadenceWeeks
-  )
-}
+// ============================================================================
+// Quadruple distribution types and helpers
+// ============================================================================
 
 /**
  * Quadruple simulation data structure (raw sprint counts from each distribution)
@@ -354,25 +295,13 @@ export function calculateAllCustomPercentiles(
   sprintCadenceWeeks: number
 ): QuadCustomResults {
   return {
-    truncatedNormal: calculateCustomPercentile(data.truncatedNormal, percentile, startDate, sprintCadenceWeeks),
-    lognormal: calculateCustomPercentile(data.lognormal, percentile, startDate, sprintCadenceWeeks),
-    gamma: calculateCustomPercentile(data.gamma, percentile, startDate, sprintCadenceWeeks),
+    truncatedNormal: calculatePercentileResult(data.truncatedNormal, percentile, startDate, sprintCadenceWeeks),
+    lognormal: calculatePercentileResult(data.lognormal, percentile, startDate, sprintCadenceWeeks),
+    gamma: calculatePercentileResult(data.gamma, percentile, startDate, sprintCadenceWeeks),
     bootstrap: data.bootstrap
-      ? calculateCustomPercentile(data.bootstrap, percentile, startDate, sprintCadenceWeeks)
+      ? calculatePercentileResult(data.bootstrap, percentile, startDate, sprintCadenceWeeks)
       : null,
   }
-}
-
-/**
- * Run bootstrap simulation using historical sprint velocities
- * Returns the sorted distribution of sprint counts across all trials
- */
-export function runBootstrapSimulation(
-  remainingBacklog: number,
-  historicalVelocities: number[],
-  trialCount: number
-): number[] {
-  return runBootstrapSimulationInternal(remainingBacklog, historicalVelocities, trialCount)
 }
 
 /**
@@ -389,9 +318,9 @@ function runDistributionSimulation(
 }
 
 /**
- * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions
- * Bootstrap is only included if historical velocities are provided
- * Optionally applies productivity adjustments if factors are provided
+ * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions.
+ * Bootstrap is only included if historical velocities are provided.
+ * Optionally applies productivity adjustments if factors are provided.
  */
 export function runQuadrupleForecast(
   config: ForecastConfig & { sprintCadenceWeeks: number },
@@ -425,6 +354,122 @@ export function runQuadrupleForecast(
       results: extractPercentileResults(sprintsRequired, config.startDate, config.sprintCadenceWeeks),
       sprintsRequired,
     }
+  }
+
+  return { truncatedNormal, lognormal, gamma, bootstrap }
+}
+
+// ============================================================================
+// Milestone-aware simulation functions
+// ============================================================================
+
+/**
+ * Per-milestone simulation results for a single distribution
+ */
+export interface MilestoneDistributionResult {
+  /** Per-milestone results: milestoneResults[milestoneIdx] = { results, sprintsRequired } */
+  milestoneResults: Array<{ results: PercentileResults; sprintsRequired: number[] }>
+}
+
+/**
+ * Full quadruple forecast result with milestone data
+ */
+export interface QuadMilestoneForecastResult {
+  truncatedNormal: MilestoneDistributionResult
+  lognormal: MilestoneDistributionResult
+  gamma: MilestoneDistributionResult
+  bootstrap: MilestoneDistributionResult | null
+}
+
+/**
+ * Milestone-aware simulation data (raw sprint counts per milestone per distribution)
+ */
+export interface QuadMilestoneSimulationData {
+  /** milestoneData[milestoneIdx] = { truncatedNormal, lognormal, gamma, bootstrap } sorted arrays */
+  milestoneData: QuadSimulationData[]
+}
+
+/**
+ * Run milestone-aware simulation for any distribution.
+ * Each trial records the sprint at which each cumulative milestone threshold is reached.
+ */
+function runMilestoneSimulation(
+  remainingBacklog: number,
+  cumulativeThresholds: number[],
+  sampler: VelocitySampler,
+  trialCount: number,
+  startDate: string,
+  sprintCadenceWeeks: number,
+  productivityFactors?: number[]
+): MilestoneDistributionResult {
+  const milestoneCount = cumulativeThresholds.length
+
+  // Collect per-milestone sprint counts across all trials
+  const milestoneSprintArrays: number[][] = Array.from(
+    { length: milestoneCount },
+    () => new Array<number>(trialCount)
+  )
+
+  for (let i = 0; i < trialCount; i++) {
+    const trialResults = runTrialWithMilestones(
+      remainingBacklog, cumulativeThresholds, sampler, productivityFactors
+    )
+    for (let m = 0; m < milestoneCount; m++) {
+      milestoneSprintArrays[m][i] = trialResults[m]
+    }
+  }
+
+  // Sort each milestone's array and extract percentile results
+  const milestoneResults = milestoneSprintArrays.map((sprintArray) => {
+    sprintArray.sort((a, b) => a - b)
+    const results = extractPercentileResults(sprintArray, startDate, sprintCadenceWeeks)
+    return { results, sprintsRequired: sprintArray }
+  })
+
+  return { milestoneResults }
+}
+
+/**
+ * Run quadruple forecasts with milestone checkpoints.
+ * Returns per-milestone percentile results and sorted sprint arrays for each distribution.
+ *
+ * @param config - Forecast configuration (remainingBacklog = total of all milestones)
+ * @param cumulativeThresholds - Ascending cumulative backlog values for each milestone
+ * @param historicalVelocities - Optional historical data for bootstrap distribution
+ * @param productivityFactors - Optional per-sprint productivity multipliers
+ */
+export function runQuadrupleForecastWithMilestones(
+  config: ForecastConfig & { sprintCadenceWeeks: number },
+  cumulativeThresholds: number[],
+  historicalVelocities?: number[],
+  productivityFactors?: number[]
+): QuadMilestoneForecastResult {
+  const { remainingBacklog, velocityMean, velocityStdDev, startDate, sprintCadenceWeeks, trialCount } = config
+  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
+
+  const truncatedNormal = runMilestoneSimulation(
+    remainingBacklog, cumulativeThresholds,
+    createSampler('truncatedNormal', velocityMean, velocityStdDev),
+    trialCount, startDate, sprintCadenceWeeks, factors
+  )
+  const lognormal = runMilestoneSimulation(
+    remainingBacklog, cumulativeThresholds,
+    createSampler('lognormal', velocityMean, velocityStdDev),
+    trialCount, startDate, sprintCadenceWeeks, factors
+  )
+  const gamma = runMilestoneSimulation(
+    remainingBacklog, cumulativeThresholds,
+    createSampler('gamma', velocityMean, velocityStdDev),
+    trialCount, startDate, sprintCadenceWeeks, factors
+  )
+
+  let bootstrap: MilestoneDistributionResult | null = null
+  if (historicalVelocities && historicalVelocities.length > 0) {
+    bootstrap = runMilestoneSimulation(
+      remainingBacklog, cumulativeThresholds,
+      createBootstrapSampler(historicalVelocities),
+      trialCount, startDate, sprintCadenceWeeks, factors
+    )
   }
 
   return { truncatedNormal, lognormal, gamma, bootstrap }

@@ -14,6 +14,55 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.14.0',
+    date: '2026-02-05',
+    sections: [
+      {
+        title: 'Release Milestone Forecasts',
+        items: [
+          'Define ordered release milestones (e.g., MVP, Beta, GA) with remaining work per milestone',
+          'Per-milestone forecast dates at all percentiles (P50, P60, P70, P80, P90)',
+          'Single simulation with checkpoint recording preserves statistical correlation between milestones',
+          'Milestone reference lines on burn-up chart at cumulative scope levels',
+          'Milestone dropdown selector on CDF and histogram charts to view per-milestone distributions',
+          'Custom percentile selector supports per-milestone results',
+          'Remaining Backlog auto-computed from milestones when defined (read-only)',
+        ],
+      },
+      {
+        title: 'Chart Controls',
+        items: [
+          'Show/hide individual milestone lines on burn-up chart via checkbox toggle',
+          'Show/hide scope line on burn-up chart for cleaner visualization',
+        ],
+      },
+      {
+        title: 'Data & Export',
+        items: [
+          'CSV export includes milestone definitions, per-milestone percentile results',
+          'Import/export validation supports milestone data',
+          'Milestone CRUD with edit, delete, and confirmation dialogs',
+        ],
+      },
+      {
+        title: 'Refactoring',
+        items: [
+          'Extracted generic CollapsibleCrudPanel component, reducing Milestones and Productivity Adjustments by ~200 LOC',
+          'Extracted import validation from project-store into dedicated module (~170 LOC moved)',
+          'Consolidated Monte Carlo simulation with sampler factory pattern (665 → 445 LOC)',
+          'Extracted shared ChartToolbar component for CDF and histogram charts (~90 LOC saved)',
+          'Removed dead code and unused props across forecast components',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          'Added 10 new tests for milestone-aware simulation logic (264 → 271 net, 3 removed with dead code)',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.13.0',
     date: '2026-02-03',
     sections: [

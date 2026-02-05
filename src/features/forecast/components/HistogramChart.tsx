@@ -14,10 +14,10 @@ import {
 } from 'recharts'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { COLORS } from '@/shared/lib/colors'
-import { type ChartFontSize, CHART_FONT_SIZES, CHART_FONT_SIZE_LABELS } from '../types'
+import { type ChartFontSize, CHART_FONT_SIZES } from '../types'
 import { buildHistogramBins } from '../lib/cdf'
-
-const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
+import type { Milestone } from '@/shared/types'
+import { ChartToolbar } from './ChartToolbar'
 
 interface HistogramChartProps {
   truncatedNormal: number[]
@@ -30,6 +30,9 @@ interface HistogramChartProps {
   chartRef?: RefObject<HTMLDivElement | null>
   fontSize?: ChartFontSize
   onFontSizeChange?: (size: ChartFontSize) => void
+  milestones?: Milestone[]
+  selectedMilestoneIndex?: number
+  onMilestoneIndexChange?: (index: number) => void
 }
 
 const CHART_COLORS = COLORS.chart
@@ -45,6 +48,9 @@ export function HistogramChart({
   chartRef,
   fontSize = 'small',
   onFontSizeChange,
+  milestones = [],
+  selectedMilestoneIndex = 0,
+  onMilestoneIndexChange,
 }: HistogramChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
@@ -83,29 +89,14 @@ export function HistogramChart({
 
       {isExpanded && (
         <div id={panelId} role="region" aria-label="Probability Distribution Histogram" className="px-4 pb-4 relative">
-          {/* Configuration row */}
-          {onFontSizeChange && (
-            <div className="flex items-center gap-2 mb-4 justify-end mr-10">
-              <label
-                htmlFor="histogram-font-size"
-                className="text-[0.8125rem] font-semibold text-spert-text-muted"
-              >
-                Text:
-              </label>
-              <select
-                id="histogram-font-size"
-                value={fontSize}
-                onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-                className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
-              >
-                {FONT_SIZES.map((size) => (
-                  <option key={size} value={size}>
-                    {CHART_FONT_SIZE_LABELS[size]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <ChartToolbar
+            idPrefix="histogram"
+            milestones={milestones}
+            selectedMilestoneIndex={selectedMilestoneIndex}
+            onMilestoneIndexChange={onMilestoneIndexChange}
+            fontSize={fontSize}
+            onFontSizeChange={onFontSizeChange}
+          />
 
           <div ref={chartRef} className="bg-white dark:bg-gray-800 p-2">
             <p className="text-xs text-muted-foreground mb-4">

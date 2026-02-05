@@ -12,6 +12,7 @@ interface ForecastFormProps {
   calculatedStdDev: number
   effectiveMean: number
   unitOfMeasure: string
+  backlogReadOnly?: boolean // True when milestones control the backlog
   onRemainingBacklogChange: (value: string) => void
   onVelocityMeanChange: (value: string) => void
   onVelocityStdDevChange: (value: string) => void
@@ -30,6 +31,7 @@ export function ForecastForm({
   calculatedStdDev,
   effectiveMean,
   unitOfMeasure,
+  backlogReadOnly = false,
   onRemainingBacklogChange,
   onVelocityMeanChange,
   onVelocityStdDevChange,
@@ -46,7 +48,7 @@ export function ForecastForm({
             htmlFor="remainingBacklog"
             className="block mb-1 text-sm font-semibold text-spert-text-secondary"
           >
-            Backlog ({unitOfMeasure}) <span className="text-spert-error">*</span>
+            Backlog ({unitOfMeasure}) {!backlogReadOnly && <span className="text-spert-error">*</span>}
           </label>
           <input
             id="remainingBacklog"
@@ -56,14 +58,22 @@ export function ForecastForm({
             step="any"
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
+            readOnly={backlogReadOnly}
             className={cn(
               'p-2 text-[0.9rem] rounded w-full dark:text-gray-100',
-              remainingBacklog
-                ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
-                : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
+              backlogReadOnly
+                ? 'border border-spert-border dark:border-gray-600 bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
+                : remainingBacklog
+                  ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                  : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
             )}
-            placeholder="Required"
+            placeholder={backlogReadOnly ? '' : 'Required'}
           />
+          {backlogReadOnly && (
+            <p className="text-xs text-spert-text-muted mt-1">
+              From milestones
+            </p>
+          )}
         </div>
 
         {/* Velocity */}

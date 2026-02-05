@@ -25,7 +25,8 @@ src/
 │   ├── about/                  # About tab content
 │   ├── changelog/              # Changelog display component
 │   ├── forecast/               # Monte Carlo simulation & charts
-│   │   ├── components/         # UI: ForecastTab, charts, forms
+│   │   ├── components/         # UI: ForecastTab, charts, forms, ChartToolbar
+│   │   ├── hooks/              # useForecastState (simulation orchestration)
 │   │   ├── lib/                # Pure logic: monte-carlo, burn-up, export-csv, productivity
 │   │   ├── constants.ts        # TRIAL_COUNT, percentile bounds
 │   │   └── types.ts            # Forecast-specific types
@@ -33,11 +34,11 @@ src/
 │   ├── settings/               # Settings tab (hidden)
 │   └── sprint-history/         # Sprint data entry & velocity stats
 ├── shared/                     # Cross-feature utilities
-│   ├── components/             # UI primitives only (CopyImageButton)
+│   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions)
 │   ├── constants.ts            # APP_VERSION, APP_NAME
 │   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient)
 │   ├── lib/                    # Pure utilities: math, dates, copy-image
-│   ├── state/                  # Zustand store (project-store, storage)
+│   ├── state/                  # Zustand store (project-store, import-validation, storage)
 │   └── types/                  # Shared types (burn-up config, project/sprint)
 ├── shell/                      # App layout & navigation
 │   └── components/             # AppShell, TabNavigation, Footer
@@ -54,7 +55,9 @@ src/
 
 **Constants in narrowest scope**: Feature constants live in feature directories. Only truly global constants live in shared/constants.ts.
 
-**Pure simulation logic**: Monte Carlo simulation, productivity calculations, burn-up projections, and CSV export are pure functions in `lib/` directories with colocated tests.
+**Pure simulation logic**: Monte Carlo simulation, productivity calculations, burn-up projections, and CSV export are pure functions in `lib/` directories with colocated tests. Simulation uses a sampler factory pattern (`createSampler`, `createBootstrapSampler`) to decouple distribution selection from trial execution.
+
+**Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup.
 
 **Date handling**: UTC for arithmetic (avoids DST drift), local timezone for user-facing display. Sprint finish dates always land on business days.
 

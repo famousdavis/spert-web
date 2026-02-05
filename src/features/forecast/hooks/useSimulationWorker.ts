@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from 'react'
 import type { ForecastConfig } from '@/shared/types'
-import type { PercentileResults } from '../lib/monte-carlo'
+import type { PercentileResults, QuadMilestoneForecastResult } from '../lib/monte-carlo'
 import type { WorkerInput } from '../lib/monte-carlo.worker'
 
 export type QuadForecastResult = {
@@ -12,10 +12,12 @@ export type QuadForecastResult = {
   bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null
 }
 
+type WorkerResult = QuadForecastResult | QuadMilestoneForecastResult
+
 export function useSimulationWorker() {
   const workerRef = useRef<Worker | null>(null)
   const pendingRef = useRef<{
-    resolve: (value: QuadForecastResult) => void
+    resolve: (value: WorkerResult) => void
     reject: (reason: Error) => void
   } | null>(null)
   const [isSimulating, setIsSimulating] = useState(false)
@@ -25,7 +27,7 @@ export function useSimulationWorker() {
       new URL('../lib/monte-carlo.worker.ts', import.meta.url)
     )
 
-    workerRef.current.onmessage = (e: MessageEvent<QuadForecastResult>) => {
+    workerRef.current.onmessage = (e: MessageEvent<WorkerResult>) => {
       setIsSimulating(false)
       pendingRef.current?.resolve(e.data)
       pendingRef.current = null
@@ -61,11 +63,38 @@ export function useSimulationWorker() {
     setIsSimulating(true)
 
     return new Promise<QuadForecastResult>((resolve, reject) => {
-      pendingRef.current = { resolve, reject }
+      pendingRef.current = {
+        resolve: resolve as (value: WorkerResult) => void,
+        reject,
+      }
       const message: WorkerInput = input
       workerRef.current?.postMessage(message)
     })
   }, [])
 
-  return { runSimulation, isSimulating }
+  const runMilestoneSimulation = useCallback((input: {
+    config: ForecastConfig & { sprintCadenceWeeks: number }
+    historicalVelocities?: number[]
+    productivityFactors?: number[]
+    milestoneThresholds: number[]
+  }): Promise<QuadMilestoneForecastResult> => {
+    // Abort any pending simulation
+    if (pendingRef.current) {
+      pendingRef.current.reject(new Error('Simulation aborted'))
+      pendingRef.current = null
+    }
+
+    setIsSimulating(true)
+
+    return new Promise<QuadMilestoneForecastResult>((resolve, reject) => {
+      pendingRef.current = {
+        resolve: resolve as (value: WorkerResult) => void,
+        reject,
+      }
+      const message: WorkerInput = input
+      workerRef.current?.postMessage(message)
+    })
+  }, [])
+
+  return { runSimulation, runMilestoneSimulation, isSimulating }
 }

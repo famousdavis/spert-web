@@ -1,5 +1,5 @@
 import type { PercentileResults } from './monte-carlo'
-import type { ProductivityAdjustment } from '@/shared/types'
+import type { ProductivityAdjustment, Milestone } from '@/shared/types'
 import { today } from '@/shared/lib/dates'
 
 interface ExportConfig {
@@ -11,6 +11,13 @@ interface ExportConfig {
   sprintCadenceWeeks: number
   trialCount: number
   productivityAdjustments?: ProductivityAdjustment[]
+  milestones?: Milestone[]
+}
+
+interface MilestoneExportData {
+  name: string
+  backlogSize: number
+  cumulativeBacklog: number
 }
 
 interface ExportData {
@@ -23,6 +30,16 @@ interface ExportData {
   lognormalSprintsRequired: number[]
   gammaSprintsRequired: number[]
   bootstrapSprintsRequired: number[] | null
+  /** Per-milestone results when milestones are defined */
+  milestoneData?: {
+    milestones: MilestoneExportData[]
+    distributions: {
+      truncatedNormal: PercentileResults[]
+      lognormal: PercentileResults[]
+      gamma: PercentileResults[]
+      bootstrap: PercentileResults[] | null
+    }
+  }
 }
 
 interface FrequencyCount {
@@ -104,6 +121,21 @@ export function generateForecastCsv(data: ExportData): string {
   }
   lines.push('')
 
+  // Section 1c: Milestones
+  const milestones = data.config.milestones ?? []
+  if (milestones.length > 0) {
+    lines.push('MILESTONES')
+    lines.push('Order,Name,Remaining,Cumulative')
+    let cumulative = 0
+    for (let i = 0; i < milestones.length; i++) {
+      const m = milestones[i]
+      cumulative += m.backlogSize
+      const escCsv = (s: string) => s.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')
+      lines.push(`${i + 1},"${escCsv(m.name)}",${m.backlogSize},${cumulative}`)
+    }
+    lines.push('')
+  }
+
   // Section 2: Percentile Results
   lines.push('PERCENTILE RESULTS')
   const percentileHeader = hasBootstrap
@@ -131,6 +163,35 @@ export function generateForecastCsv(data: ExportData): string {
     lines.push(line)
   }
   lines.push('')
+
+  // Section 2b: Per-milestone percentile results
+  if (data.milestoneData && data.milestoneData.milestones.length > 0) {
+    lines.push('PER-MILESTONE PERCENTILE RESULTS')
+    for (let mi = 0; mi < data.milestoneData.milestones.length; mi++) {
+      const ms = data.milestoneData.milestones[mi]
+      const isLast = mi === data.milestoneData.milestones.length - 1
+      lines.push(`Milestone: ${ms.name}${isLast ? ' (Total)' : ''} - ${ms.backlogSize} remaining / ${ms.cumulativeBacklog} cumulative`)
+      lines.push(percentileHeader)
+
+      const tnResults = data.milestoneData.distributions.truncatedNormal[mi]
+      const lnResults = data.milestoneData.distributions.lognormal[mi]
+      const gaResults = data.milestoneData.distributions.gamma[mi]
+      const bsResults = data.milestoneData.distributions.bootstrap?.[mi] ?? null
+
+      for (const p of percentiles) {
+        const tn = tnResults[p.key]
+        const ln = lnResults[p.key]
+        const ga = gaResults[p.key]
+        let line = `P${p.label},${tn.sprintsRequired},${tn.finishDate},${ln.sprintsRequired},${ln.finishDate},${ga.sprintsRequired},${ga.finishDate}`
+        if (hasBootstrap && bsResults) {
+          const bs = bsResults[p.key]
+          line += `,${bs.sprintsRequired},${bs.finishDate}`
+        }
+        lines.push(line)
+      }
+      lines.push('')
+    }
+  }
 
   // Section 3: Frequency Distribution
   lines.push('FREQUENCY DISTRIBUTION')
