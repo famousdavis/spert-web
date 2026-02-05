@@ -11,7 +11,7 @@ import { SettingsTab } from '@/features/settings'
 import { APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
-import { ThemeToggle } from '@/shared/components/ThemeToggle'
+
 import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp'
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
 import { Toaster } from 'sonner'
@@ -45,6 +45,11 @@ export function AppShell() {
     },
     {
       key: '4',
+      description: 'Go to Settings tab',
+      action: () => setActiveTab('settings'),
+    },
+    {
+      key: '5',
       description: 'Go to About tab',
       action: () => setActiveTab('about'),
     },
@@ -61,20 +66,15 @@ export function AppShell() {
     <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 md:p-8 transition-colors">
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
         <header className="mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem] mb-1">
-                <span
-                  className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
-                >
-                  {APP_NAME}
-                </span>
-                <span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic">{APP_DESCRIPTION}</p>
-            </div>
-            <ThemeToggle />
-          </div>
+          <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem] mb-1">
+            <span
+              className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
+            >
+              {APP_NAME}
+            </span>
+            <span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{APP_DESCRIPTION}</p>
         </header>
 
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />

@@ -12,6 +12,7 @@ interface ExportConfig {
   trialCount: number
   productivityAdjustments?: ProductivityAdjustment[]
   milestones?: Milestone[]
+  scopeGrowthPerSprint?: number
 }
 
 interface MilestoneExportData {
@@ -104,6 +105,10 @@ export function generateForecastCsv(data: ExportData): string {
   lines.push(`Sprint Cadence (weeks),${data.config.sprintCadenceWeeks}`)
   lines.push(`Trial Count,${totalTrials}`)
   lines.push(`Bootstrap Enabled,${hasBootstrap ? 'Yes' : 'No'}`)
+  lines.push(`Scope Growth Modeling,${data.config.scopeGrowthPerSprint !== undefined ? 'Yes' : 'No'}`)
+  if (data.config.scopeGrowthPerSprint !== undefined) {
+    lines.push(`Scope Growth Per Sprint,${data.config.scopeGrowthPerSprint}`)
+  }
   lines.push('')
 
   // Section 1b: Productivity Adjustments

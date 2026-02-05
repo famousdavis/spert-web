@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import { useForecastState } from '../hooks/useForecastState'
 import { ForecastForm } from './ForecastForm'
+import { ForecastSummary } from './ForecastSummary'
 import { ForecastResults } from './ForecastResults'
 import { DistributionChart } from './DistributionChart'
 import { HistogramChart } from './HistogramChart'
@@ -31,6 +32,9 @@ export function ForecastTab() {
     setRemainingBacklog,
     setVelocityMean,
     setVelocityStdDev,
+    scopeChangeStats,
+    modelScopeGrowth,
+    setModelScopeGrowth,
     isSimulating,
     results,
     simulationData,
@@ -91,11 +95,6 @@ export function ForecastTab() {
         </select>
       </h2>
 
-      {/* Productivity Adjustments - show when project is selected */}
-      {selectedProject && (
-        <ProductivityAdjustments projectId={selectedProject.id} />
-      )}
-
       {/* Milestones - show when project is selected */}
       {selectedProject && (
         <Milestones
@@ -118,6 +117,10 @@ export function ForecastTab() {
               effectiveMean={effectiveMean}
               unitOfMeasure={selectedProject.unitOfMeasure}
               backlogReadOnly={hasMilestones}
+              sprints={projectSprints}
+              scopeChangeStats={scopeChangeStats}
+              modelScopeGrowth={modelScopeGrowth}
+              onModelScopeGrowthChange={setModelScopeGrowth}
               onRemainingBacklogChange={setRemainingBacklog}
               onVelocityMeanChange={setVelocityMean}
               onVelocityStdDevChange={setVelocityStdDev}
@@ -127,6 +130,22 @@ export function ForecastTab() {
             />
             {hasResults && (
               <div className={cn('mt-6 transition-opacity duration-300', isSimulating && 'opacity-50')}>
+                <ForecastSummary
+                  results={results}
+                  simulationData={simulationData}
+                  completedSprintCount={completedSprintCount}
+                  remainingBacklog={Number(remainingBacklog) || 0}
+                  unitOfMeasure={selectedProject.unitOfMeasure}
+                  projectName={selectedProject.name}
+                  sprintCadenceWeeks={selectedProject.sprintCadenceWeeks!}
+                  startDate={forecastStartDate}
+                  milestones={milestones}
+                  milestoneResultsState={milestoneResultsState}
+                  cumulativeThresholds={cumulativeThresholds}
+                  hasBootstrap={results.bootstrap !== null}
+                  modelScopeGrowth={modelScopeGrowth}
+                  scopeGrowthPerSprint={modelScopeGrowth && scopeChangeStats ? scopeChangeStats.averageScopeInjection : undefined}
+                />
                 <ForecastResults
                   truncatedNormalResults={results.truncatedNormal}
                   lognormalResults={results.lognormal}
@@ -151,6 +170,11 @@ export function ForecastTab() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Productivity Adjustments - below inputs, set-and-forget */}
+      {selectedProject && (
+        <ProductivityAdjustments projectId={selectedProject.id} />
       )}
 
       {hasResults && (
