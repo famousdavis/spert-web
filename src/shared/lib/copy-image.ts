@@ -23,9 +23,12 @@ export async function copyElementAsImage(
     pixelRatio: 2,
   })
 
-  // Convert data URL to blob
-  const response = await fetch(dataUrl)
-  const blob = await response.blob()
+  // Convert data URL to blob (direct base64 decode avoids CSP connect-src restrictions)
+  const base64 = dataUrl.split(',')[1]
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  const blob = new Blob([bytes], { type: 'image/png' })
 
   // Copy to clipboard
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])

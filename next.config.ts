@@ -23,7 +23,8 @@ if (!isDev) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
-      "connect-src 'self'",
+      // html-to-image fetches Google Fonts to embed in canvas for copy-as-image
+      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
       // Web Workers are loaded as blob URLs
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
