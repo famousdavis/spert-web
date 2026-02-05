@@ -311,7 +311,7 @@ const CHANGELOG: ChangelogEntry[] = [
 
 export function ChangelogContent() {
   return (
-    <div className="space-y-10 max-w-2xl">
+    <div className="space-y-10 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Changelog</h1>
         <p className="text-muted-foreground italic">
