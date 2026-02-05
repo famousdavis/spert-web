@@ -53,6 +53,7 @@ export function useSimulationWorker() {
     config: ForecastConfig & { sprintCadenceWeeks: number }
     historicalVelocities?: number[]
     productivityFactors?: number[]
+    scopeGrowthPerSprint?: number
   }): Promise<QuadForecastResult> => {
     // Abort any pending simulation
     if (pendingRef.current) {
@@ -77,6 +78,7 @@ export function useSimulationWorker() {
     historicalVelocities?: number[]
     productivityFactors?: number[]
     milestoneThresholds: number[]
+    scopeGrowthPerSprint?: number
   }): Promise<QuadMilestoneForecastResult> => {
     // Abort any pending simulation
     if (pendingRef.current) {

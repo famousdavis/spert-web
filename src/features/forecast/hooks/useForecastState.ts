@@ -6,8 +6,11 @@ import {
   useProjectStore,
   selectViewingProject,
 } from '@/shared/state/project-store'
-import { useIsClient } from '@/shared/hooks'
-import { calculateVelocityStats } from '../lib/statistics'
+import { useSettingsStore } from '@/shared/state/settings-store'
+import { useIsClient, useDebounce } from '@/shared/hooks'
+import { useSprintData } from './useSprintData'
+import { useForecastInputs } from './useForecastInputs'
+import { useChartSettings } from './useChartSettings'
 import {
   calculateAllCustomPercentiles,
   type PercentileResults,
@@ -16,12 +19,8 @@ import {
 } from '../lib/monte-carlo'
 import { useSimulationWorker } from './useSimulationWorker'
 import { preCalculateSprintFactors } from '../lib/productivity'
-import { today, calculateSprintStartDate } from '@/shared/lib/dates'
-import { TRIAL_COUNT, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { safeParseNumber } from '@/shared/lib/validation'
-import { DEFAULT_CHART_FONT_SIZE, type ChartFontSize } from '@/shared/types/burn-up'
-import { DEFAULT_BURN_UP_CONFIG, type BurnUpConfig } from '../types'
 
 interface QuadResults {
   truncatedNormal: PercentileResults
@@ -32,9 +31,7 @@ interface QuadResults {
 
 /** Per-milestone QuadResults and QuadSimulationData */
 export interface MilestoneResults {
-  /** milestoneResults[milestoneIdx] = QuadResults for that milestone */
   milestoneResults: QuadResults[]
-  /** milestoneSimulationData[milestoneIdx] = QuadSimulationData for that milestone */
   milestoneSimulationData: QuadSimulationData[]
 }
 
@@ -43,111 +40,44 @@ export function useForecastState() {
   const { runSimulation, runMilestoneSimulation, isSimulating } = useSimulationWorker()
   const projects = useProjectStore((state) => state.projects)
   const selectedProject = useProjectStore(selectViewingProject)
-  const allSprints = useProjectStore((state) => state.sprints)
   const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
 
-  // Get productivity adjustments for the selected project
+  // Global settings
+  const trialCount = useSettingsStore((s) => s.trialCount)
+  const autoRecalculate = useSettingsStore((s) => s.autoRecalculate)
+
+  // Composed hooks
+  const sprintData = useSprintData()
+  const inputs = useForecastInputs(sprintData.calculatedStats)
+  const charts = useChartSettings()
+
+  // Productivity adjustments for the selected project
   const productivityAdjustments = useMemo(
     () => selectedProject?.productivityAdjustments ?? [],
     [selectedProject?.productivityAdjustments]
   )
 
-  // Get milestones for the selected project
-  const milestones = useMemo(
-    () => selectedProject?.milestones ?? [],
-    [selectedProject?.milestones]
-  )
-
-  const hasMilestones = milestones.length > 0
-
-  // Compute cumulative thresholds from milestone order
-  const cumulativeThresholds = useMemo(() => {
-    let cumulative = 0
-    return milestones.map((m) => {
-      cumulative += m.backlogSize
-      return cumulative
-    })
-  }, [milestones])
-
-  // Total backlog from milestones (sum of incremental sizes)
-  const milestoneTotal = cumulativeThresholds.length > 0
-    ? cumulativeThresholds[cumulativeThresholds.length - 1]
-    : 0
-
-  // Track previous project to clear results when project changes
+  // Track previous project to clear results on change
   const prevProjectIdRef = useRef<string | undefined>(selectedProject?.id)
 
-  // Refs for copy-to-clipboard functionality
-  const forecastInputsResultsRef = useRef<HTMLDivElement>(null)
-  const distributionChartRef = useRef<HTMLDivElement>(null)
-  const histogramChartRef = useRef<HTMLDivElement>(null)
-  const percentileSelectorRef = useRef<HTMLDivElement>(null)
-  const burnUpChartRef = useRef<HTMLDivElement>(null)
-
-  // Get all sprints for the selected project
-  const projectSprints = useMemo(
-    () => selectedProject
-      ? allSprints.filter((s) => s.projectId === selectedProject.id)
-      : [],
-    [allSprints, selectedProject]
-  )
-
-  const includedSprints = useMemo(
-    () => projectSprints.filter((s) => s.includedInForecast),
-    [projectSprints]
-  )
-
-  const calculatedStats = useMemo(
-    () => calculateVelocityStats(includedSprints),
-    [includedSprints]
-  )
-
-  // Calculate the number of completed sprints (highest sprint number in history)
-  const completedSprintCount = useMemo(() => {
-    if (projectSprints.length === 0) return 0
-    return Math.max(...projectSprints.map((s) => s.sprintNumber))
-  }, [projectSprints])
-
-  // Calculate the forecast start date (next sprint start date after the latest sprint)
-  const forecastStartDate = useMemo(() => {
-    if (!selectedProject?.firstSprintStartDate || !selectedProject?.sprintCadenceWeeks) return today()
-    if (projectSprints.length === 0) return today()
-
-    return calculateSprintStartDate(
-      selectedProject.firstSprintStartDate,
-      completedSprintCount + 1,
-      selectedProject.sprintCadenceWeeks
-    )
-  }, [selectedProject, projectSprints, completedSprintCount])
-
-  // Check if we have enough sprints for bootstrap
-  const canUseBootstrap = includedSprints.length >= MIN_SPRINTS_FOR_BOOTSTRAP
-
-  // Get historical velocities for bootstrap
-  const historicalVelocities = useMemo(
-    () => includedSprints.map((s) => s.doneValue),
-    [includedSprints]
-  )
+  // Track whether a forecast has been run at least once (for auto-recalc guard)
+  const hasRunOnceRef = useRef(false)
 
   // Results state
   const [results, setResults] = useState<QuadResults | null>(null)
   const [simulationData, setSimulationData] = useState<QuadSimulationData | null>(null)
   const [milestoneResultsState, setMilestoneResultsState] = useState<MilestoneResults | null>(null)
-  const [customPercentile, setCustomPercentile] = useState(85)
+  const defaultPercentile = useSettingsStore((s) => s.defaultCustomPercentile)
+  const [customPercentile, setCustomPercentile] = useState(defaultPercentile)
   const [customResults, setCustomResults] = useState<QuadCustomResults>({
-    truncatedNormal: null,
-    lognormal: null,
-    gamma: null,
-    bootstrap: null,
+    truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null,
   })
+
+  // Scope growth modeling toggle (session only)
+  const [modelScopeGrowth, setModelScopeGrowth] = useState(false)
 
   // Milestone chart selector (which milestone to show on CDF/histogram)
   const [selectedMilestoneIndex, setSelectedMilestoneIndex] = useState(0)
-
-  // Chart font sizes (session only, not persisted)
-  const [burnUpFontSize, setBurnUpFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
-  const [distributionFontSize, setDistributionFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
-  const [histogramFontSize, setHistogramFontSize] = useState<ChartFontSize>(DEFAULT_CHART_FONT_SIZE)
 
   // Clear results when project changes
   useEffect(() => {
@@ -157,63 +87,26 @@ export function useForecastState() {
       setMilestoneResultsState(null)
       setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
       setSelectedMilestoneIndex(0)
+      hasRunOnceRef.current = false
       prevProjectIdRef.current = selectedProject?.id
     }
   }, [selectedProject?.id])
 
-  // Form state - stored per project so it persists across tab navigation
-  const setForecastInput = useProjectStore((state) => state.setForecastInput)
-  const forecastInputs = useProjectStore((state) =>
-    selectedProject ? state.forecastInputs[selectedProject.id] : undefined
-  )
-  const remainingBacklog = hasMilestones
-    ? String(milestoneTotal)
-    : (forecastInputs?.remainingBacklog ?? '')
-  const velocityMean = forecastInputs?.velocityMean ?? ''
-  const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
-
-  const setRemainingBacklog = (value: string) => {
-    if (selectedProject && !hasMilestones) setForecastInput(selectedProject.id, 'remainingBacklog', value)
-  }
-  const setVelocityMean = (value: string) => {
-    if (selectedProject) setForecastInput(selectedProject.id, 'velocityMean', value)
-  }
-  const setVelocityStdDev = (value: string) => {
-    if (selectedProject) setForecastInput(selectedProject.id, 'velocityStdDev', value)
-  }
-
-  // Burn-up config state (per project, session only)
-  const setBurnUpConfigStore = useProjectStore((state) => state.setBurnUpConfig)
-  const burnUpConfigFromStore = useProjectStore((state) =>
-    selectedProject ? state.burnUpConfigs[selectedProject.id] : undefined
-  )
-  const burnUpConfig = burnUpConfigFromStore ?? DEFAULT_BURN_UP_CONFIG
-
-  const handleBurnUpConfigChange = (config: BurnUpConfig) => {
-    if (selectedProject) {
-      setBurnUpConfigStore(selectedProject.id, config)
-    }
-  }
-
-  // Use calculated stats or overrides
-  const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
-  const effectiveStdDev = velocityStdDev ? Number(velocityStdDev) : calculatedStats.standardDeviation
-
   const handleRunForecast = async () => {
-    if (!selectedProject || !remainingBacklog || !selectedProject.sprintCadenceWeeks) return
+    if (!selectedProject || !inputs.remainingBacklog || !selectedProject.sprintCadenceWeeks) return
     if (!selectedProject.firstSprintStartDate) return
 
-    const parsedBacklog = safeParseNumber(remainingBacklog)
+    const parsedBacklog = safeParseNumber(inputs.remainingBacklog)
     if (parsedBacklog === null || parsedBacklog <= 0) return
-    if (!Number.isFinite(effectiveMean) || effectiveMean <= 0) return
-    if (!Number.isFinite(effectiveStdDev) || effectiveStdDev < 0) return
+    if (!Number.isFinite(inputs.effectiveMean) || inputs.effectiveMean <= 0) return
+    if (!Number.isFinite(inputs.effectiveStdDev) || inputs.effectiveStdDev < 0) return
 
     const config = {
       remainingBacklog: parsedBacklog,
-      velocityMean: effectiveMean,
-      velocityStdDev: effectiveStdDev,
-      startDate: forecastStartDate,
-      trialCount: TRIAL_COUNT,
+      velocityMean: inputs.effectiveMean,
+      velocityStdDev: inputs.effectiveStdDev,
+      startDate: sprintData.forecastStartDate,
+      trialCount,
       sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
     }
 
@@ -224,24 +117,28 @@ export function useForecastState() {
       const { factors } = preCalculateSprintFactors(
         selectedProject.firstSprintStartDate,
         selectedProject.sprintCadenceWeeks,
-        completedSprintCount + 1,
+        sprintData.completedSprintCount + 1,
         enabledAdjustments
       )
       productivityFactors = factors
     }
 
+    // Compute scope growth if enabled and data is available
+    const scopeGrowthPerSprint = modelScopeGrowth && sprintData.scopeChangeStats
+      ? sprintData.scopeChangeStats.averageScopeInjection
+      : undefined
+
     try {
-      if (hasMilestones && cumulativeThresholds.length > 0) {
-        // Milestone mode: run simulation with checkpoints
+      if (inputs.hasMilestones && inputs.cumulativeThresholds.length > 0) {
         const milestoneResult = await runMilestoneSimulation({
           config,
-          historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
+          historicalVelocities: sprintData.canUseBootstrap ? sprintData.historicalVelocities : undefined,
           productivityFactors,
-          milestoneThresholds: cumulativeThresholds,
+          milestoneThresholds: inputs.cumulativeThresholds,
+          scopeGrowthPerSprint,
         })
 
-        // Extract per-milestone results and simulation data
-        const milestoneCount = cumulativeThresholds.length
+        const milestoneCount = inputs.cumulativeThresholds.length
         const perMilestoneResults: QuadResults[] = []
         const perMilestoneSimData: QuadSimulationData[] = []
 
@@ -262,44 +159,23 @@ export function useForecastState() {
 
         setMilestoneResultsState({ milestoneResults: perMilestoneResults, milestoneSimulationData: perMilestoneSimData })
 
-        // Set the "total" (last milestone) as the primary results for backward compatibility
         const lastIdx = milestoneCount - 1
-        const totalSimData = perMilestoneSimData[lastIdx]
-        const totalResults = perMilestoneResults[lastIdx]
-
-        setSimulationData(totalSimData)
-        setResults(totalResults)
+        setSimulationData(perMilestoneSimData[lastIdx])
+        setResults(perMilestoneResults[lastIdx])
         setSelectedMilestoneIndex(lastIdx)
-
         setCustomResults(calculateAllCustomPercentiles(
-          totalSimData,
-          customPercentile,
-          forecastStartDate,
-          selectedProject.sprintCadenceWeeks
+          perMilestoneSimData[lastIdx], customPercentile,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
       } else {
-        // Simple mode: run standard simulation
         const quadResults = await runSimulation({
           config,
-          historicalVelocities: canUseBootstrap ? historicalVelocities : undefined,
+          historicalVelocities: sprintData.canUseBootstrap ? sprintData.historicalVelocities : undefined,
           productivityFactors,
+          scopeGrowthPerSprint,
         })
 
         setMilestoneResultsState(null)
-
-        setSimulationData({
-          truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-          lognormal: quadResults.lognormal.sprintsRequired,
-          gamma: quadResults.gamma.sprintsRequired,
-          bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
-        })
-
-        setResults({
-          truncatedNormal: quadResults.truncatedNormal.results,
-          lognormal: quadResults.lognormal.results,
-          gamma: quadResults.gamma.results,
-          bootstrap: quadResults.bootstrap?.results ?? null,
-        })
 
         const simData: QuadSimulationData = {
           truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
@@ -307,32 +183,60 @@ export function useForecastState() {
           gamma: quadResults.gamma.sprintsRequired,
           bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
         }
+        setSimulationData(simData)
+        setResults({
+          truncatedNormal: quadResults.truncatedNormal.results,
+          lognormal: quadResults.lognormal.results,
+          gamma: quadResults.gamma.results,
+          bootstrap: quadResults.bootstrap?.results ?? null,
+        })
         setCustomResults(calculateAllCustomPercentiles(
-          simData,
-          customPercentile,
-          forecastStartDate,
-          selectedProject.sprintCadenceWeeks
+          simData, customPercentile,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
       }
+      hasRunOnceRef.current = true
     } catch {
       // Aborted simulation (new run started) — ignore
     }
   }
 
+  // Auto-recalculation: re-run forecast when inputs change (after first manual run)
+  const runForecastRef = useRef(handleRunForecast)
+  runForecastRef.current = handleRunForecast
+
+  const debouncedBacklog = useDebounce(inputs.remainingBacklog, 400)
+  const debouncedMean = useDebounce(inputs.velocityMean, 400)
+  const debouncedStdDev = useDebounce(inputs.velocityStdDev, 400)
+
+  useEffect(() => {
+    if (!autoRecalculate || !hasRunOnceRef.current) return
+    const canRun = !!debouncedBacklog && inputs.effectiveMean > 0
+    if (!canRun) return
+    runForecastRef.current()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    autoRecalculate,
+    debouncedBacklog,
+    debouncedMean,
+    debouncedStdDev,
+    modelScopeGrowth,
+    productivityAdjustments,
+    inputs.cumulativeThresholds,
+    trialCount,
+  ])
+
   const handleCustomPercentileChange = (percentile: number) => {
     setCustomPercentile(percentile)
 
-    // Determine which simulation data to use for custom percentile
     const activeSimData = milestoneResultsState && selectedMilestoneIndex < milestoneResultsState.milestoneSimulationData.length
       ? milestoneResultsState.milestoneSimulationData[selectedMilestoneIndex]
       : simulationData
 
     if (activeSimData && selectedProject?.sprintCadenceWeeks) {
       setCustomResults(calculateAllCustomPercentiles(
-        activeSimData,
-        percentile,
-        forecastStartDate,
-        selectedProject.sprintCadenceWeeks
+        activeSimData, percentile,
+        sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
       ))
     }
   }
@@ -347,10 +251,8 @@ export function useForecastState() {
 
       if (selectedProject?.sprintCadenceWeeks) {
         setCustomResults(calculateAllCustomPercentiles(
-          simData,
-          customPercentile,
-          forecastStartDate,
-          selectedProject.sprintCadenceWeeks
+          simData, customPercentile,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
       }
     }
@@ -359,11 +261,10 @@ export function useForecastState() {
   const handleExportCsv = () => {
     if (!selectedProject || !results || !simulationData || !selectedProject.sprintCadenceWeeks) return
 
-    // Build milestone export data if milestones exist
     let milestoneExportData: Parameters<typeof generateForecastCsv>[0]['milestoneData']
-    if (hasMilestones && milestoneResultsState) {
+    if (inputs.hasMilestones && milestoneResultsState) {
       let cumulative = 0
-      const msExport = milestones.map((m) => {
+      const msExport = inputs.milestones.map((m) => {
         cumulative += m.backlogSize
         return { name: m.name, backlogSize: m.backlogSize, cumulativeBacklog: cumulative }
       })
@@ -383,14 +284,17 @@ export function useForecastState() {
     const csvContent = generateForecastCsv({
       config: {
         projectName: selectedProject.name,
-        remainingBacklog: safeParseNumber(remainingBacklog) ?? 0,
-        velocityMean: effectiveMean,
-        velocityStdDev: effectiveStdDev,
-        startDate: forecastStartDate,
+        remainingBacklog: safeParseNumber(inputs.remainingBacklog) ?? 0,
+        velocityMean: inputs.effectiveMean,
+        velocityStdDev: inputs.effectiveStdDev,
+        startDate: sprintData.forecastStartDate,
         sprintCadenceWeeks: selectedProject.sprintCadenceWeeks,
-        trialCount: TRIAL_COUNT,
+        trialCount,
         productivityAdjustments: productivityAdjustments.filter((a) => a.enabled !== false),
-        milestones: hasMilestones ? milestones : undefined,
+        milestones: inputs.hasMilestones ? inputs.milestones : undefined,
+        scopeGrowthPerSprint: modelScopeGrowth && sprintData.scopeChangeStats
+          ? sprintData.scopeChangeStats.averageScopeInjection
+          : undefined,
       },
       truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
@@ -408,8 +312,7 @@ export function useForecastState() {
   }
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newProjectId = e.target.value
-    setViewingProjectId(newProjectId)
+    setViewingProjectId(e.target.value)
   }
 
   return {
@@ -418,26 +321,30 @@ export function useForecastState() {
     projects,
     selectedProject,
 
-    // Sprint data
-    projectSprints,
-    completedSprintCount,
-    forecastStartDate,
-    calculatedStats,
+    // Sprint data (from useSprintData)
+    projectSprints: sprintData.projectSprints,
+    completedSprintCount: sprintData.completedSprintCount,
+    forecastStartDate: sprintData.forecastStartDate,
+    calculatedStats: sprintData.calculatedStats,
 
-    // Milestone data
-    milestones,
-    hasMilestones,
-    cumulativeThresholds,
-    milestoneTotal,
+    // Milestone data (from useForecastInputs)
+    milestones: inputs.milestones,
+    hasMilestones: inputs.hasMilestones,
+    cumulativeThresholds: inputs.cumulativeThresholds,
 
-    // Form state
-    remainingBacklog,
-    velocityMean,
-    velocityStdDev,
-    effectiveMean,
-    setRemainingBacklog,
-    setVelocityMean,
-    setVelocityStdDev,
+    // Form state (from useForecastInputs)
+    remainingBacklog: inputs.remainingBacklog,
+    velocityMean: inputs.velocityMean,
+    velocityStdDev: inputs.velocityStdDev,
+    effectiveMean: inputs.effectiveMean,
+    setRemainingBacklog: inputs.setRemainingBacklog,
+    setVelocityMean: inputs.setVelocityMean,
+    setVelocityStdDev: inputs.setVelocityStdDev,
+
+    // Scope growth modeling
+    scopeChangeStats: sprintData.scopeChangeStats,
+    modelScopeGrowth,
+    setModelScopeGrowth,
 
     // Simulation state
     isSimulating,
@@ -450,24 +357,8 @@ export function useForecastState() {
     customResults,
     selectedMilestoneIndex,
 
-    // Burn-up config
-    burnUpConfig,
-    handleBurnUpConfigChange,
-
-    // Chart font sizes
-    burnUpFontSize,
-    setBurnUpFontSize,
-    distributionFontSize,
-    setDistributionFontSize,
-    histogramFontSize,
-    setHistogramFontSize,
-
-    // Refs
-    forecastInputsResultsRef,
-    distributionChartRef,
-    histogramChartRef,
-    percentileSelectorRef,
-    burnUpChartRef,
+    // Chart settings (from useChartSettings)
+    ...charts,
 
     // Handlers
     handleRunForecast,

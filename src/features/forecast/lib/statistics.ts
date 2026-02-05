@@ -32,6 +32,8 @@ export interface ScopeChangeStats {
   dataPoints: ScopeChangeDataPoint[]
   averageChange: number
   averagePercentChange: number
+  /** Net new scope added per sprint, accounting for completed work. Use for simulation input. */
+  averageScopeInjection: number
   volatility: number
   trend: 'growing' | 'shrinking' | 'stable'
   sprintsWithData: number
@@ -58,6 +60,7 @@ export function calculateScopeChangeStats(sprints: Sprint[]): ScopeChangeStats |
   const dataPoints: ScopeChangeDataPoint[] = []
   const changes: number[] = []
   const percentChanges: number[] = []
+  const injections: number[] = []
 
   // First data point has no change (baseline)
   dataPoints.push({
@@ -74,8 +77,13 @@ export function calculateScopeChangeStats(sprints: Sprint[]): ScopeChangeStats |
     const change = currentScope - prevScope
     const percentChange = prevScope !== 0 ? (change / prevScope) * 100 : 0
 
+    // Net new scope injected = backlog change + work completed
+    // This isolates scope additions from velocity burn-down
+    const injection = change + sprintsWithBacklog[i].doneValue
+
     changes.push(change)
     percentChanges.push(percentChange)
+    injections.push(injection)
 
     dataPoints.push({
       sprintNumber: sprintsWithBacklog[i].sprintNumber,
@@ -87,6 +95,7 @@ export function calculateScopeChangeStats(sprints: Sprint[]): ScopeChangeStats |
 
   const averageChange = mean(changes)
   const averagePercentChange = mean(percentChanges)
+  const averageScopeInjection = mean(injections)
   const volatility = standardDeviation(changes)
 
   // Determine trend based on average change relative to volatility
@@ -107,6 +116,7 @@ export function calculateScopeChangeStats(sprints: Sprint[]): ScopeChangeStats |
     dataPoints,
     averageChange,
     averagePercentChange,
+    averageScopeInjection,
     volatility,
     trend,
     sprintsWithData: sprintsWithBacklog.length,

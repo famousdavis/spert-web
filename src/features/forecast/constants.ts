@@ -1,6 +1,6 @@
 // Forecast-specific constants
 
-export const TRIAL_COUNT = 50000
+export const DEFAULT_TRIAL_COUNT = 10000
 
 export const DEFAULT_PERCENTILES = [50, 60, 70, 80, 90] as const
 export const MIN_PERCENTILE = 1

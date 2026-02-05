@@ -6,18 +6,19 @@ export interface WorkerInput {
   historicalVelocities?: number[]
   productivityFactors?: number[]
   milestoneThresholds?: number[] // Cumulative backlog thresholds for milestone mode
+  scopeGrowthPerSprint?: number  // Optional scope growth per sprint
 }
 
 self.onmessage = (e: MessageEvent<WorkerInput>) => {
-  const { config, historicalVelocities, productivityFactors, milestoneThresholds } = e.data
+  const { config, historicalVelocities, productivityFactors, milestoneThresholds, scopeGrowthPerSprint } = e.data
 
   if (milestoneThresholds && milestoneThresholds.length > 0) {
     const result = runQuadrupleForecastWithMilestones(
-      config, milestoneThresholds, historicalVelocities, productivityFactors
+      config, milestoneThresholds, historicalVelocities, productivityFactors, scopeGrowthPerSprint
     )
     self.postMessage(result)
   } else {
-    const result = runQuadrupleForecast(config, historicalVelocities, productivityFactors)
+    const result = runQuadrupleForecast(config, historicalVelocities, productivityFactors, scopeGrowthPerSprint)
     self.postMessage(result)
   }
 }

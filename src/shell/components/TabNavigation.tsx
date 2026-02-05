@@ -14,7 +14,7 @@ const TABS: Tab[] = [
   { id: 'projects', label: 'Projects' },
   { id: 'sprint-history', label: 'Sprint History' },
   { id: 'forecast', label: 'Forecast' },
-  { id: 'settings', label: 'Settings', hidden: true },
+  { id: 'settings', label: 'Settings' },
   { id: 'about', label: 'About' },
 ]
 

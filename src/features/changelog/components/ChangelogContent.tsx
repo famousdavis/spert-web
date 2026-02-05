@@ -14,6 +14,38 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.15.0',
+    date: '2026-02-05',
+    sections: [
+      {
+        title: 'Settings Tab',
+        items: [
+          'New Settings tab with persisted global preferences',
+          'Auto-recalculate toggle: re-runs forecast automatically when inputs change (after first manual run)',
+          'Configurable simulation trial count (1,000–50,000) with default of 10,000',
+          'Default chart font size preference (Small/Medium/Large)',
+          'Default custom percentile preference (1–99)',
+          'Theme selector (Light/Dark/System) moved from header to Settings',
+        ],
+      },
+      {
+        title: 'User Experience',
+        items: [
+          'Debounced auto-recalculation (400ms) for text inputs, immediate for toggles and dropdowns',
+          'Productivity Adjustments moved below forecast form as a set-and-forget section',
+          'Keyboard shortcut 4 → Settings, 5 → About',
+        ],
+      },
+      {
+        title: 'Architecture',
+        items: [
+          'New settings-store (Zustand + localStorage) separate from project data store',
+          'Trial count now configurable via settings instead of hard-coded constant',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.14.0',
     date: '2026-02-05',
     sections: [

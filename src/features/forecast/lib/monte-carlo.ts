@@ -21,8 +21,7 @@ export interface SimulationInput {
 }
 
 export interface SimulationOutput {
-  sprintsRequired: number[] // Array of sprint counts from each trial
-  percentiles: Map<number, ForecastResult>
+  sprintsRequired: number[] // Sorted array of sprint counts from each trial
   distributionType: DistributionType
 }
 
@@ -77,16 +76,19 @@ export function createBootstrapSampler(velocities: number[]): VelocitySampler {
  * @param remainingBacklog - Work remaining
  * @param sampler - Function that returns a velocity sample from the chosen distribution
  * @param productivityFactors - Optional per-sprint multipliers (index 0 = first sprint)
+ * @param scopeGrowthPerSprint - Optional scope growth per sprint (positive = growing, negative = shrinking)
  */
 export function runTrial(
   remainingBacklog: number,
   sampler: VelocitySampler,
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): number {
   let remaining = remainingBacklog
   let sprints = 0
 
   while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
+    if (scopeGrowthPerSprint) remaining += scopeGrowthPerSprint
     const baseVelocity = Math.max(0.1, sampler())
     const factor = productivityFactors?.[sprints] ?? 1.0
     remaining -= baseVelocity * factor
@@ -104,13 +106,15 @@ export function runTrial(
  * @param cumulativeThresholds - Ascending cumulative backlog values for each milestone
  * @param sampler - Function that returns a velocity sample from the chosen distribution
  * @param productivityFactors - Optional per-sprint multipliers (index 0 = first sprint)
+ * @param scopeGrowthPerSprint - Optional scope growth per sprint (positive = growing, negative = shrinking)
  * @returns Array of sprint counts, one per milestone
  */
 function runTrialWithMilestones(
   remainingBacklog: number,
   cumulativeThresholds: number[],
   sampler: VelocitySampler,
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): number[] {
   let remaining = remainingBacklog
   let completed = 0
@@ -119,6 +123,7 @@ function runTrialWithMilestones(
   const results = new Array<number>(cumulativeThresholds.length).fill(MAX_TRIAL_SPRINTS)
 
   while (remaining > 0 && sprints < MAX_TRIAL_SPRINTS) {
+    if (scopeGrowthPerSprint) remaining += scopeGrowthPerSprint
     const baseVelocity = Math.max(0.1, sampler())
     const factor = productivityFactors?.[sprints] ?? 1.0
     const work = baseVelocity * factor
@@ -148,10 +153,34 @@ function runTrialWithMilestones(
 // ============================================================================
 
 /**
- * Run a Monte Carlo simulation, optionally with productivity adjustments.
+ * Run N trials with a given sampler and return sorted sprint counts.
+ * Common kernel used by all simulation entry points.
+ */
+function runTrials(
+  remainingBacklog: number,
+  sampler: VelocitySampler,
+  trialCount: number,
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
+): number[] {
+  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
+  const sprintsRequired: number[] = []
+  for (let i = 0; i < trialCount; i++) {
+    sprintsRequired.push(runTrial(remainingBacklog, sampler, factors, scopeGrowthPerSprint))
+  }
+  sprintsRequired.sort((a, b) => a - b)
+  return sprintsRequired
+}
+
+/**
+ * Run a Monte Carlo simulation, optionally with productivity adjustments and scope growth.
  * Returns the distribution of sprint counts across all trials.
  */
-export function runSimulation(input: SimulationInput, productivityFactors?: number[]): SimulationOutput {
+export function runSimulation(
+  input: SimulationInput,
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
+): SimulationOutput {
   const {
     remainingBacklog,
     velocityMean,
@@ -161,41 +190,11 @@ export function runSimulation(input: SimulationInput, productivityFactors?: numb
   } = input
 
   const sampler = createSampler(distributionType, velocityMean, velocityStdDev)
-  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
-
-  const sprintsRequired: number[] = []
-  for (let i = 0; i < trialCount; i++) {
-    sprintsRequired.push(runTrial(remainingBacklog, sampler, factors))
-  }
-
-  sprintsRequired.sort((a, b) => a - b)
 
   return {
-    sprintsRequired,
-    percentiles: new Map(),
+    sprintsRequired: runTrials(remainingBacklog, sampler, trialCount, productivityFactors, scopeGrowthPerSprint),
     distributionType,
   }
-}
-
-/**
- * Run bootstrap simulation, optionally with productivity adjustments.
- */
-function runBootstrapSimulationInternal(
-  remainingBacklog: number,
-  historicalVelocities: number[],
-  trialCount: number,
-  productivityFactors?: number[]
-): number[] {
-  const sampler = createBootstrapSampler(historicalVelocities)
-  const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
-
-  const sprintsRequired: number[] = []
-  for (let i = 0; i < trialCount; i++) {
-    sprintsRequired.push(runTrial(remainingBacklog, sampler, factors))
-  }
-
-  sprintsRequired.sort((a, b) => a - b)
-  return sprintsRequired
 }
 
 // ============================================================================
@@ -310,9 +309,10 @@ export function calculateAllCustomPercentiles(
 function runDistributionSimulation(
   baseInput: SimulationInput,
   distributionType: DistributionType,
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): { results: PercentileResults; sprintsRequired: number[] } {
-  const sim = runSimulation({ ...baseInput, distributionType }, productivityFactors)
+  const sim = runSimulation({ ...baseInput, distributionType }, productivityFactors, scopeGrowthPerSprint)
   const results = extractPercentileResults(sim.sprintsRequired, baseInput.startDate, baseInput.sprintCadenceWeeks)
   return { results, sprintsRequired: sim.sprintsRequired }
 }
@@ -320,12 +320,13 @@ function runDistributionSimulation(
 /**
  * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions.
  * Bootstrap is only included if historical velocities are provided.
- * Optionally applies productivity adjustments if factors are provided.
+ * Optionally applies productivity adjustments and scope growth if provided.
  */
 export function runQuadrupleForecast(
   config: ForecastConfig & { sprintCadenceWeeks: number },
   historicalVelocities?: number[],
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): {
   truncatedNormal: { results: PercentileResults; sprintsRequired: number[] }
   lognormal: { results: PercentileResults; sprintsRequired: number[] }
@@ -341,14 +342,16 @@ export function runQuadrupleForecast(
     trialCount: config.trialCount,
   }
 
-  const truncatedNormal = runDistributionSimulation(baseInput, 'truncatedNormal', productivityFactors)
-  const lognormal = runDistributionSimulation(baseInput, 'lognormal', productivityFactors)
-  const gamma = runDistributionSimulation(baseInput, 'gamma', productivityFactors)
+  const truncatedNormal = runDistributionSimulation(baseInput, 'truncatedNormal', productivityFactors, scopeGrowthPerSprint)
+  const lognormal = runDistributionSimulation(baseInput, 'lognormal', productivityFactors, scopeGrowthPerSprint)
+  const gamma = runDistributionSimulation(baseInput, 'gamma', productivityFactors, scopeGrowthPerSprint)
 
   let bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null = null
   if (historicalVelocities && historicalVelocities.length > 0) {
-    const sprintsRequired = runBootstrapSimulationInternal(
-      config.remainingBacklog, historicalVelocities, config.trialCount, productivityFactors
+    const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
+    const sprintsRequired = runTrials(
+      config.remainingBacklog, createBootstrapSampler(historicalVelocities),
+      config.trialCount, factors, scopeGrowthPerSprint
     )
     bootstrap = {
       results: extractPercentileResults(sprintsRequired, config.startDate, config.sprintCadenceWeeks),
@@ -393,14 +396,15 @@ export interface QuadMilestoneSimulationData {
  * Run milestone-aware simulation for any distribution.
  * Each trial records the sprint at which each cumulative milestone threshold is reached.
  */
-function runMilestoneSimulation(
+function runMilestoneSimulationInternal(
   remainingBacklog: number,
   cumulativeThresholds: number[],
   sampler: VelocitySampler,
   trialCount: number,
   startDate: string,
   sprintCadenceWeeks: number,
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): MilestoneDistributionResult {
   const milestoneCount = cumulativeThresholds.length
 
@@ -412,7 +416,7 @@ function runMilestoneSimulation(
 
   for (let i = 0; i < trialCount; i++) {
     const trialResults = runTrialWithMilestones(
-      remainingBacklog, cumulativeThresholds, sampler, productivityFactors
+      remainingBacklog, cumulativeThresholds, sampler, productivityFactors, scopeGrowthPerSprint
     )
     for (let m = 0; m < milestoneCount; m++) {
       milestoneSprintArrays[m][i] = trialResults[m]
@@ -437,38 +441,40 @@ function runMilestoneSimulation(
  * @param cumulativeThresholds - Ascending cumulative backlog values for each milestone
  * @param historicalVelocities - Optional historical data for bootstrap distribution
  * @param productivityFactors - Optional per-sprint productivity multipliers
+ * @param scopeGrowthPerSprint - Optional scope growth per sprint
  */
 export function runQuadrupleForecastWithMilestones(
   config: ForecastConfig & { sprintCadenceWeeks: number },
   cumulativeThresholds: number[],
   historicalVelocities?: number[],
-  productivityFactors?: number[]
+  productivityFactors?: number[],
+  scopeGrowthPerSprint?: number
 ): QuadMilestoneForecastResult {
   const { remainingBacklog, velocityMean, velocityStdDev, startDate, sprintCadenceWeeks, trialCount } = config
   const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
 
-  const truncatedNormal = runMilestoneSimulation(
+  const truncatedNormal = runMilestoneSimulationInternal(
     remainingBacklog, cumulativeThresholds,
     createSampler('truncatedNormal', velocityMean, velocityStdDev),
-    trialCount, startDate, sprintCadenceWeeks, factors
+    trialCount, startDate, sprintCadenceWeeks, factors, scopeGrowthPerSprint
   )
-  const lognormal = runMilestoneSimulation(
+  const lognormal = runMilestoneSimulationInternal(
     remainingBacklog, cumulativeThresholds,
     createSampler('lognormal', velocityMean, velocityStdDev),
-    trialCount, startDate, sprintCadenceWeeks, factors
+    trialCount, startDate, sprintCadenceWeeks, factors, scopeGrowthPerSprint
   )
-  const gamma = runMilestoneSimulation(
+  const gamma = runMilestoneSimulationInternal(
     remainingBacklog, cumulativeThresholds,
     createSampler('gamma', velocityMean, velocityStdDev),
-    trialCount, startDate, sprintCadenceWeeks, factors
+    trialCount, startDate, sprintCadenceWeeks, factors, scopeGrowthPerSprint
   )
 
   let bootstrap: MilestoneDistributionResult | null = null
   if (historicalVelocities && historicalVelocities.length > 0) {
-    bootstrap = runMilestoneSimulation(
+    bootstrap = runMilestoneSimulationInternal(
       remainingBacklog, cumulativeThresholds,
       createBootstrapSampler(historicalVelocities),
-      trialCount, startDate, sprintCadenceWeeks, factors
+      trialCount, startDate, sprintCadenceWeeks, factors, scopeGrowthPerSprint
     )
   }
 

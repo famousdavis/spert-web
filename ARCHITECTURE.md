@@ -28,17 +28,17 @@ src/
 │   │   ├── components/         # UI: ForecastTab, charts, forms, ChartToolbar
 │   │   ├── hooks/              # useForecastState (simulation orchestration)
 │   │   ├── lib/                # Pure logic: monte-carlo, burn-up, export-csv, productivity
-│   │   ├── constants.ts        # TRIAL_COUNT, percentile bounds
+│   │   ├── constants.ts        # DEFAULT_TRIAL_COUNT, percentile bounds
 │   │   └── types.ts            # Forecast-specific types
 │   ├── projects/               # Project CRUD & reordering
-│   ├── settings/               # Settings tab (hidden)
+│   ├── settings/               # Global settings (simulation, chart defaults, theme)
 │   └── sprint-history/         # Sprint data entry & velocity stats
 ├── shared/                     # Cross-feature utilities
 │   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions)
 │   ├── constants.ts            # APP_VERSION, APP_NAME
 │   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient)
 │   ├── lib/                    # Pure utilities: math, dates, copy-image
-│   ├── state/                  # Zustand store (project-store, import-validation, storage)
+│   ├── state/                  # Zustand stores (project-store, settings-store, import-validation, storage)
 │   └── types/                  # Shared types (burn-up config, project/sprint)
 ├── shell/                      # App layout & navigation
 │   └── components/             # AppShell, TabNavigation, Footer
@@ -63,11 +63,13 @@ src/
 
 ## Data Flow
 
-1. **Projects & Sprints** are persisted in localStorage via Zustand middleware
-2. **Forecast inputs** (backlog, velocity overrides) are session-only state per project
-3. **Monte Carlo simulation** runs client-side with 50,000 trials across four distributions
-4. **Productivity adjustments** modify velocity per sprint based on date-range overlap
-5. **Charts** (CDF, burn-up) render from simulation results using Recharts
+1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key)
+2. **Global settings** (trial count, auto-recalc, chart defaults, theme) persisted separately (`spert-settings` key)
+3. **Forecast inputs** (backlog, velocity overrides) are session-only state per project
+3. **Monte Carlo simulation** runs client-side with configurable trial count (default 10,000) across four distributions
+5. **Productivity adjustments** modify velocity per sprint based on date-range overlap
+6. **Auto-recalculation** (when enabled) debounces text inputs at 400ms, triggers immediately for toggles/dropdowns
+7. **Charts** (CDF, burn-up) render from simulation results using Recharts
 
 ## Testing
 
