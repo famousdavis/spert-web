@@ -102,9 +102,11 @@ function buildChartData(input: BuildChartDataInput): BurnUpDataPoint[] {
   for (const sprint of sortedSprints) {
     cumDone += sprint.doneValue
     const finishDate = getSprintFinishDate(firstSprintStartDate, sprint.sprintNumber, sprintCadenceWeeks)
-    const scope = hasBacklogHistory && sprint.backlogAtSprintEnd !== undefined
+    const rawScope = hasBacklogHistory && sprint.backlogAtSprintEnd !== undefined
       ? cumDone + sprint.backlogAtSprintEnd
       : syntheticBacklog
+    // Cap historical scope to finalScope so the line stays flat when forecast targets a milestone
+    const scope = Math.min(rawScope, finalScope)
 
     points.push({
       sprintNumber: sprint.sprintNumber,
