@@ -2,30 +2,14 @@
 
 import { useMemo, useState, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
-import {
-  ComposedChart,
-  Line,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts'
 import type { Sprint, Milestone } from '@/shared/types'
 import type { QuadSimulationData } from '../lib/monte-carlo'
 import type { BurnUpConfig, ChartFontSize } from '../types'
 import { CHART_FONT_SIZES } from '../types'
 import { calculateBurnUpData, isBootstrapAvailable } from '../lib/burn-up'
 import { BurnUpConfigUI } from './BurnUpConfig'
+import { BurnUpChartCanvas } from './BurnUpChartCanvas'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
-import { COLORS } from '@/shared/lib/colors'
-
-// Fixed colors for backlog and done lines
-const BACKLOG_COLOR = COLORS.burnUp.backlog
-const DONE_COLOR = COLORS.burnUp.done
 
 interface BurnUpChartProps {
   sprints: Sprint[]
@@ -91,10 +75,10 @@ export function BurnUpChart({
   }, [forecastBacklog, topVisibleMilestoneThreshold])
 
   // Milestone reference lines on Y-axis
-  // When scope is shown: exclude last milestone (it equals the scope line)
-  // When scope is hidden: include all visible milestones (last one becomes the ceiling)
   const milestoneRefLines = useMemo(() => {
     if (milestones.length === 0 || cumulativeThresholds.length === 0) return []
+    // When scope is shown: exclude last milestone (it equals the scope line)
+    // When scope is hidden: include all visible milestones (last one becomes the ceiling)
     const candidates = scopeHidden ? milestones : milestones.slice(0, -1)
     if (candidates.length === 0) return []
     return candidates
@@ -134,7 +118,6 @@ export function BurnUpChart({
       if (point.line2 !== undefined) max = Math.max(max, point.line2)
       if (point.line3 !== undefined) max = Math.max(max, point.line3)
     }
-    // Add 10% padding
     return Math.ceil(max * 1.1)
   }, [chartData])
 
@@ -163,7 +146,6 @@ export function BurnUpChart({
 
       {isExpanded && (
         <div id={panelId} role="region" aria-label="Burn-Up Chart" className="px-4 pb-4 relative">
-          {/* Configuration UI */}
           <BurnUpConfigUI
             config={config}
             hasBootstrap={hasBootstrap}
@@ -177,164 +159,13 @@ export function BurnUpChart({
               Shows cumulative work completed (Done) vs total product scope (Scope). Forecast lines
               show projected completion at different confidence levels.
             </p>
-            <ResponsiveContainer width="100%" height={400}>
-              <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 10, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.light} />
-                <XAxis
-                  dataKey="sprintNumber"
-                  tick={(props) => {
-                    const { x, y, payload } = props
-                    const point = chartData.find((p) => p.sprintNumber === payload.value)
-                    const dateLabel = point?.dateLabel || ''
-                    return (
-                      <g transform={`translate(${x},${y})`}>
-                        <text x={0} y={0} dy={14} textAnchor="middle" fontSize={fontSizes.axisTick} fill={COLORS.text.primary}>
-                          {payload.value}
-                        </text>
-                        <text x={0} y={0} dy={30} textAnchor="middle" fontSize={fontSizes.dateLabel} fill={COLORS.text.secondary}>
-                          {dateLabel}
-                        </text>
-                      </g>
-                    )
-                  }}
-                  tickLine={{ transform: 'translate(0, 0)' }}
-                  axisLine={{ stroke: '#e5e7eb' }}
-                  interval={chartData.length <= 25 ? 0 : chartData.length <= 50 ? 1 : chartData.length <= 80 ? 2 : Math.floor(chartData.length / 25)}
-                />
-                <YAxis
-                  domain={[0, yAxisMax]}
-                  label={{ value: 'Work Units', angle: -90, position: 'insideLeft', fontSize: fontSizes.axisLabel }}
-                  tick={{ fontSize: fontSizes.axisTick }}
-                />
-                <Tooltip
-                  formatter={(value, name) => {
-                    if (value === undefined || value === null) return ['-', name]
-                    return [typeof value === 'number' ? value.toFixed(1) : value, name]
-                  }}
-                  labelFormatter={(sprintNumber) => {
-                    const point = chartData.find((p) => p.sprintNumber === sprintNumber)
-                    return point ? `Sprint ${sprintNumber} (${point.dateLabel})` : `Sprint ${sprintNumber}`
-                  }}
-                  contentStyle={{ fontSize: fontSizes.axisTick }}
-                />
-                <Legend wrapperStyle={{ fontSize: fontSizes.legend, paddingTop: 20 }} verticalAlign="bottom" />
-
-                {/* Confidence interval areas (rendered first so lines appear on top) */}
-                {config.showConfidenceIntervals && (
-                  <>
-                    {/* Area between line1 (optimistic) and line2 (expected) */}
-                    <Area
-                      type="linear"
-                      dataKey="line1"
-                      stroke="none"
-                      fill={config.lines[0].color}
-                      fillOpacity={0.15}
-                      connectNulls={false}
-                      legendType="none"
-                      name=""
-                    />
-                    <Area
-                      type="linear"
-                      dataKey="line2"
-                      stroke="none"
-                      fill={config.lines[1].color}
-                      fillOpacity={0.15}
-                      connectNulls={false}
-                      legendType="none"
-                      name=""
-                    />
-                    {/* Area between line2 (expected) and line3 (conservative) */}
-                    <Area
-                      type="linear"
-                      dataKey="line3"
-                      stroke="none"
-                      fill={config.lines[2].color}
-                      fillOpacity={0.15}
-                      connectNulls={false}
-                      legendType="none"
-                      name=""
-                    />
-                  </>
-                )}
-
-                {/* Scope line (solid) - total product scope over time */}
-                {config.showScopeLine !== false && (
-                  <Line
-                    type="stepAfter"
-                    dataKey="backlog"
-                    name="Scope"
-                    stroke={BACKLOG_COLOR}
-                    dot={false}
-                    strokeWidth={3.5}
-                    connectNulls={false}
-                  />
-                )}
-
-                {/* Cumulative done line (solid) - stops at history end (nulls are not connected) */}
-                <Line
-                  type="stepAfter"
-                  dataKey="cumulativeDone"
-                  name="Done"
-                  stroke={DONE_COLOR}
-                  dot={false}
-                  strokeWidth={3.5}
-                  connectNulls={false}
-                />
-
-                {/* Forecast line 1 (dashed) */}
-                <Line
-                  type="linear"
-                  dataKey="line1"
-                  name={config.lines[0].label}
-                  stroke={config.lines[0].color}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  strokeWidth={3}
-                  connectNulls={false}
-                />
-
-                {/* Forecast line 2 (dashed) */}
-                <Line
-                  type="linear"
-                  dataKey="line2"
-                  name={config.lines[1].label}
-                  stroke={config.lines[1].color}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  strokeWidth={3}
-                  connectNulls={false}
-                />
-
-                {/* Forecast line 3 (dashed) */}
-                <Line
-                  type="linear"
-                  dataKey="line3"
-                  name={config.lines[2].label}
-                  stroke={config.lines[2].color}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  strokeWidth={3}
-                  connectNulls={false}
-                />
-
-                {/* Milestone reference lines (horizontal dashed lines at cumulative scope levels) */}
-                {milestoneRefLines.map((ref) => (
-                  <ReferenceLine
-                    key={ref.id}
-                    y={ref.yValue}
-                    stroke={ref.color}
-                    strokeDasharray="8 4"
-                    strokeWidth={1.5}
-                    label={{
-                      value: ref.name,
-                      position: 'insideTopLeft',
-                      fontSize: fontSizes.axisTick,
-                      fill: ref.color,
-                    }}
-                  />
-                ))}
-              </ComposedChart>
-            </ResponsiveContainer>
+            <BurnUpChartCanvas
+              chartData={chartData}
+              config={config}
+              yAxisMax={yAxisMax}
+              milestoneRefLines={milestoneRefLines}
+              fontSizes={fontSizes}
+            />
           </div>
           {chartRef && (
             <div className="absolute top-2 right-2">

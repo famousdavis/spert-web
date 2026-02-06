@@ -452,7 +452,7 @@ describe('runTrial with scope growth', () => {
   it('produces same result without scope growth parameter', () => {
     const sampler = createSampler('truncatedNormal', 20, 0)
     expect(runTrial(100, sampler)).toBe(5)
-    expect(runTrial(100, sampler, undefined, 0)).toBe(5) // 0 is falsy → no growth
+    expect(runTrial(100, sampler, undefined, 0)).toBe(5) // 0 growth is a no-op
   })
 
   it('increases sprint count with positive scope growth (deterministic)', () => {
@@ -535,17 +535,77 @@ describe('runQuadrupleForecastWithMilestones with scope growth', () => {
     expect(tn[1].results.p50.sprintsRequired).toBeLessThanOrEqual(tn[2].results.p50.sprintsRequired)
   })
 
-  it('scope growth does not change milestone completion when based on cumulative work', () => {
-    // Milestone thresholds check cumulative completed work, not remaining backlog.
-    // With stdDev=0 (deterministic), milestone sprint counts should be identical
-    // regardless of scope growth, because completed work rate is unchanged.
+  it('scope growth delays milestones with exact sprint counts (deterministic)', () => {
+    // velocity=20, stdDev=0, backlog=100, growth=5/sprint
+    // Trace per sprint (remaining starts at 100):
+    //   Sprint 1: 100+5=105, 105-20=85 → remaining 85, need ≤60? No
+    //   Sprint 2: 85+5=90, 90-20=70 → remaining 70, need ≤60? No
+    //   Sprint 3: 70+5=75, 75-20=55 → remaining 55, need ≤60? Yes → milestone 1 (40) at sprint 3
+    //   Sprint 4: 55+5=60, 60-20=40 → remaining 40, need ≤20? No
+    //   Sprint 5: 40+5=45, 45-20=25 → remaining 25, need ≤20? No
+    //   Sprint 6: 25+5=30, 30-20=10 → remaining 10, need ≤20? Yes → milestone 2 (80) at sprint 6
+    //   Sprint 7: 10+5=15, 15-20=-5 → remaining -5, need ≤0? Yes → milestone 3 (100) at sprint 7
     const thresholds = [40, 80, 100]
-    const withGrowth = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds, undefined, undefined, 3)
+    const result = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds, undefined, undefined, 5)
+    const tn = result.truncatedNormal.milestoneResults
+
+    expect(tn[0].results.p50.sprintsRequired).toBe(3)
+    expect(tn[1].results.p50.sprintsRequired).toBe(6)
+    expect(tn[2].results.p50.sprintsRequired).toBe(7)
+
+    // Without growth: 40/20=2, 80/20=4, 100/20=5
+    const baseline = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds)
+    const tnBase = baseline.truncatedNormal.milestoneResults
+    expect(tnBase[0].results.p50.sprintsRequired).toBe(2)
+    expect(tnBase[1].results.p50.sprintsRequired).toBe(4)
+    expect(tnBase[2].results.p50.sprintsRequired).toBe(5)
+  })
+
+  it('negative scope growth accelerates milestones with exact sprint counts (deterministic)', () => {
+    // velocity=20, stdDev=0, backlog=100, growth=-3/sprint → net 23/sprint
+    // Trace:
+    //   Sprint 1: 100-3=97, 97-20=77 → ≤60? No
+    //   Sprint 2: 77-3=74, 74-20=54 → ≤60? Yes → milestone 1 (40) at sprint 2
+    //   Sprint 3: 54-3=51, 51-20=31 → ≤20? No
+    //   Sprint 4: 31-3=28, 28-20=8 → ≤20? Yes → milestone 2 (80) at sprint 4
+    //   Sprint 5: 8-3=5, 5-20=-15 → ≤0? Yes → milestone 3 (100) at sprint 5
+    const thresholds = [40, 80, 100]
+    const result = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds, undefined, undefined, -3)
+    const tn = result.truncatedNormal.milestoneResults
+
+    expect(tn[0].results.p50.sprintsRequired).toBe(2)
+    expect(tn[1].results.p50.sprintsRequired).toBe(4)
+    expect(tn[2].results.p50.sprintsRequired).toBe(5)
+  })
+
+  it('zero scope growth produces identical results to no growth', () => {
+    const thresholds = [40, 80, 100]
+    const withZero = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds, undefined, undefined, 0)
     const withoutGrowth = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds)
 
     for (let m = 0; m < thresholds.length; m++) {
-      expect(withGrowth.truncatedNormal.milestoneResults[m].results.p50.sprintsRequired)
+      expect(withZero.truncatedNormal.milestoneResults[m].results.p50.sprintsRequired)
         .toBe(withoutGrowth.truncatedNormal.milestoneResults[m].results.p50.sprintsRequired)
     }
+  })
+
+  it('last milestone with scope growth matches runTrial sprint count', () => {
+    const thresholds = [40, 100]
+    const milestoneResult = runQuadrupleForecastWithMilestones(deterministicConfig, thresholds, undefined, undefined, 5)
+    const simpleResult = runQuadrupleForecast(deterministicConfig, undefined, undefined, 5)
+
+    expect(milestoneResult.truncatedNormal.milestoneResults[1].results.p50.sprintsRequired)
+      .toBe(simpleResult.truncatedNormal.results.p50.sprintsRequired)
+  })
+
+  it('runTrial exact sprint counts with scope growth (regression)', () => {
+    const sampler = createSampler('truncatedNormal', 20, 0)
+    // +5 growth: net 15/sprint → ceil(100/15) ≈ 7 sprints
+    expect(runTrial(100, sampler, undefined, 5)).toBe(7)
+    // -3 growth: net 23/sprint → ceil(100/23) ≈ 5 sprints
+    expect(runTrial(100, sampler, undefined, -3)).toBe(5)
+    // 0 growth: same as no growth → 100/20 = 5 sprints
+    expect(runTrial(100, sampler, undefined, 0)).toBe(5)
+    expect(runTrial(100, sampler)).toBe(5)
   })
 })

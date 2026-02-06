@@ -18,6 +18,7 @@ import {
   type QuadCustomResults,
 } from '../lib/monte-carlo'
 import { useSimulationWorker } from './useSimulationWorker'
+import { useScopeGrowthState } from './useScopeGrowthState'
 import { preCalculateSprintFactors } from '../lib/productivity'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { safeParseNumber } from '@/shared/lib/validation'
@@ -73,10 +74,8 @@ export function useForecastState() {
     truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null,
   })
 
-  // Scope growth modeling (session only)
-  const [modelScopeGrowth, setModelScopeGrowth] = useState(false)
-  const [scopeGrowthMode, setScopeGrowthMode] = useState<'calculated' | 'custom'>('calculated')
-  const [customScopeGrowth, setCustomScopeGrowth] = useState('')
+  // Scope growth modeling (session only, extracted hook)
+  const scopeGrowth = useScopeGrowthState(sprintData.scopeChangeStats?.averageScopeInjection)
 
   // Milestone chart selector (which milestone to show on CDF/histogram)
   const [selectedMilestoneIndex, setSelectedMilestoneIndex] = useState(0)
@@ -89,8 +88,7 @@ export function useForecastState() {
       setMilestoneResultsState(null)
       setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
       setSelectedMilestoneIndex(0)
-      setScopeGrowthMode('calculated')
-      setCustomScopeGrowth('')
+      scopeGrowth.resetScopeGrowth()
       hasRunOnceRef.current = false
       prevProjectIdRef.current = selectedProject?.id
     }
@@ -127,16 +125,6 @@ export function useForecastState() {
       productivityFactors = factors
     }
 
-    // Compute scope growth if enabled
-    const scopeGrowthPerSprint = (() => {
-      if (!modelScopeGrowth) return undefined
-      if (scopeGrowthMode === 'custom') {
-        const parsed = parseFloat(customScopeGrowth)
-        return isNaN(parsed) ? undefined : parsed
-      }
-      return sprintData.scopeChangeStats?.averageScopeInjection
-    })()
-
     try {
       if (inputs.hasMilestones && inputs.cumulativeThresholds.length > 0) {
         const milestoneResult = await runMilestoneSimulation({
@@ -144,7 +132,7 @@ export function useForecastState() {
           historicalVelocities: sprintData.canUseBootstrap ? sprintData.historicalVelocities : undefined,
           productivityFactors,
           milestoneThresholds: inputs.cumulativeThresholds,
-          scopeGrowthPerSprint,
+          scopeGrowthPerSprint: scopeGrowth.scopeGrowthPerSprint,
         })
 
         const milestoneCount = inputs.cumulativeThresholds.length
@@ -181,7 +169,7 @@ export function useForecastState() {
           config,
           historicalVelocities: sprintData.canUseBootstrap ? sprintData.historicalVelocities : undefined,
           productivityFactors,
-          scopeGrowthPerSprint,
+          scopeGrowthPerSprint: scopeGrowth.scopeGrowthPerSprint,
         })
 
         setMilestoneResultsState(null)
@@ -217,7 +205,7 @@ export function useForecastState() {
   const debouncedBacklog = useDebounce(inputs.remainingBacklog, 400)
   const debouncedMean = useDebounce(inputs.velocityMean, 400)
   const debouncedStdDev = useDebounce(inputs.velocityStdDev, 400)
-  const debouncedCustomGrowth = useDebounce(customScopeGrowth, 400)
+  const debouncedCustomGrowth = useDebounce(scopeGrowth.customScopeGrowth, 400)
 
   useEffect(() => {
     if (!autoRecalculate || !hasRunOnceRef.current) return
@@ -230,8 +218,8 @@ export function useForecastState() {
     debouncedBacklog,
     debouncedMean,
     debouncedStdDev,
-    modelScopeGrowth,
-    scopeGrowthMode,
+    scopeGrowth.modelScopeGrowth,
+    scopeGrowth.scopeGrowthMode,
     debouncedCustomGrowth,
     productivityAdjustments,
     inputs.cumulativeThresholds,
@@ -304,14 +292,7 @@ export function useForecastState() {
         trialCount,
         productivityAdjustments: productivityAdjustments.filter((a) => a.enabled !== false),
         milestones: inputs.hasMilestones ? inputs.milestones : undefined,
-        scopeGrowthPerSprint: (() => {
-          if (!modelScopeGrowth) return undefined
-          if (scopeGrowthMode === 'custom') {
-            const parsed = parseFloat(customScopeGrowth)
-            return isNaN(parsed) ? undefined : parsed
-          }
-          return sprintData.scopeChangeStats?.averageScopeInjection
-        })(),
+        scopeGrowthPerSprint: scopeGrowth.scopeGrowthPerSprint,
       },
       truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
@@ -358,14 +339,9 @@ export function useForecastState() {
     setVelocityMean: inputs.setVelocityMean,
     setVelocityStdDev: inputs.setVelocityStdDev,
 
-    // Scope growth modeling
+    // Scope growth modeling (from useScopeGrowthState)
     scopeChangeStats: sprintData.scopeChangeStats,
-    modelScopeGrowth,
-    setModelScopeGrowth,
-    scopeGrowthMode,
-    setScopeGrowthMode,
-    customScopeGrowth,
-    setCustomScopeGrowth,
+    ...scopeGrowth,
 
     // Simulation state
     isSimulating,

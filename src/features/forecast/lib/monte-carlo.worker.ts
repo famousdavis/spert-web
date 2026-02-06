@@ -1,12 +1,8 @@
 import { runQuadrupleForecast, runQuadrupleForecastWithMilestones } from './monte-carlo'
-import type { ForecastConfig } from '@/shared/types'
+import type { SimulationContext } from './monte-carlo'
 
-export interface WorkerInput {
-  config: ForecastConfig & { sprintCadenceWeeks: number }
-  historicalVelocities?: number[]
-  productivityFactors?: number[]
+export interface WorkerInput extends SimulationContext {
   milestoneThresholds?: number[] // Cumulative backlog thresholds for milestone mode
-  scopeGrowthPerSprint?: number  // Optional scope growth per sprint
 }
 
 self.onmessage = (e: MessageEvent<WorkerInput>) => {

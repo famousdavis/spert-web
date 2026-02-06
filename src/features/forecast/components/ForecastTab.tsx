@@ -39,6 +39,7 @@ export function ForecastTab() {
     setScopeGrowthMode,
     customScopeGrowth,
     setCustomScopeGrowth,
+    scopeGrowthPerSprint,
     isSimulating,
     results,
     simulationData,
@@ -153,14 +154,7 @@ export function ForecastTab() {
                   hasBootstrap={results.bootstrap !== null}
                   modelScopeGrowth={modelScopeGrowth}
                   scopeGrowthMode={scopeGrowthMode}
-                  scopeGrowthPerSprint={(() => {
-                    if (!modelScopeGrowth) return undefined
-                    if (scopeGrowthMode === 'custom') {
-                      const parsed = parseFloat(customScopeGrowth)
-                      return isNaN(parsed) ? undefined : parsed
-                    }
-                    return scopeChangeStats?.averageScopeInjection
-                  })()}
+                  scopeGrowthPerSprint={scopeGrowthPerSprint}
                 />
                 <ForecastResults
                   truncatedNormalResults={results.truncatedNormal}
