@@ -32,6 +32,7 @@ interface ForecastSummaryProps {
   cumulativeThresholds?: number[]
   hasBootstrap: boolean
   modelScopeGrowth?: boolean
+  scopeGrowthMode?: 'calculated' | 'custom'
   scopeGrowthPerSprint?: number
 }
 
@@ -66,13 +67,15 @@ export function buildSummaryText(
   completedSprintCount: number,
   distributionLabel: string,
   modelScopeGrowth?: boolean,
-  scopeGrowthPerSprint?: number
+  scopeGrowthPerSprint?: number,
+  scopeGrowthMode?: 'calculated' | 'custom'
 ): string {
   const absoluteSprint = sprintsRequired + completedSprintCount
   let text = `There is a ${percentile}% chance that ${projectName} will finish the ${backlog.toLocaleString()} ${unitOfMeasure} backlog by Sprint ${absoluteSprint} (${formatDateLong(finishDate)}), using the ${distributionLabel} distribution.`
   if (modelScopeGrowth && scopeGrowthPerSprint !== undefined) {
     const sign = scopeGrowthPerSprint > 0 ? '+' : ''
-    text += ` Scope growth of ${sign}${scopeGrowthPerSprint.toFixed(1)} ${unitOfMeasure}/sprint is modeled.`
+    const source = scopeGrowthMode === 'custom' ? 'custom' : 'calculated'
+    text += ` Scope growth of ${sign}${scopeGrowthPerSprint.toFixed(1)} ${unitOfMeasure}/sprint is modeled (${source}).`
   }
   return text
 }
@@ -101,6 +104,7 @@ export function ForecastSummary({
   cumulativeThresholds = [],
   hasBootstrap,
   modelScopeGrowth,
+  scopeGrowthMode,
   scopeGrowthPerSprint,
 }: ForecastSummaryProps) {
   const [selectedDistribution, setSelectedDistribution] = useState<DistributionType>('truncatedNormal')
@@ -132,9 +136,10 @@ export function ForecastSummary({
       completedSprintCount,
       DISTRIBUTION_LABELS[selectedDistribution],
       modelScopeGrowth,
-      scopeGrowthPerSprint
+      scopeGrowthPerSprint,
+      scopeGrowthMode
     )
-  }, [selectedResult, projectName, remainingBacklog, unitOfMeasure, selectedPercentile, completedSprintCount, selectedDistribution, modelScopeGrowth, scopeGrowthPerSprint])
+  }, [selectedResult, projectName, remainingBacklog, unitOfMeasure, selectedPercentile, completedSprintCount, selectedDistribution, modelScopeGrowth, scopeGrowthPerSprint, scopeGrowthMode])
 
   const milestoneTexts = useMemo(() => {
     if (!milestoneResultsState || milestones.length === 0) return []

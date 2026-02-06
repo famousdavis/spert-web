@@ -14,6 +14,31 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.15.1',
+    date: '2026-02-05',
+    sections: [
+      {
+        title: 'Custom Scope Growth Override',
+        items: [
+          'Choose between calculated scope growth (from sprint history) or a custom user-specified rate',
+          'Radio button selection between Calculated and Custom when scope growth is enabled',
+          'Custom input allows negative values for scope shrinking scenarios',
+          'Warning indicator applies to whichever mode is active (calculated or custom)',
+          'Summary text indicates source: "(calculated)" or "(custom)"',
+          'Auto-recalculation supports both modes with debounced custom input',
+        ],
+      },
+      {
+        title: 'Bug Fixes',
+        items: [
+          'Fixed tab margin jitter on Windows caused by scrollbar appearing/disappearing between tabs',
+          'Updated About page to not hardcode trial count',
+          'Dynamic copyright year in footer',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-02-05',
     sections: [

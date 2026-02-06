@@ -35,6 +35,10 @@ export function ForecastTab() {
     scopeChangeStats,
     modelScopeGrowth,
     setModelScopeGrowth,
+    scopeGrowthMode,
+    setScopeGrowthMode,
+    customScopeGrowth,
+    setCustomScopeGrowth,
     isSimulating,
     results,
     simulationData,
@@ -120,7 +124,11 @@ export function ForecastTab() {
               sprints={projectSprints}
               scopeChangeStats={scopeChangeStats}
               modelScopeGrowth={modelScopeGrowth}
+              scopeGrowthMode={scopeGrowthMode}
+              customScopeGrowth={customScopeGrowth}
               onModelScopeGrowthChange={setModelScopeGrowth}
+              onScopeGrowthModeChange={setScopeGrowthMode}
+              onCustomScopeGrowthChange={setCustomScopeGrowth}
               onRemainingBacklogChange={setRemainingBacklog}
               onVelocityMeanChange={setVelocityMean}
               onVelocityStdDevChange={setVelocityStdDev}
@@ -144,7 +152,15 @@ export function ForecastTab() {
                   cumulativeThresholds={cumulativeThresholds}
                   hasBootstrap={results.bootstrap !== null}
                   modelScopeGrowth={modelScopeGrowth}
-                  scopeGrowthPerSprint={modelScopeGrowth && scopeChangeStats ? scopeChangeStats.averageScopeInjection : undefined}
+                  scopeGrowthMode={scopeGrowthMode}
+                  scopeGrowthPerSprint={(() => {
+                    if (!modelScopeGrowth) return undefined
+                    if (scopeGrowthMode === 'custom') {
+                      const parsed = parseFloat(customScopeGrowth)
+                      return isNaN(parsed) ? undefined : parsed
+                    }
+                    return scopeChangeStats?.averageScopeInjection
+                  })()}
                 />
                 <ForecastResults
                   truncatedNormalResults={results.truncatedNormal}
