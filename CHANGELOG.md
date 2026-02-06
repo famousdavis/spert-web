@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.16.1 - 2026-02-06
+
+### Bug Fixes
+
+- Burn-up chart forecast lines now target highest visible milestone instead of always extending to total project scope
+- Historical scope line capped to milestone target, eliminating misleading cliff at forecast boundary
+
+### Dark Mode
+
+- Active tab dimmed to `blue-700` for reduced glare against dark backgrounds
+- Export/Import buttons switch to ghost variants (outlined with tinted background) in dark mode
+- Add Milestone/Add Adjustment buttons use matching ghost variant in dark mode
+- Tab container border visible in dark mode (`gray-700`)
+
 ## v0.16.0 - 2026-02-05
 
 ### Features

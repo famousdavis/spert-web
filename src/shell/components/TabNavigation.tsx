@@ -25,7 +25,7 @@ interface TabNavigationProps {
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <div className="flex gap-2 border-b-2 border-gray-100 pl-2">
+    <div className="flex gap-2 border-b-2 border-gray-100 dark:border-gray-700 pl-2">
       {TABS.filter((tab) => !tab.hidden).map((tab) => (
         <button
           key={tab.id}
@@ -33,7 +33,7 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
           className={cn(
             'px-5 py-2 border-0 border-b-[3px] rounded-t-lg cursor-pointer font-semibold text-base transition-all duration-200',
             activeTab === tab.id
-              ? 'bg-spert-blue text-white border-b-spert-blue'
+              ? 'bg-spert-blue dark:bg-blue-700 text-white border-b-spert-blue dark:border-b-blue-700'
               : 'bg-transparent text-spert-text-muted border-b-transparent hover:bg-spert-bg-hover'
           )}
         >

@@ -139,7 +139,7 @@ export function CollapsibleCrudPanel<T extends CrudItem>({
           {!showForm && canAdd && (
             <button
               onClick={() => setIsAdding(true)}
-              className="mb-4 cursor-pointer rounded border-none bg-spert-blue px-4 py-2 text-sm font-medium text-white"
+              className="mb-4 cursor-pointer rounded border-none dark:border dark:border-blue-600 bg-spert-blue dark:bg-blue-900/30 px-4 py-2 text-sm font-medium text-white dark:text-blue-400"
             >
               {addButtonLabel}
             </button>

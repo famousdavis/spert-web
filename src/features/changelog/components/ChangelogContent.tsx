@@ -14,6 +14,28 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.16.1',
+    date: '2026-02-06',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        items: [
+          'Burn-up chart forecast lines now target highest visible milestone instead of total project scope',
+          'Historical scope line capped to milestone target, eliminating misleading cliff at forecast boundary',
+        ],
+      },
+      {
+        title: 'Dark Mode',
+        items: [
+          'Active tab dimmed for reduced glare against dark backgrounds',
+          'Export/Import buttons switch to ghost variants (outlined with tinted background)',
+          'Add Milestone/Add Adjustment buttons use matching ghost variant',
+          'Tab container border now visible in dark mode',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.16.0',
     date: '2026-02-05',
     sections: [
