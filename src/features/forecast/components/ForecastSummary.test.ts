@@ -23,7 +23,7 @@ describe('buildSummaryText', () => {
     expect(text).not.toContain('Scope growth')
   })
 
-  it('includes scope growth info when enabled', () => {
+  it('includes calculated scope growth info when enabled', () => {
     const text = buildSummaryText(
       'Project Beta',
       200,
@@ -34,11 +34,29 @@ describe('buildSummaryText', () => {
       3,
       'Lognorm',
       true,
-      5.2
+      5.2,
+      'calculated'
     )
     expect(text).toContain('90% chance')
     expect(text).toContain('Sprint 18') // 15 + 3
-    expect(text).toContain('Scope growth of +5.2 stories/sprint is modeled')
+    expect(text).toContain('Scope growth of +5.2 stories/sprint is modeled (calculated)')
+  })
+
+  it('includes custom scope growth info when enabled', () => {
+    const text = buildSummaryText(
+      'Project Beta',
+      200,
+      'stories',
+      90,
+      15,
+      '2026-06-15',
+      3,
+      'Lognorm',
+      true,
+      8.0,
+      'custom'
+    )
+    expect(text).toContain('Scope growth of +8.0 stories/sprint is modeled (custom)')
   })
 
   it('handles negative scope growth (scope shrinking)', () => {
@@ -52,9 +70,10 @@ describe('buildSummaryText', () => {
       2,
       'Gamma',
       true,
-      -3.5
+      -3.5,
+      'calculated'
     )
-    expect(text).toContain('Scope growth of -3.5 pts/sprint is modeled')
+    expect(text).toContain('Scope growth of -3.5 pts/sprint is modeled (calculated)')
   })
 
   it('does not include scope growth when not enabled', () => {
