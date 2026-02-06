@@ -1,5 +1,79 @@
 # Changelog
 
+## v0.16.0 - 2026-02-05
+
+### Features
+
+- Custom scope growth override: choose between calculated rate (from sprint history) or a user-specified custom rate
+- Radio button UI with inline calculated stats and custom numeric input
+- Summary text shows source label: "(calculated)" or "(custom)"
+
+### Bug Fixes
+
+- Fixed scope growth not affecting milestone forecasts (milestone check now uses remaining backlog instead of cumulative velocity)
+- Fixed truthiness check allowing zero scope growth to be modeled correctly
+- Fixed Windows scrollbar jitter with scrollbar gutter reservation
+- Dynamic copyright year derived from system date
+
+### Refactoring
+
+- Extracted `resolveScopeGrowthPerSprint` helper (eliminates 3x duplicated IIFE)
+- Introduced `SimulationContext` interface grouping related simulation parameters
+- Added `runAllDistributions<T>()` generic sweep helper (adding a distribution is now a one-line change)
+- Extracted `useScopeGrowthState` hook from `useForecastState` (392 → 367 LOC)
+- Extracted `BurnUpChartCanvas` from `BurnUpChart` (349 → 179 + 195 LOC)
+- Extracted `ScopeGrowthSection` from `ForecastForm` (298 → 228 + 115 LOC)
+- `WorkerInput` extends `SimulationContext` instead of duplicating fields
+
+### Test Coverage
+
+- Added deterministic scope growth tests with exact sprint count assertions and sprint-by-sprint traces
+- Added `resolveScopeGrowthPerSprint` unit tests (6 cases)
+- 312 tests passing (was 305)
+
+## v0.15.0 - 2026-02-04
+
+### Settings
+
+- Settings tab with persisted global preferences
+- Auto-recalculate toggle (debounced 400ms for text, immediate for toggles)
+- Configurable trial count (1K-50K, default 10K)
+- Default chart font size and custom percentile preferences
+- Theme selector moved from header to Settings
+
+### Forecast Enhancements
+
+- Forecast Summary Card with key metrics
+- Velocity Sparkline on forecast form
+- Velocity Trend Chart on Sprint History tab
+- Scope creep forecasting with growth model
+- Productivity Adjustments moved below forecast form
+
+### Refactoring
+
+- Decomposed `useForecastState` into focused hooks (useSprintData, useForecastInputs, useChartSettings)
+- New settings-store (Zustand + localStorage) separate from project data
+
+## v0.14.0 - 2026-02-03
+
+### Milestones
+
+- Ordered release milestones with per-milestone forecast dates
+- Milestone reference lines on burn-up chart with show/hide toggles
+- Scope line visibility control
+- Milestone selectors on CDF and histogram charts
+
+### Refactoring
+
+- Extracted `CollapsibleCrudPanel` generic component (~200 LOC saved)
+- Extracted import validation module from project-store
+- Consolidated Monte Carlo simulation with sampler factory pattern (665 → 445 LOC)
+- Extracted shared `ChartToolbar` component
+
+### Test Coverage
+
+- 271 tests passing
+
 ## v0.13.0 - 2026-02-03
 
 ### Visualization

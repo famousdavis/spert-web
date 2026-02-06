@@ -26,8 +26,27 @@ src/
 │   ├── changelog/              # Changelog display component
 │   ├── forecast/               # Monte Carlo simulation & charts
 │   │   ├── components/         # UI: ForecastTab, charts, forms, ChartToolbar
-│   │   ├── hooks/              # useForecastState (simulation orchestration)
+│   │   │   ├── BurnUpChart.tsx           # Burn-up orchestration (config, data prep)
+│   │   │   ├── BurnUpChartCanvas.tsx     # Pure Recharts burn-up rendering
+│   │   │   ├── ForecastForm.tsx          # Forecast input form
+│   │   │   ├── ScopeGrowthSection.tsx    # Scope growth modeling controls
+│   │   │   └── ...                       # Results, CDF, histogram, milestones, etc.
+│   │   ├── hooks/              # State orchestration
+│   │   │   ├── useForecastState.ts       # Top-level simulation orchestration
+│   │   │   ├── useScopeGrowthState.ts    # Scope growth state + resolution
+│   │   │   ├── useSprintData.ts          # Sprint statistics & dates
+│   │   │   ├── useForecastInputs.ts      # Form inputs & milestone thresholds
+│   │   │   ├── useChartSettings.ts       # Chart config state
+│   │   │   └── useSimulationWorker.ts    # Web Worker bridge
 │   │   ├── lib/                # Pure logic: monte-carlo, burn-up, export-csv, productivity
+│   │   │   ├── monte-carlo.ts            # Simulation engine (SimulationContext, runAllDistributions)
+│   │   │   ├── monte-carlo.worker.ts     # Web Worker entry point
+│   │   │   ├── scope-growth.ts           # Scope growth resolution helper
+│   │   │   ├── burn-up.ts                # Burn-up chart data calculation
+│   │   │   ├── export-csv.ts             # CSV generation & download
+│   │   │   ├── productivity.ts           # Productivity adjustment factors
+│   │   │   ├── statistics.ts             # Scope change analysis
+│   │   │   └── cdf.ts                    # CDF calculation utilities
 │   │   ├── constants.ts        # DEFAULT_TRIAL_COUNT, percentile bounds
 │   │   └── types.ts            # Forecast-specific types
 │   ├── projects/               # Project CRUD & reordering
@@ -37,7 +56,7 @@ src/
 │   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions)
 │   ├── constants.ts            # APP_VERSION, APP_NAME
 │   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient)
-│   ├── lib/                    # Pure utilities: math, dates, copy-image
+│   ├── lib/                    # Pure utilities: math, dates, copy-image, colors
 │   ├── state/                  # Zustand stores (project-store, settings-store, import-validation, storage)
 │   └── types/                  # Shared types (burn-up config, project/sprint)
 ├── shell/                      # App layout & navigation
@@ -51,11 +70,16 @@ src/
 
 **Vertical slices**: Features are self-contained slices. No Clean Architecture layers or ceremony.
 
-**~300 LOC cap**: Components are kept under ~300 lines. Larger components get split (e.g., SprintConfig extracted from SprintHistoryTab).
+**~300 LOC cap**: Components are kept under ~300 lines. Larger components get split (e.g., BurnUpChartCanvas from BurnUpChart, ScopeGrowthSection from ForecastForm).
 
 **Constants in narrowest scope**: Feature constants live in feature directories. Only truly global constants live in shared/constants.ts.
 
-**Pure simulation logic**: Monte Carlo simulation, productivity calculations, burn-up projections, and CSV export are pure functions in `lib/` directories with colocated tests. Simulation uses a sampler factory pattern (`createSampler`, `createBootstrapSampler`) to decouple distribution selection from trial execution.
+**Pure simulation logic**: Monte Carlo simulation, productivity calculations, burn-up projections, and CSV export are pure functions in `lib/` directories with colocated tests. The simulation engine uses:
+- **Sampler factory pattern** (`createSampler`, `createBootstrapSampler`) to decouple distribution selection from trial execution
+- **`SimulationContext`** interface to group related simulation parameters (config, velocities, productivity factors, scope growth)
+- **`runAllDistributions<T>()`** generic helper to sweep all four distributions with a single callback, making new distribution additions a one-line change
+
+**Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge).
 
 **Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup.
 
@@ -66,11 +90,13 @@ src/
 1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key)
 2. **Global settings** (trial count, auto-recalc, chart defaults, theme) persisted separately (`spert-settings` key)
 3. **Forecast inputs** (backlog, velocity overrides) are session-only state per project
-3. **Monte Carlo simulation** runs client-side with configurable trial count (default 10,000) across four distributions
-5. **Productivity adjustments** modify velocity per sprint based on date-range overlap
-6. **Auto-recalculation** (when enabled) debounces text inputs at 400ms, triggers immediately for toggles/dropdowns
-7. **Charts** (CDF, burn-up) render from simulation results using Recharts
+4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across four distributions
+5. **Scope growth modeling** resolves per-sprint scope injection from calculated or custom rates via `resolveScopeGrowthPerSprint()`
+6. **Productivity adjustments** modify velocity per sprint based on date-range overlap
+7. **Milestone forecasts** use cumulative thresholds with remaining-backlog checks, correctly accounting for scope growth
+8. **Auto-recalculation** (when enabled) debounces text inputs at 400ms, triggers immediately for toggles/dropdowns
+9. **Charts** (CDF, burn-up, histogram) render from simulation results using Recharts
 
 ## Testing
 
-Tests are colocated as `*.test.ts` files alongside source. Pure logic in `lib/` directories has the highest coverage priority. Run with `npm test`.
+Tests are colocated as `*.test.ts` files alongside source. Pure logic in `lib/` directories has the highest coverage priority. Deterministic tests (stdDev=0) verify exact sprint counts for scope growth and milestone scenarios. Run with `npm test`.
