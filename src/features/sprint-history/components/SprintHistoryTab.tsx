@@ -155,7 +155,7 @@ export function SprintHistoryTab() {
             className={cn(
               'px-4 py-2 border-none rounded text-[0.9rem] font-semibold text-white',
               isSprintConfigComplete
-                ? 'bg-spert-blue cursor-pointer opacity-100'
+                ? 'bg-spert-blue dark:bg-blue-700 cursor-pointer opacity-100'
                 : 'bg-[#ccc] cursor-not-allowed opacity-60'
             )}
           >

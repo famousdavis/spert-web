@@ -192,7 +192,7 @@ export function ForecastForm({
               isSimulating
                 ? 'bg-spert-success cursor-not-allowed scale-[0.97]'
                 : canRun
-                  ? 'bg-spert-blue cursor-pointer scale-100'
+                  ? 'bg-spert-blue dark:bg-blue-700 cursor-pointer scale-100'
                   : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed scale-100'
             )}
           >
