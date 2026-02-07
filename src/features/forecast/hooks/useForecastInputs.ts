@@ -80,20 +80,20 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
     : (canUseHistory ? 'history' : 'subjective')
 
   // Effective values depend on forecast mode
-  // In subjective mode (when no manual override): use velocity estimate and CV-derived std dev
-  // In history mode or with manual overrides: use calculated stats or overrides
+  // In subjective mode: derived entirely from velocity estimate + CV (no fallthrough to calc stats)
+  // In history mode: use calculated stats, manual overrides, or volatility multiplier
   const velocityEstimateNum = Number(velocityEstimate) || 0
 
   const effectiveMean = velocityMean
     ? Number(velocityMean)
-    : (resolvedMode === 'subjective' && velocityEstimateNum > 0)
-      ? velocityEstimateNum
+    : resolvedMode === 'subjective'
+      ? velocityEstimateNum                                     // 0 if no estimate → disables Run
       : calculatedStats.mean
 
   const effectiveStdDev = velocityStdDev
     ? Number(velocityStdDev)
-    : (resolvedMode === 'subjective' && velocityEstimateNum > 0)
-      ? velocityEstimateNum * selectedCV
+    : resolvedMode === 'subjective'
+      ? velocityEstimateNum * selectedCV                        // 0 if no estimate
       : calculatedStats.standardDeviation * volatilityMultiplier
 
   return {
