@@ -158,7 +158,11 @@ export function ForecastForm({
             min="0"
             max="999999"
             step="any"
-            value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
+            value={
+              isSubjective
+                ? (estimateNum > 0 ? estimateNum.toFixed(1) : '')
+                : velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')
+            }
             onChange={(e) => onVelocityMeanChange(e.target.value)}
             disabled={isSubjective}
             className={cn(
@@ -167,11 +171,11 @@ export function ForecastForm({
                 ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
                 : 'bg-white dark:bg-gray-700'
             )}
-            placeholder={calculatedMean > 0 ? '' : 'No data'}
+            placeholder={isSubjective ? 'From estimate' : (calculatedMean > 0 ? '' : 'No data')}
           />
           <p className={helperClass}>
             {isSubjective
-              ? (estimateNum > 0 ? `From estimate: ${estimateNum.toFixed(1)}` : '\u00A0')
+              ? (calculatedMean > 0 ? `Calc: ${calculatedMean.toFixed(1)}` : '\u00A0')
               : calculatedMean > 0
                 ? `Calc: ${calculatedMean.toFixed(1)}`
                 : 'Add sprints to calculate'}
@@ -192,7 +196,9 @@ export function ForecastForm({
             value={
               isAdjusterActive
                 ? effectiveStdDev.toFixed(1)
-                : velocityStdDev || (isSubjective && estimateNum > 0 ? effectiveStdDev.toFixed(1) : calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')
+                : isSubjective
+                  ? (estimateNum > 0 ? effectiveStdDev.toFixed(1) : '')
+                  : velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')
             }
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
             disabled={isSubjective || isAdjusterActive}
@@ -202,7 +208,7 @@ export function ForecastForm({
                 ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
                 : 'bg-white dark:bg-gray-700'
             )}
-            placeholder={calculatedStdDev > 0 || (isSubjective && estimateNum > 0) ? '' : 'No data'}
+            placeholder={isSubjective ? (estimateNum > 0 ? '' : 'From CV') : (calculatedStdDev > 0 ? '' : 'No data')}
           />
           <p className={helperClass}>
             {isSubjective
