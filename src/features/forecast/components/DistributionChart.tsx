@@ -184,16 +184,14 @@ export function DistributionChart({
                 dot={false}
                 strokeWidth={2.5}
               />
-              {!isSubjective && (
-                <Line
-                  type="stepAfter"
-                  dataKey="gamma"
-                  name="Gamma"
-                  stroke={CHART_COLORS.gamma}
-                  dot={false}
-                  strokeWidth={2.5}
-                />
-              )}
+              <Line
+                type="stepAfter"
+                dataKey="gamma"
+                name="Gamma"
+                stroke={CHART_COLORS.gamma}
+                dot={false}
+                strokeWidth={2.5}
+              />
               {!isSubjective && hasBootstrap && (
                 <Line
                   type="stepAfter"

@@ -27,6 +27,7 @@ function getDistributionColumns(forecastMode: ForecastMode, hasBootstrap: boolea
     return [
       { key: 'truncatedNormal', label: 'T-Normal' },
       { key: 'lognormal', label: 'Lognorm' },
+      { key: 'gamma', label: 'Gamma' },
       { key: 'triangular', label: 'Triangular' },
       { key: 'uniform', label: 'Uniform' },
     ]
@@ -207,6 +208,7 @@ export function ForecastResults({
               <>
                 <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
                 <strong>Lognorm</strong>: right-skewed.{' '}
+                <strong>Gamma</strong>: flexible shape.{' '}
                 <strong>Triangular</strong>: peak at estimate.{' '}
                 <strong>Uniform</strong>: equal probability across range.
               </>

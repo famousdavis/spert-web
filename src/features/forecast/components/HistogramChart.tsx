@@ -175,14 +175,12 @@ export function HistogramChart({
                   fill={CHART_COLORS.lognormal}
                   opacity={0.8}
                 />
-                {!isSubjective && (
-                  <Bar
-                    dataKey="gamma"
-                    name="Gamma"
-                    fill={CHART_COLORS.gamma}
-                    opacity={0.8}
-                  />
-                )}
+                <Bar
+                  dataKey="gamma"
+                  name="Gamma"
+                  fill={CHART_COLORS.gamma}
+                  opacity={0.8}
+                />
                 {!isSubjective && hasBootstrap && (
                   <Bar
                     dataKey="bootstrap"

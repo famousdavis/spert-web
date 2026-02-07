@@ -37,6 +37,7 @@ function getDistCards(
     return [
       { label: 'T-Normal', result: props.truncatedNormalResult },
       { label: 'Lognorm', result: props.lognormalResult },
+      { label: 'Gamma', result: props.gammaResult },
       { label: 'Triangular', result: props.triangularResult },
       { label: 'Uniform', result: props.uniformResult },
     ]
