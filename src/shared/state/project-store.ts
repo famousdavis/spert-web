@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Project, Sprint, ProductivityAdjustment, Milestone } from '@/shared/types'
+import type { Project, Sprint, ProductivityAdjustment, Milestone, ForecastMode } from '@/shared/types'
 import { storage, STORAGE_KEY } from './storage'
 import { APP_VERSION } from '@/shared/constants'
 import { type BurnUpConfig, DEFAULT_BURN_UP_CONFIG } from '@/shared/types/burn-up'
@@ -12,6 +12,10 @@ interface ForecastInputs {
   remainingBacklog: string
   velocityMean: string
   velocityStdDev: string
+  forecastMode?: ForecastMode // undefined = auto-detect based on sprint count
+  velocityEstimate?: string   // Subjective mode: user's velocity guess
+  selectedCV?: number         // Subjective mode: selected coefficient of variation
+  volatilityMultiplier?: number // History mode: SD multiplier (1.0 = match history)
 }
 
 interface ProjectState {
@@ -64,7 +68,7 @@ interface ProjectState {
   importData: (data: ExportData) => void
 
   // Forecast input actions (session only)
-  setForecastInput: (projectId: string, field: keyof ForecastInputs, value: string) => void
+  setForecastInput: <K extends keyof ForecastInputs>(projectId: string, field: K, value: ForecastInputs[K]) => void
   getForecastInputs: (projectId: string) => ForecastInputs
 
   // Burn-up config actions (session only)
@@ -314,7 +318,7 @@ export const useProjectStore = create<ProjectState>()(
           forecastInputs: {
             ...state.forecastInputs,
             [projectId]: {
-              ...(state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '' }),
+              ...(state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '', forecastMode: undefined, velocityEstimate: undefined, selectedCV: undefined }),
               [field]: value,
             },
           },
@@ -322,7 +326,7 @@ export const useProjectStore = create<ProjectState>()(
 
       getForecastInputs: (projectId) => {
         const state = get()
-        return state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '' }
+        return state.forecastInputs[projectId] || { remainingBacklog: '', velocityMean: '', velocityStdDev: '', forecastMode: undefined, velocityEstimate: undefined, selectedCV: undefined }
       },
 
       setBurnUpConfig: (projectId, config) =>

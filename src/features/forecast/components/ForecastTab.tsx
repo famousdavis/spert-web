@@ -25,13 +25,24 @@ export function ForecastTab() {
     milestones,
     hasMilestones,
     cumulativeThresholds,
+    forecastMode,
+    canUseHistory,
+    setForecastMode,
+    includedSprintCount,
     remainingBacklog,
     velocityMean,
     velocityStdDev,
     effectiveMean,
+    effectiveStdDev,
     setRemainingBacklog,
     setVelocityMean,
     setVelocityStdDev,
+    velocityEstimate,
+    selectedCV,
+    setVelocityEstimate,
+    setSelectedCV,
+    volatilityMultiplier,
+    setVolatilityMultiplier,
     scopeChangeStats,
     modelScopeGrowth,
     setModelScopeGrowth,
@@ -120,6 +131,7 @@ export function ForecastTab() {
               calculatedMean={calculatedStats.mean}
               calculatedStdDev={calculatedStats.standardDeviation}
               effectiveMean={effectiveMean}
+              effectiveStdDev={effectiveStdDev}
               unitOfMeasure={selectedProject.unitOfMeasure}
               backlogReadOnly={hasMilestones}
               sprints={projectSprints}
@@ -127,12 +139,22 @@ export function ForecastTab() {
               modelScopeGrowth={modelScopeGrowth}
               scopeGrowthMode={scopeGrowthMode}
               customScopeGrowth={customScopeGrowth}
+              forecastMode={forecastMode}
+              canUseHistory={canUseHistory}
+              includedSprintCount={includedSprintCount}
+              velocityEstimate={velocityEstimate}
+              selectedCV={selectedCV}
+              onForecastModeChange={setForecastMode}
+              onVelocityEstimateChange={setVelocityEstimate}
+              onCVChange={setSelectedCV}
               onModelScopeGrowthChange={setModelScopeGrowth}
               onScopeGrowthModeChange={setScopeGrowthMode}
               onCustomScopeGrowthChange={setCustomScopeGrowth}
               onRemainingBacklogChange={setRemainingBacklog}
               onVelocityMeanChange={setVelocityMean}
               onVelocityStdDevChange={setVelocityStdDev}
+              volatilityMultiplier={volatilityMultiplier}
+              onVolatilityMultiplierChange={setVolatilityMultiplier}
               onRunForecast={handleRunForecast}
               canRun={!!remainingBacklog && effectiveMean > 0}
               isSimulating={isSimulating}
@@ -152,15 +174,14 @@ export function ForecastTab() {
                   milestoneResultsState={milestoneResultsState}
                   cumulativeThresholds={cumulativeThresholds}
                   hasBootstrap={results.bootstrap !== null}
+                  forecastMode={forecastMode}
                   modelScopeGrowth={modelScopeGrowth}
                   scopeGrowthMode={scopeGrowthMode}
                   scopeGrowthPerSprint={scopeGrowthPerSprint}
                 />
                 <ForecastResults
-                  truncatedNormalResults={results.truncatedNormal}
-                  lognormalResults={results.lognormal}
-                  gammaResults={results.gamma}
-                  bootstrapResults={results.bootstrap}
+                  results={results}
+                  forecastMode={forecastMode}
                   completedSprintCount={completedSprintCount}
                   onExport={handleExportCsv}
                   milestones={milestones}
@@ -196,6 +217,9 @@ export function ForecastTab() {
             lognormalResult={customResults.lognormal}
             gammaResult={customResults.gamma}
             bootstrapResult={customResults.bootstrap}
+            triangularResult={customResults.triangular}
+            uniformResult={customResults.uniform}
+            forecastMode={forecastMode}
             completedSprintCount={completedSprintCount}
             onPercentileChange={handleCustomPercentileChange}
             selectorRef={percentileSelectorRef}
@@ -227,6 +251,9 @@ export function ForecastTab() {
             lognormal={simulationData.lognormal}
             gamma={simulationData.gamma}
             bootstrap={simulationData.bootstrap}
+            triangular={simulationData.triangular}
+            uniform={simulationData.uniform}
+            forecastMode={forecastMode}
             customPercentile={customPercentile}
             startDate={forecastStartDate}
             sprintCadenceWeeks={selectedProject!.sprintCadenceWeeks!}
@@ -246,6 +273,9 @@ export function ForecastTab() {
             lognormal={simulationData.lognormal}
             gamma={simulationData.gamma}
             bootstrap={simulationData.bootstrap}
+            triangular={simulationData.triangular}
+            uniform={simulationData.uniform}
+            forecastMode={forecastMode}
             startDate={forecastStartDate}
             sprintCadenceWeeks={selectedProject!.sprintCadenceWeeks!}
             completedSprintCount={completedSprintCount}

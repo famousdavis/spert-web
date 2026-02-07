@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.17.0 - 2026-02-07
+
+### Features
+
+- **Subjective Forecasting (Cold-Start Mode)**: Teams with no sprint history can now produce probabilistic forecasts using a velocity estimate and variability level
+- Forecast mode toggle: pill-style switch between History and Subjective modes
+- Auto-detects mode based on sprint count (5+ sprints → History, otherwise Subjective)
+- CV elicitation UI: 6 radio buttons (Very Low to Extreme) with dynamic velocity range labels
+- Two new probability distributions: Triangular and Uniform
+- Mode-aware results tables: Subjective shows T-Normal, Lognormal, Triangular, Uniform; History shows T-Normal, Lognormal, Gamma, Bootstrap
+- All 6 distributions available in burn-up chart distribution selector regardless of mode
+- CDF, histogram, and burn-up charts render mode-appropriate distributions
+- CSV export includes forecast mode metadata and mode-appropriate distribution columns
+
+### Volatility Adjuster (History Mode)
+
+- **Opt-in volatility adjustment** for History mode: adjust the calculated standard deviation with human-readable multipliers
+- 4 radio options: Less volatile (0.75x), Match history (1.0x), Slightly more volatile (1.25x), Much more volatile (1.5x)
+- Each option shows a rounded velocity range preview (e.g., "45–95") using the existing `roundRange()` function
+- Inline toggle link ("Adjust" / "Close") in the Std Dev helper text — zero layout disruption
+- Std Dev field becomes read-only when adjuster is active; reverts to editable when closed
+- Collapsing the adjuster resets multiplier to 1.0; expanding clears any manual SD override
+- Amber color scheme distinguishes from Subjective mode's blue CV selector
+- Volatility multiplier included in CSV export when ≠ 1.0
+
+### Engine
+
+- `createSampler` expanded with optional bounds parameter for Triangular/Uniform distributions
+- `runAllDistributions` now sweeps all 6 distributions (was 4)
+- `randomTriangular` and `randomUniform` math functions with floor-at-zero safety
+- Expanded `QuadSimulationData`, `QuadCustomResults`, and milestone types for 6 distributions
+- `effectiveStdDev` in History mode now applies `calculatedStdDev * volatilityMultiplier`
+
+### Test Coverage
+
+- New tests for `randomTriangular`, `randomUniform`, CV rounding helpers
+- New tests for `VOLATILITY_OPTIONS` ordering, values, and `DEFAULT_VOLATILITY_MULTIPLIER`
+- New tests for volatility multiplier in CSV export
+- Updated existing tests for expanded data structures
+- 363 tests passing (was 338)
+
 ## v0.16.1 - 2026-02-06
 
 ### Bug Fixes

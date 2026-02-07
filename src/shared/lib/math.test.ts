@@ -11,6 +11,8 @@ import {
   randomLognormalFromMeanStdDev,
   randomGamma,
   randomGammaFromMeanStdDev,
+  randomTriangular,
+  randomUniform,
 } from './math'
 
 describe('mean', () => {
@@ -286,5 +288,73 @@ describe('normalToGammaParams edge cases', () => {
     const result = normalToGammaParams(10, -5)
     expect(result.shape).toBe(100)
     expect(result.scale).toBeCloseTo(0.1)
+  })
+})
+
+// --- Triangular and Uniform distributions (v0.17.0) ---
+
+describe('randomTriangular', () => {
+  it('samples within bounds', () => {
+    const samples = Array.from({ length: 5000 }, () => randomTriangular(10, 50, 90))
+    expect(samples.every((s) => s >= 10 && s <= 90)).toBe(true)
+  })
+
+  it('floors lower bound at 0', () => {
+    const samples = Array.from({ length: 5000 }, () => randomTriangular(-20, 50, 90))
+    expect(samples.every((s) => s >= 0 && s <= 90)).toBe(true)
+  })
+
+  it('returns mode when upper <= lower (degenerate case)', () => {
+    expect(randomTriangular(50, 30, 10)).toBe(30)
+  })
+
+  it('returns mode when upper <= 0 after flooring', () => {
+    // lower=-50 floors to 0, upper=-10 → upper <= lo, returns max(0, mode)
+    expect(randomTriangular(-50, -20, -10)).toBe(0)
+  })
+
+  it('handles symmetric distribution with approximately correct mean', () => {
+    // Triangular(10, 50, 90): mean = (10+50+90)/3 = 50
+    const samples = Array.from({ length: 10000 }, () => randomTriangular(10, 50, 90))
+    const avg = mean(samples)
+    expect(avg).toBeCloseTo(50, 0)
+  })
+
+  it('handles mode at lower bound', () => {
+    const samples = Array.from({ length: 5000 }, () => randomTriangular(10, 10, 50))
+    expect(samples.every((s) => s >= 10 && s <= 50)).toBe(true)
+  })
+
+  it('handles mode at upper bound', () => {
+    const samples = Array.from({ length: 5000 }, () => randomTriangular(10, 50, 50))
+    expect(samples.every((s) => s >= 10 && s <= 50)).toBe(true)
+  })
+})
+
+describe('randomUniform', () => {
+  it('samples within bounds', () => {
+    const samples = Array.from({ length: 5000 }, () => randomUniform(10, 90))
+    expect(samples.every((s) => s >= 10 && s <= 90)).toBe(true)
+  })
+
+  it('floors lower bound at 0', () => {
+    const samples = Array.from({ length: 5000 }, () => randomUniform(-20, 50))
+    expect(samples.every((s) => s >= 0 && s <= 50)).toBe(true)
+  })
+
+  it('returns lower when upper <= lower (degenerate case)', () => {
+    expect(randomUniform(50, 10)).toBe(50)
+  })
+
+  it('returns 0 when both bounds are negative', () => {
+    // lower=-50 floors to 0, upper=-10 → upper <= lo, returns 0
+    expect(randomUniform(-50, -10)).toBe(0)
+  })
+
+  it('has approximately correct mean', () => {
+    // Uniform(10, 90): mean = (10+90)/2 = 50
+    const samples = Array.from({ length: 10000 }, () => randomUniform(10, 90))
+    const avg = mean(samples)
+    expect(avg).toBeCloseTo(50, 0)
   })
 })

@@ -25,3 +25,79 @@ export const DEFAULT_MILESTONE_COLORS = [
   '#8b5cf6', // purple
   '#ef4444', // red
 ] as const
+
+// ============================================================================
+// Subjective forecasting (cold-start mode)
+// ============================================================================
+
+/** Minimum included sprints for history-based forecasting (also enables bootstrap) */
+export const MIN_SPRINTS_FOR_HISTORY = MIN_SPRINTS_FOR_BOOTSTRAP
+
+/** CV elicitation options for subjective mode */
+export interface CVOption {
+  label: string
+  cv: number
+}
+
+export const CV_OPTIONS: CVOption[] = [
+  { label: 'Very steady', cv: 0.15 },
+  { label: 'Fairly consistent', cv: 0.25 },
+  { label: 'Somewhat variable', cv: 0.35 },
+  { label: 'Somewhat volatile', cv: 0.45 },
+  { label: 'Quite volatile', cv: 0.55 },
+  { label: 'Wildly uncertain', cv: 0.65 },
+]
+
+export const DEFAULT_CV = 0.35
+
+// ============================================================================
+// History mode volatility adjustment
+// ============================================================================
+
+/** Multiplier options for adjusting calculated SD in history mode */
+export interface VolatilityOption {
+  label: string
+  multiplier: number
+}
+
+export const VOLATILITY_OPTIONS: VolatilityOption[] = [
+  { label: 'Less volatile',          multiplier: 0.75 },
+  { label: 'Match history',          multiplier: 1.0  },
+  { label: 'Slightly more volatile', multiplier: 1.25 },
+  { label: 'Much more volatile',     multiplier: 1.5  },
+]
+
+export const DEFAULT_VOLATILITY_MULTIPLIER = 1.0
+
+/**
+ * Get the rounding increment for cosmetic range display.
+ * Goal: displayed numbers should look like rough, hand-wavy estimates.
+ */
+export function getRoundingIncrement(velocity: number): number {
+  if (velocity < 50) return 2
+  if (velocity < 100) return 5
+  return 10
+}
+
+/**
+ * Round a number to the nearest increment.
+ */
+export function roundToNearest(value: number, increment: number): number {
+  return Math.round(value / increment) * increment
+}
+
+/**
+ * Compute the cosmetic display range for a velocity estimate and CV.
+ * Returns rounded lower/upper bounds for display only.
+ * The actual SD used in simulation is unrounded: velocity * cv.
+ */
+export function roundRange(velocity: number, cv: number): { displayLower: number; displayUpper: number } {
+  const sd = velocity * cv
+  const rawLower = Math.max(0, velocity - sd)
+  const rawUpper = velocity + sd
+  const increment = getRoundingIncrement(velocity)
+  return {
+    displayLower: Math.max(0, roundToNearest(rawLower, increment)),
+    displayUpper: roundToNearest(rawUpper, increment),
+  }
+}

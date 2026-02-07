@@ -16,7 +16,7 @@ import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { COLORS } from '@/shared/lib/colors'
 import { type ChartFontSize, CHART_FONT_SIZES } from '../types'
 import { buildHistogramBins } from '../lib/cdf'
-import type { Milestone } from '@/shared/types'
+import type { Milestone, ForecastMode } from '@/shared/types'
 import { ChartToolbar } from './ChartToolbar'
 
 interface HistogramChartProps {
@@ -24,6 +24,9 @@ interface HistogramChartProps {
   lognormal: number[]
   gamma: number[]
   bootstrap: number[] | null
+  triangular: number[]
+  uniform: number[]
+  forecastMode: ForecastMode
   startDate: string
   sprintCadenceWeeks: number
   completedSprintCount: number
@@ -42,6 +45,9 @@ export function HistogramChart({
   lognormal,
   gamma,
   bootstrap,
+  triangular,
+  uniform,
+  forecastMode,
   startDate,
   sprintCadenceWeeks,
   completedSprintCount,
@@ -54,10 +60,11 @@ export function HistogramChart({
 }: HistogramChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
+  const isSubjective = forecastMode === 'subjective'
 
   const chartData = useMemo(
-    () => buildHistogramBins(truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks),
-    [truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks]
+    () => buildHistogramBins(truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks, 15, triangular, uniform),
+    [truncatedNormal, lognormal, gamma, bootstrap, triangular, uniform, startDate, sprintCadenceWeeks]
   )
 
   const hasBootstrap = bootstrap !== null
@@ -168,17 +175,35 @@ export function HistogramChart({
                   fill={CHART_COLORS.lognormal}
                   opacity={0.8}
                 />
-                <Bar
-                  dataKey="gamma"
-                  name="Gamma"
-                  fill={CHART_COLORS.gamma}
-                  opacity={0.8}
-                />
-                {hasBootstrap && (
+                {!isSubjective && (
+                  <Bar
+                    dataKey="gamma"
+                    name="Gamma"
+                    fill={CHART_COLORS.gamma}
+                    opacity={0.8}
+                  />
+                )}
+                {!isSubjective && hasBootstrap && (
                   <Bar
                     dataKey="bootstrap"
                     name="Bootstrap"
                     fill={CHART_COLORS.bootstrap}
+                    opacity={0.8}
+                  />
+                )}
+                {isSubjective && (
+                  <Bar
+                    dataKey="triangular"
+                    name="Triangular"
+                    fill={CHART_COLORS.triangular}
+                    opacity={0.8}
+                  />
+                )}
+                {isSubjective && (
+                  <Bar
+                    dataKey="uniform"
+                    name="Uniform"
+                    fill={CHART_COLORS.uniform}
                     opacity={0.8}
                   />
                 )}

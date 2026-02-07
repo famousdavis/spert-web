@@ -1,10 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { ScopeChangeStats } from '../lib/statistics'
-import type { Sprint } from '@/shared/types'
+import type { Sprint, ForecastMode } from '@/shared/types'
 import { VelocitySparkline } from './VelocitySparkline'
 import { ScopeGrowthSection } from './ScopeGrowthSection'
+import { ForecastModeToggle } from './ForecastModeToggle'
+import { SubjectiveInputs } from './SubjectiveInputs'
+import { VolatilityAdjuster } from './VolatilityAdjuster'
+import { DEFAULT_VOLATILITY_MULTIPLIER } from '../constants'
 
 interface ForecastFormProps {
   remainingBacklog: string
@@ -15,6 +20,7 @@ interface ForecastFormProps {
   calculatedMean: number
   calculatedStdDev: number
   effectiveMean: number
+  effectiveStdDev: number
   unitOfMeasure: string
   backlogReadOnly?: boolean // True when milestones control the backlog
   sprints: Sprint[]
@@ -22,12 +28,22 @@ interface ForecastFormProps {
   modelScopeGrowth: boolean
   scopeGrowthMode: 'calculated' | 'custom'
   customScopeGrowth: string
+  forecastMode: ForecastMode
+  canUseHistory: boolean
+  includedSprintCount: number
+  velocityEstimate: string
+  selectedCV: number
+  onForecastModeChange: (mode: ForecastMode) => void
+  onVelocityEstimateChange: (value: string) => void
+  onCVChange: (cv: number) => void
   onModelScopeGrowthChange: (value: boolean) => void
   onScopeGrowthModeChange: (mode: 'calculated' | 'custom') => void
   onCustomScopeGrowthChange: (value: string) => void
   onRemainingBacklogChange: (value: string) => void
   onVelocityMeanChange: (value: string) => void
   onVelocityStdDevChange: (value: string) => void
+  volatilityMultiplier: number
+  onVolatilityMultiplierChange: (multiplier: number) => void
   onRunForecast: () => void
   canRun: boolean
   isSimulating: boolean
@@ -47,6 +63,7 @@ export function ForecastForm({
   calculatedMean,
   calculatedStdDev,
   effectiveMean,
+  effectiveStdDev,
   unitOfMeasure,
   backlogReadOnly = false,
   sprints,
@@ -54,18 +71,51 @@ export function ForecastForm({
   modelScopeGrowth,
   scopeGrowthMode,
   customScopeGrowth,
+  forecastMode,
+  canUseHistory,
+  includedSprintCount,
+  velocityEstimate,
+  selectedCV,
+  onForecastModeChange,
+  onVelocityEstimateChange,
+  onCVChange,
   onModelScopeGrowthChange,
   onScopeGrowthModeChange,
   onCustomScopeGrowthChange,
   onRemainingBacklogChange,
   onVelocityMeanChange,
   onVelocityStdDevChange,
+  volatilityMultiplier,
+  onVolatilityMultiplierChange,
   onRunForecast,
   canRun,
   isSimulating,
 }: ForecastFormProps) {
+  const isSubjective = forecastMode === 'subjective'
+  const estimateNum = Number(velocityEstimate) || 0
+  const [adjusterOpen, setAdjusterOpen] = useState(false)
+  const isAdjusterActive = !isSubjective && adjusterOpen && calculatedStdDev > 0
+
+  const handleToggleAdjuster = () => {
+    if (adjusterOpen) {
+      // Collapsing: reset multiplier to 1.0
+      onVolatilityMultiplierChange(DEFAULT_VOLATILITY_MULTIPLIER)
+      setAdjusterOpen(false)
+    } else {
+      // Expanding: clear any manual SD override so multiplier takes effect
+      onVelocityStdDevChange('')
+      setAdjusterOpen(true)
+    }
+  }
+
   return (
     <div className="rounded-lg border border-border dark:border-gray-700 p-4 bg-spert-bg-input dark:bg-gray-800">
+      <ForecastModeToggle
+        mode={forecastMode}
+        onModeChange={onForecastModeChange}
+        canUseHistory={canUseHistory}
+        includedSprintCount={includedSprintCount}
+      />
       <div className="flex gap-4 items-end flex-wrap">
         {/* Remaining Backlog */}
         <div className="flex-[1.5_1_170px] min-w-[120px]">
@@ -97,7 +147,7 @@ export function ForecastForm({
         </div>
 
         {/* Velocity */}
-        <div className="flex-[1.5_1_170px] min-w-[120px]">
+        <div className="flex-[1_1_140px] min-w-[120px]">
           <label htmlFor="velocityMean" className={labelClass}>
             Velocity
           </label>
@@ -109,18 +159,26 @@ export function ForecastForm({
             step="any"
             value={velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')}
             onChange={(e) => onVelocityMeanChange(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
+            disabled={isSubjective}
+            className={cn(
+              'p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full text-spert-text dark:text-gray-100',
+              isSubjective
+                ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
+                : 'bg-white dark:bg-gray-700'
+            )}
             placeholder={calculatedMean > 0 ? '' : 'No data'}
           />
           <p className={helperClass}>
-            {calculatedMean > 0
-              ? `Calc: ${calculatedMean.toFixed(1)}`
-              : 'Add sprints to calculate'}
+            {isSubjective
+              ? (estimateNum > 0 ? `From estimate: ${estimateNum.toFixed(1)}` : '\u00A0')
+              : calculatedMean > 0
+                ? `Calc: ${calculatedMean.toFixed(1)}`
+                : 'Add sprints to calculate'}
           </p>
         </div>
 
         {/* Velocity Std Dev */}
-        <div className="flex-[0_0_90px]">
+        <div className="flex-[0_0_120px]">
           <label htmlFor="velocityStdDev" className={labelClass}>
             Std Dev
           </label>
@@ -130,20 +188,46 @@ export function ForecastForm({
             min="0"
             max="999999"
             step="any"
-            value={velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')}
+            value={
+              isAdjusterActive
+                ? effectiveStdDev.toFixed(1)
+                : velocityStdDev || (isSubjective && estimateNum > 0 ? effectiveStdDev.toFixed(1) : calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')
+            }
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
-            className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
-            placeholder={calculatedStdDev > 0 ? '' : 'No data'}
+            disabled={isSubjective || isAdjusterActive}
+            className={cn(
+              'p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-full text-spert-text dark:text-gray-100',
+              (isSubjective || isAdjusterActive)
+                ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
+                : 'bg-white dark:bg-gray-700'
+            )}
+            placeholder={calculatedStdDev > 0 || (isSubjective && estimateNum > 0) ? '' : 'No data'}
           />
           <p className={helperClass}>
-            {calculatedStdDev > 0
-              ? `Calc: ${calculatedStdDev.toFixed(1)}`
-              : 'Need 2+ sprints'}
+            {isSubjective
+              ? (estimateNum > 0 ? `From CV: ${effectiveStdDev.toFixed(1)}` : '\u00A0')
+              : isAdjusterActive && volatilityMultiplier !== DEFAULT_VOLATILITY_MULTIPLIER
+                ? `Adj: ${effectiveStdDev.toFixed(1)} (\u00D7${volatilityMultiplier})`
+                : calculatedStdDev > 0
+                  ? `Calc: ${calculatedStdDev.toFixed(1)}`
+                  : 'Need 2+ sprints'}
+            {!isSubjective && calculatedStdDev > 0 && (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  onClick={handleToggleAdjuster}
+                  className="text-xs text-spert-text-muted dark:text-gray-400 hover:text-spert-text dark:hover:text-gray-200 transition-colors cursor-pointer bg-transparent border-none p-0 underline"
+                >
+                  {adjusterOpen ? 'Close' : 'Adjust'}
+                </button>
+              </>
+            )}
           </p>
         </div>
 
         {/* Velocity Sparkline — nudged up to visually center with input fields */}
-        {sprints.length >= 2 && (
+        {!isSubjective && sprints.length >= 2 && (
           <div className="flex-[0_0_auto] relative -top-2">
             <VelocitySparkline sprints={sprints} />
           </div>
@@ -208,6 +292,27 @@ export function ForecastForm({
           </p>
         </div>
       </div>
+
+      {/* Subjective Inputs — shown in subjective mode */}
+      {isSubjective && (
+        <SubjectiveInputs
+          velocityEstimate={velocityEstimate}
+          selectedCV={selectedCV}
+          onVelocityEstimateChange={onVelocityEstimateChange}
+          onCVChange={onCVChange}
+          unitOfMeasure={unitOfMeasure}
+        />
+      )}
+
+      {/* Volatility Adjuster panel — shown when toggle is open in history mode */}
+      {isAdjusterActive && (
+        <VolatilityAdjuster
+          calculatedStdDev={calculatedStdDev}
+          effectiveMean={effectiveMean}
+          selectedMultiplier={volatilityMultiplier}
+          onMultiplierChange={onVolatilityMultiplierChange}
+        />
+      )}
 
       {/* Scope Growth Modeling */}
       {scopeChangeStats && (

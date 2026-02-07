@@ -26,10 +26,14 @@ const baseExportData = {
   lognormalResults: makePercentileResults(5),
   gammaResults: makePercentileResults(5),
   bootstrapResults: null,
+  triangularResults: makePercentileResults(5),
+  uniformResults: makePercentileResults(5),
   truncatedNormalSprintsRequired: [4, 5, 5, 6, 7],
   lognormalSprintsRequired: [4, 5, 5, 6, 7],
   gammaSprintsRequired: [4, 5, 5, 6, 7],
   bootstrapSprintsRequired: null,
+  triangularSprintsRequired: [4, 5, 5, 6, 7],
+  uniformSprintsRequired: [4, 5, 5, 6, 7],
 }
 
 describe('generateForecastCsv', () => {
@@ -142,8 +146,8 @@ describe('generateForecastCsv', () => {
     const csv = generateForecastCsv(baseExportData)
     const lines = csv.split('\n')
     const percentileHeader = lines.find((l) => l.startsWith('Percentile,'))!
-    // 7 columns: Percentile, T-Normal Sprints, T-Normal Date, Lognorm Sprints, Lognorm Date, Gamma Sprints, Gamma Date
-    expect(percentileHeader.split(',').length).toBe(7)
+    // 11 columns: Percentile, T-Normal Sprints/Date, Lognorm Sprints/Date, Gamma Sprints/Date, Triangular Sprints/Date, Uniform Sprints/Date
+    expect(percentileHeader.split(',').length).toBe(11)
     expect(csv).toContain('Bootstrap Enabled,No')
   })
 
@@ -156,8 +160,8 @@ describe('generateForecastCsv', () => {
     const csv = generateForecastCsv(data)
     const lines = csv.split('\n')
     const percentileHeader = lines.find((l) => l.startsWith('Percentile,'))!
-    // 9 columns: +2 for Bootstrap Sprints and Bootstrap Date
-    expect(percentileHeader.split(',').length).toBe(9)
+    // 13 columns: +2 for Bootstrap Sprints and Bootstrap Date
+    expect(percentileHeader.split(',').length).toBe(13)
     expect(csv).toContain('Bootstrap Enabled,Yes')
   })
 
@@ -175,6 +179,78 @@ describe('generateForecastCsv', () => {
       dataRows++
     }
     expect(dataRows).toBe(5)
+  })
+
+  it('includes subjective mode fields when forecastMode is subjective', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        forecastMode: 'subjective' as const,
+        velocityEstimate: 25,
+        selectedCV: 0.35,
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).toContain('Forecast Mode,subjective')
+    expect(csv).toContain('Velocity Estimate,25')
+    expect(csv).toContain('Selected CV,0.35')
+  })
+
+  it('omits subjective fields when forecastMode is history', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        forecastMode: 'history' as const,
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).toContain('Forecast Mode,history')
+    expect(csv).not.toContain('Velocity Estimate,')
+    expect(csv).not.toContain('Selected CV,')
+  })
+
+  it('includes volatility adjustment when multiplier is not 1.0', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        volatilityMultiplier: 1.5,
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).toContain('Volatility Adjustment,1.5x')
+  })
+
+  it('omits volatility adjustment when multiplier is 1.0', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        volatilityMultiplier: 1.0,
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).not.toContain('Volatility Adjustment')
+  })
+
+  it('omits volatility adjustment when multiplier is undefined', () => {
+    const csv = generateForecastCsv(baseExportData)
+    expect(csv).not.toContain('Volatility Adjustment')
+  })
+
+  it('includes scope growth info when provided', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        scopeGrowthPerSprint: 3.5,
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).toContain('Scope Growth Modeling,Yes')
+    expect(csv).toContain('Scope Growth Per Sprint,3.5')
   })
 })
 

@@ -65,6 +65,8 @@ export const COLORS = {
     lognormal: '#10b981',
     gamma: '#f59e0b',
     bootstrap: '#8b5cf6',
+    triangular: '#ec4899',
+    uniform: '#6366f1',
   },
 
   // Burn-up chart

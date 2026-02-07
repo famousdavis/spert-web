@@ -221,3 +221,38 @@ export function randomGammaFromMeanStdDev(mean: number, stdDev: number): number 
   const { shape, scale } = normalToGammaParams(mean, stdDev)
   return randomGamma(shape, scale)
 }
+
+/**
+ * Generate a random number from a triangular distribution
+ * using the inverse CDF method.
+ *
+ * @param lower - Lower bound (floored at 0 for velocity)
+ * @param mode - Mode (most likely value)
+ * @param upper - Upper bound
+ */
+export function randomTriangular(lower: number, mode: number, upper: number): number {
+  const lo = Math.max(0, lower)
+  if (upper <= lo) return Math.max(0, mode)
+  const m = Math.max(lo, Math.min(upper, mode))
+
+  const u = Math.random()
+  const fc = (m - lo) / (upper - lo)
+
+  if (u < fc) {
+    return lo + Math.sqrt(u * (upper - lo) * (m - lo))
+  } else {
+    return upper - Math.sqrt((1 - u) * (upper - lo) * (upper - m))
+  }
+}
+
+/**
+ * Generate a random number from a uniform distribution.
+ *
+ * @param lower - Lower bound (floored at 0 for velocity)
+ * @param upper - Upper bound
+ */
+export function randomUniform(lower: number, upper: number): number {
+  const lo = Math.max(0, lower)
+  if (upper <= lo) return lo
+  return lo + Math.random() * (upper - lo)
+}

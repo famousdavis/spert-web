@@ -13,27 +13,78 @@ import { useForecastInputs } from './useForecastInputs'
 import { useChartSettings } from './useChartSettings'
 import {
   calculateAllCustomPercentiles,
-  type PercentileResults,
+  type QuadResults,
   type QuadSimulationData,
   type QuadCustomResults,
+  type QuadMilestoneForecastResult,
 } from '../lib/monte-carlo'
-import { useSimulationWorker } from './useSimulationWorker'
+import { useSimulationWorker, type QuadForecastResult } from './useSimulationWorker'
 import { useScopeGrowthState } from './useScopeGrowthState'
 import { preCalculateSprintFactors } from '../lib/productivity'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { safeParseNumber } from '@/shared/lib/validation'
-
-interface QuadResults {
-  truncatedNormal: PercentileResults
-  lognormal: PercentileResults
-  gamma: PercentileResults
-  bootstrap: PercentileResults | null
-}
+import { MIN_SPRINTS_FOR_HISTORY } from '../constants'
+import type { ForecastMode } from '@/shared/types'
 
 /** Per-milestone QuadResults and QuadSimulationData */
 export interface MilestoneResults {
   milestoneResults: QuadResults[]
   milestoneSimulationData: QuadSimulationData[]
+}
+
+const EMPTY_CUSTOM_RESULTS: QuadCustomResults = {
+  truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null,
+  triangular: null, uniform: null,
+}
+
+/** Extract QuadResults + QuadSimulationData from a QuadForecastResult */
+function extractQuadData(raw: QuadForecastResult): { results: QuadResults; simData: QuadSimulationData } {
+  return {
+    results: {
+      truncatedNormal: raw.truncatedNormal.results,
+      lognormal: raw.lognormal.results,
+      gamma: raw.gamma.results,
+      bootstrap: raw.bootstrap?.results ?? null,
+      triangular: raw.triangular.results,
+      uniform: raw.uniform.results,
+    },
+    simData: {
+      truncatedNormal: raw.truncatedNormal.sprintsRequired,
+      lognormal: raw.lognormal.sprintsRequired,
+      gamma: raw.gamma.sprintsRequired,
+      bootstrap: raw.bootstrap?.sprintsRequired ?? null,
+      triangular: raw.triangular.sprintsRequired,
+      uniform: raw.uniform.sprintsRequired,
+    },
+  }
+}
+
+/** Reshape QuadMilestoneForecastResult into per-milestone QuadResults[] + QuadSimulationData[] */
+function extractMilestoneData(
+  raw: QuadMilestoneForecastResult,
+  milestoneCount: number
+): { perMilestoneResults: QuadResults[]; perMilestoneSimData: QuadSimulationData[] } {
+  const perMilestoneResults: QuadResults[] = []
+  const perMilestoneSimData: QuadSimulationData[] = []
+  for (let m = 0; m < milestoneCount; m++) {
+    perMilestoneResults.push({
+      truncatedNormal: raw.truncatedNormal.milestoneResults[m].results,
+      lognormal: raw.lognormal.milestoneResults[m].results,
+      gamma: raw.gamma.milestoneResults[m].results,
+      bootstrap: raw.bootstrap?.milestoneResults[m].results ?? null,
+      triangular: raw.triangular.milestoneResults[m].results,
+      uniform: raw.uniform.milestoneResults[m].results,
+    })
+    perMilestoneSimData.push({
+      truncatedNormal: raw.truncatedNormal.milestoneResults[m].sprintsRequired,
+      lognormal: raw.lognormal.milestoneResults[m].sprintsRequired,
+      gamma: raw.gamma.milestoneResults[m].sprintsRequired,
+      bootstrap: raw.bootstrap?.milestoneResults[m].sprintsRequired ?? null,
+      triangular: raw.triangular.milestoneResults[m].sprintsRequired,
+      uniform: raw.uniform.milestoneResults[m].sprintsRequired,
+    })
+  }
+  return { perMilestoneResults, perMilestoneSimData }
 }
 
 export function useForecastState() {
@@ -49,8 +100,14 @@ export function useForecastState() {
 
   // Composed hooks
   const sprintData = useSprintData()
-  const inputs = useForecastInputs(sprintData.calculatedStats)
+  const inputs = useForecastInputs(sprintData.calculatedStats, sprintData.includedSprintCount)
   const charts = useChartSettings()
+
+  // Forecast mode: auto-detect or user override
+  const canUseHistory = sprintData.includedSprintCount >= MIN_SPRINTS_FOR_HISTORY
+  const effectiveForecastMode: ForecastMode = inputs.forecastMode
+    ? inputs.forecastMode
+    : (canUseHistory ? 'history' : 'subjective')
 
   // Productivity adjustments for the selected project
   const productivityAdjustments = useMemo(
@@ -70,9 +127,7 @@ export function useForecastState() {
   const [milestoneResultsState, setMilestoneResultsState] = useState<MilestoneResults | null>(null)
   const defaultPercentile = useSettingsStore((s) => s.defaultCustomPercentile)
   const [customPercentile, setCustomPercentile] = useState(defaultPercentile)
-  const [customResults, setCustomResults] = useState<QuadCustomResults>({
-    truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null,
-  })
+  const [customResults, setCustomResults] = useState<QuadCustomResults>(EMPTY_CUSTOM_RESULTS)
 
   // Scope growth modeling (session only, extracted hook)
   const scopeGrowth = useScopeGrowthState(sprintData.scopeChangeStats?.averageScopeInjection)
@@ -86,7 +141,7 @@ export function useForecastState() {
       setResults(null)
       setSimulationData(null)
       setMilestoneResultsState(null)
-      setCustomResults({ truncatedNormal: null, lognormal: null, gamma: null, bootstrap: null })
+      setCustomResults(EMPTY_CUSTOM_RESULTS)
       setSelectedMilestoneIndex(0)
       scopeGrowth.resetScopeGrowth()
       hasRunOnceRef.current = false
@@ -135,28 +190,12 @@ export function useForecastState() {
           scopeGrowthPerSprint: scopeGrowth.scopeGrowthPerSprint,
         })
 
-        const milestoneCount = inputs.cumulativeThresholds.length
-        const perMilestoneResults: QuadResults[] = []
-        const perMilestoneSimData: QuadSimulationData[] = []
-
-        for (let m = 0; m < milestoneCount; m++) {
-          perMilestoneResults.push({
-            truncatedNormal: milestoneResult.truncatedNormal.milestoneResults[m].results,
-            lognormal: milestoneResult.lognormal.milestoneResults[m].results,
-            gamma: milestoneResult.gamma.milestoneResults[m].results,
-            bootstrap: milestoneResult.bootstrap?.milestoneResults[m].results ?? null,
-          })
-          perMilestoneSimData.push({
-            truncatedNormal: milestoneResult.truncatedNormal.milestoneResults[m].sprintsRequired,
-            lognormal: milestoneResult.lognormal.milestoneResults[m].sprintsRequired,
-            gamma: milestoneResult.gamma.milestoneResults[m].sprintsRequired,
-            bootstrap: milestoneResult.bootstrap?.milestoneResults[m].sprintsRequired ?? null,
-          })
-        }
-
+        const { perMilestoneResults, perMilestoneSimData } = extractMilestoneData(
+          milestoneResult, inputs.cumulativeThresholds.length
+        )
         setMilestoneResultsState({ milestoneResults: perMilestoneResults, milestoneSimulationData: perMilestoneSimData })
 
-        const lastIdx = milestoneCount - 1
+        const lastIdx = perMilestoneResults.length - 1
         setSimulationData(perMilestoneSimData[lastIdx])
         setResults(perMilestoneResults[lastIdx])
         setSelectedMilestoneIndex(lastIdx)
@@ -174,19 +213,9 @@ export function useForecastState() {
 
         setMilestoneResultsState(null)
 
-        const simData: QuadSimulationData = {
-          truncatedNormal: quadResults.truncatedNormal.sprintsRequired,
-          lognormal: quadResults.lognormal.sprintsRequired,
-          gamma: quadResults.gamma.sprintsRequired,
-          bootstrap: quadResults.bootstrap?.sprintsRequired ?? null,
-        }
+        const { results: quadResultsMapped, simData } = extractQuadData(quadResults)
         setSimulationData(simData)
-        setResults({
-          truncatedNormal: quadResults.truncatedNormal.results,
-          lognormal: quadResults.lognormal.results,
-          gamma: quadResults.gamma.results,
-          bootstrap: quadResults.bootstrap?.results ?? null,
-        })
+        setResults(quadResultsMapped)
         setCustomResults(calculateAllCustomPercentiles(
           simData, customPercentile,
           sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
@@ -206,6 +235,7 @@ export function useForecastState() {
   const debouncedMean = useDebounce(inputs.velocityMean, 400)
   const debouncedStdDev = useDebounce(inputs.velocityStdDev, 400)
   const debouncedCustomGrowth = useDebounce(scopeGrowth.customScopeGrowth, 400)
+  const debouncedEstimate = useDebounce(inputs.velocityEstimate, 400)
 
   useEffect(() => {
     if (!autoRecalculate || !hasRunOnceRef.current) return
@@ -224,6 +254,10 @@ export function useForecastState() {
     productivityAdjustments,
     inputs.cumulativeThresholds,
     trialCount,
+    effectiveForecastMode,
+    debouncedEstimate,
+    inputs.selectedCV,
+    inputs.volatilityMultiplier,
   ])
 
   const handleCustomPercentileChange = (percentile: number) => {
@@ -277,6 +311,8 @@ export function useForecastState() {
           bootstrap: milestoneResultsState.milestoneResults[0]?.bootstrap
             ? milestoneResultsState.milestoneResults.map((r) => r.bootstrap!)
             : null,
+          triangular: milestoneResultsState.milestoneResults.map((r) => r.triangular),
+          uniform: milestoneResultsState.milestoneResults.map((r) => r.uniform),
         },
       }
     }
@@ -293,15 +329,23 @@ export function useForecastState() {
         productivityAdjustments: productivityAdjustments.filter((a) => a.enabled !== false),
         milestones: inputs.hasMilestones ? inputs.milestones : undefined,
         scopeGrowthPerSprint: scopeGrowth.scopeGrowthPerSprint,
+        forecastMode: effectiveForecastMode,
+        velocityEstimate: effectiveForecastMode === 'subjective' ? (Number(inputs.velocityEstimate) || undefined) : undefined,
+        selectedCV: effectiveForecastMode === 'subjective' ? inputs.selectedCV : undefined,
+        volatilityMultiplier: effectiveForecastMode !== 'subjective' ? inputs.volatilityMultiplier : undefined,
       },
       truncatedNormalResults: results.truncatedNormal,
       lognormalResults: results.lognormal,
       gammaResults: results.gamma,
       bootstrapResults: results.bootstrap,
+      triangularResults: results.triangular,
+      uniformResults: results.uniform,
       truncatedNormalSprintsRequired: simulationData.truncatedNormal,
       lognormalSprintsRequired: simulationData.lognormal,
       gammaSprintsRequired: simulationData.gamma,
       bootstrapSprintsRequired: simulationData.bootstrap,
+      triangularSprintsRequired: simulationData.triangular,
+      uniformSprintsRequired: simulationData.uniform,
       milestoneData: milestoneExportData,
     })
 
@@ -330,14 +374,31 @@ export function useForecastState() {
     hasMilestones: inputs.hasMilestones,
     cumulativeThresholds: inputs.cumulativeThresholds,
 
+    // Forecast mode
+    forecastMode: effectiveForecastMode,
+    canUseHistory,
+    setForecastMode: inputs.setForecastMode,
+
     // Form state (from useForecastInputs)
     remainingBacklog: inputs.remainingBacklog,
     velocityMean: inputs.velocityMean,
     velocityStdDev: inputs.velocityStdDev,
     effectiveMean: inputs.effectiveMean,
+    effectiveStdDev: inputs.effectiveStdDev,
+    includedSprintCount: sprintData.includedSprintCount,
     setRemainingBacklog: inputs.setRemainingBacklog,
     setVelocityMean: inputs.setVelocityMean,
     setVelocityStdDev: inputs.setVelocityStdDev,
+
+    // Subjective mode inputs
+    velocityEstimate: inputs.velocityEstimate,
+    selectedCV: inputs.selectedCV,
+    setVelocityEstimate: inputs.setVelocityEstimate,
+    setSelectedCV: inputs.setSelectedCV,
+
+    // History mode volatility adjustment
+    volatilityMultiplier: inputs.volatilityMultiplier,
+    setVolatilityMultiplier: inputs.setVolatilityMultiplier,
 
     // Scope growth modeling (from useScopeGrowthState)
     scopeChangeStats: sprintData.scopeChangeStats,

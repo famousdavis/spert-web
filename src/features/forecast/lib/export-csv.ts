@@ -1,5 +1,5 @@
 import type { PercentileResults } from './monte-carlo'
-import type { ProductivityAdjustment, Milestone } from '@/shared/types'
+import type { ProductivityAdjustment, Milestone, ForecastMode } from '@/shared/types'
 import { today } from '@/shared/lib/dates'
 
 interface ExportConfig {
@@ -13,6 +13,10 @@ interface ExportConfig {
   productivityAdjustments?: ProductivityAdjustment[]
   milestones?: Milestone[]
   scopeGrowthPerSprint?: number
+  forecastMode?: ForecastMode
+  velocityEstimate?: number
+  selectedCV?: number
+  volatilityMultiplier?: number
 }
 
 interface MilestoneExportData {
@@ -27,10 +31,14 @@ interface ExportData {
   lognormalResults: PercentileResults
   gammaResults: PercentileResults
   bootstrapResults: PercentileResults | null
+  triangularResults: PercentileResults
+  uniformResults: PercentileResults
   truncatedNormalSprintsRequired: number[]
   lognormalSprintsRequired: number[]
   gammaSprintsRequired: number[]
   bootstrapSprintsRequired: number[] | null
+  triangularSprintsRequired: number[]
+  uniformSprintsRequired: number[]
   /** Per-milestone results when milestones are defined */
   milestoneData?: {
     milestones: MilestoneExportData[]
@@ -39,6 +47,8 @@ interface ExportData {
       lognormal: PercentileResults[]
       gamma: PercentileResults[]
       bootstrap: PercentileResults[] | null
+      triangular: PercentileResults[]
+      uniform: PercentileResults[]
     }
   }
 }
@@ -48,6 +58,8 @@ interface FrequencyCount {
   lognormal: number
   gamma: number
   bootstrap: number
+  triangular: number
+  uniform: number
 }
 
 /**
@@ -59,7 +71,7 @@ function countDistribution(
   key: keyof FrequencyCount
 ): void {
   for (const sprint of sprints) {
-    const existing = freq.get(sprint) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0 }
+    const existing = freq.get(sprint) || { truncatedNormal: 0, lognormal: 0, gamma: 0, bootstrap: 0, triangular: 0, uniform: 0 }
     existing[key]++
     freq.set(sprint, existing)
   }
@@ -72,16 +84,18 @@ function buildFrequencyDistribution(
   truncatedNormalSprints: number[],
   lognormalSprints: number[],
   gammaSprints: number[],
-  bootstrapSprints: number[] | null
+  bootstrapSprints: number[] | null,
+  triangularSprints: number[],
+  uniformSprints: number[]
 ): Map<number, FrequencyCount> {
   const freq = new Map<number, FrequencyCount>()
 
   countDistribution(truncatedNormalSprints, freq, 'truncatedNormal')
   countDistribution(lognormalSprints, freq, 'lognormal')
   countDistribution(gammaSprints, freq, 'gamma')
-  if (bootstrapSprints) {
-    countDistribution(bootstrapSprints, freq, 'bootstrap')
-  }
+  if (bootstrapSprints) countDistribution(bootstrapSprints, freq, 'bootstrap')
+  countDistribution(triangularSprints, freq, 'triangular')
+  countDistribution(uniformSprints, freq, 'uniform')
 
   return freq
 }
@@ -104,6 +118,14 @@ export function generateForecastCsv(data: ExportData): string {
   lines.push(`Start Date,${data.config.startDate}`)
   lines.push(`Sprint Cadence (weeks),${data.config.sprintCadenceWeeks}`)
   lines.push(`Trial Count,${totalTrials}`)
+  lines.push(`Forecast Mode,${data.config.forecastMode ?? 'history'}`)
+  if (data.config.forecastMode === 'subjective') {
+    if (data.config.velocityEstimate !== undefined) lines.push(`Velocity Estimate,${data.config.velocityEstimate}`)
+    if (data.config.selectedCV !== undefined) lines.push(`Selected CV,${data.config.selectedCV}`)
+  }
+  if (data.config.volatilityMultiplier !== undefined && data.config.volatilityMultiplier !== 1.0) {
+    lines.push(`Volatility Adjustment,${data.config.volatilityMultiplier}x`)
+  }
   lines.push(`Bootstrap Enabled,${hasBootstrap ? 'Yes' : 'No'}`)
   lines.push(`Scope Growth Modeling,${data.config.scopeGrowthPerSprint !== undefined ? 'Yes' : 'No'}`)
   if (data.config.scopeGrowthPerSprint !== undefined) {
@@ -143,9 +165,9 @@ export function generateForecastCsv(data: ExportData): string {
 
   // Section 2: Percentile Results
   lines.push('PERCENTILE RESULTS')
-  const percentileHeader = hasBootstrap
-    ? 'Percentile,T-Normal Sprints,T-Normal Finish Date,Lognorm Sprints,Lognorm Finish Date,Gamma Sprints,Gamma Finish Date,Bootstrap Sprints,Bootstrap Finish Date'
-    : 'Percentile,T-Normal Sprints,T-Normal Finish Date,Lognorm Sprints,Lognorm Finish Date,Gamma Sprints,Gamma Finish Date'
+  let percentileHeader = 'Percentile,T-Normal Sprints,T-Normal Finish Date,Lognorm Sprints,Lognorm Finish Date,Gamma Sprints,Gamma Finish Date'
+  if (hasBootstrap) percentileHeader += ',Bootstrap Sprints,Bootstrap Finish Date'
+  percentileHeader += ',Triangular Sprints,Triangular Finish Date,Uniform Sprints,Uniform Finish Date'
   lines.push(percentileHeader)
 
   const percentiles = [
@@ -160,11 +182,14 @@ export function generateForecastCsv(data: ExportData): string {
     const truncatedNormal = data.truncatedNormalResults[p.key]
     const lognormal = data.lognormalResults[p.key]
     const gamma = data.gammaResults[p.key]
+    const triangular = data.triangularResults[p.key]
+    const uniform = data.uniformResults[p.key]
     let line = `P${p.label},${truncatedNormal.sprintsRequired},${truncatedNormal.finishDate},${lognormal.sprintsRequired},${lognormal.finishDate},${gamma.sprintsRequired},${gamma.finishDate}`
     if (hasBootstrap && data.bootstrapResults) {
       const bootstrap = data.bootstrapResults[p.key]
       line += `,${bootstrap.sprintsRequired},${bootstrap.finishDate}`
     }
+    line += `,${triangular.sprintsRequired},${triangular.finishDate},${uniform.sprintsRequired},${uniform.finishDate}`
     lines.push(line)
   }
   lines.push('')
@@ -182,16 +207,21 @@ export function generateForecastCsv(data: ExportData): string {
       const lnResults = data.milestoneData.distributions.lognormal[mi]
       const gaResults = data.milestoneData.distributions.gamma[mi]
       const bsResults = data.milestoneData.distributions.bootstrap?.[mi] ?? null
+      const triResults = data.milestoneData.distributions.triangular[mi]
+      const uniResults = data.milestoneData.distributions.uniform[mi]
 
       for (const p of percentiles) {
         const tn = tnResults[p.key]
         const ln = lnResults[p.key]
         const ga = gaResults[p.key]
+        const tri = triResults[p.key]
+        const uni = uniResults[p.key]
         let line = `P${p.label},${tn.sprintsRequired},${tn.finishDate},${ln.sprintsRequired},${ln.finishDate},${ga.sprintsRequired},${ga.finishDate}`
         if (hasBootstrap && bsResults) {
           const bs = bsResults[p.key]
           line += `,${bs.sprintsRequired},${bs.finishDate}`
         }
+        line += `,${tri.sprintsRequired},${tri.finishDate},${uni.sprintsRequired},${uni.finishDate}`
         lines.push(line)
       }
       lines.push('')
@@ -200,16 +230,18 @@ export function generateForecastCsv(data: ExportData): string {
 
   // Section 3: Frequency Distribution
   lines.push('FREQUENCY DISTRIBUTION')
-  const freqHeader = hasBootstrap
-    ? 'Sprints,T-Normal Count,T-Normal %,T-Normal Cumul %,Lognorm Count,Lognorm %,Lognorm Cumul %,Gamma Count,Gamma %,Gamma Cumul %,Bootstrap Count,Bootstrap %,Bootstrap Cumul %'
-    : 'Sprints,T-Normal Count,T-Normal %,T-Normal Cumul %,Lognorm Count,Lognorm %,Lognorm Cumul %,Gamma Count,Gamma %,Gamma Cumul %'
+  let freqHeader = 'Sprints,T-Normal Count,T-Normal %,T-Normal Cumul %,Lognorm Count,Lognorm %,Lognorm Cumul %,Gamma Count,Gamma %,Gamma Cumul %'
+  if (hasBootstrap) freqHeader += ',Bootstrap Count,Bootstrap %,Bootstrap Cumul %'
+  freqHeader += ',Triangular Count,Triangular %,Triangular Cumul %,Uniform Count,Uniform %,Uniform Cumul %'
   lines.push(freqHeader)
 
   const freq = buildFrequencyDistribution(
     data.truncatedNormalSprintsRequired,
     data.lognormalSprintsRequired,
     data.gammaSprintsRequired,
-    data.bootstrapSprintsRequired
+    data.bootstrapSprintsRequired,
+    data.triangularSprintsRequired,
+    data.uniformSprintsRequired
   )
 
   // Sort by sprint count
@@ -219,15 +251,21 @@ export function generateForecastCsv(data: ExportData): string {
   let lognormalCumulative = 0
   let gammaCumulative = 0
   let bootstrapCumulative = 0
+  let triangularCumulative = 0
+  let uniformCumulative = 0
 
   for (const sprints of sortedSprints) {
     const counts = freq.get(sprints)!
     const truncatedNormalPct = (counts.truncatedNormal / totalTrials) * 100
     const lognormalPct = (counts.lognormal / totalTrials) * 100
     const gammaPct = (counts.gamma / totalTrials) * 100
+    const triangularPct = (counts.triangular / totalTrials) * 100
+    const uniformPct = (counts.uniform / totalTrials) * 100
     truncatedNormalCumulative += truncatedNormalPct
     lognormalCumulative += lognormalPct
     gammaCumulative += gammaPct
+    triangularCumulative += triangularPct
+    uniformCumulative += uniformPct
 
     let line = `${sprints},${counts.truncatedNormal},${truncatedNormalPct.toFixed(2)}%,${truncatedNormalCumulative.toFixed(2)}%,${counts.lognormal},${lognormalPct.toFixed(2)}%,${lognormalCumulative.toFixed(2)}%,${counts.gamma},${gammaPct.toFixed(2)}%,${gammaCumulative.toFixed(2)}%`
 
@@ -237,15 +275,17 @@ export function generateForecastCsv(data: ExportData): string {
       line += `,${counts.bootstrap},${bootstrapPct.toFixed(2)}%,${bootstrapCumulative.toFixed(2)}%`
     }
 
+    line += `,${counts.triangular},${triangularPct.toFixed(2)}%,${triangularCumulative.toFixed(2)}%,${counts.uniform},${uniformPct.toFixed(2)}%,${uniformCumulative.toFixed(2)}%`
+
     lines.push(line)
   }
   lines.push('')
 
   // Section 4: Raw Trial Data
   lines.push('RAW TRIAL DATA (sorted)')
-  const rawHeader = hasBootstrap
-    ? 'Trial,T-Normal Sprints,Lognorm Sprints,Gamma Sprints,Bootstrap Sprints'
-    : 'Trial,T-Normal Sprints,Lognorm Sprints,Gamma Sprints'
+  let rawHeader = 'Trial,T-Normal Sprints,Lognorm Sprints,Gamma Sprints'
+  if (hasBootstrap) rawHeader += ',Bootstrap Sprints'
+  rawHeader += ',Triangular Sprints,Uniform Sprints'
   lines.push(rawHeader)
 
   for (let i = 0; i < totalTrials; i++) {
@@ -253,6 +293,7 @@ export function generateForecastCsv(data: ExportData): string {
     if (hasBootstrap && data.bootstrapSprintsRequired) {
       line += `,${data.bootstrapSprintsRequired[i]}`
     }
+    line += `,${data.triangularSprintsRequired[i]},${data.uniformSprintsRequired[i]}`
     lines.push(line)
   }
 

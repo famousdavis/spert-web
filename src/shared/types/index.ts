@@ -77,3 +77,5 @@ export interface PercentileResult {
   p90: ForecastResult
   custom?: ForecastResult
 }
+
+export type ForecastMode = 'history' | 'subjective'

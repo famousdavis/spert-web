@@ -2,21 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import type { PercentileResults } from '../lib/monte-carlo'
-import type { QuadSimulationData } from '../lib/monte-carlo'
-import { calculatePercentileResult } from '../lib/monte-carlo'
+import { calculatePercentileResult, type PercentileResults, type QuadResults, type QuadSimulationData } from '../lib/monte-carlo'
 import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDateLong } from '@/shared/lib/dates'
-import type { Milestone } from '@/shared/types'
-import type { DistributionType } from '../types'
-import { DISTRIBUTION_LABELS } from '../types'
-
-interface QuadResults {
-  truncatedNormal: PercentileResults
-  lognormal: PercentileResults
-  gamma: PercentileResults
-  bootstrap: PercentileResults | null
-}
+import type { Milestone, ForecastMode } from '@/shared/types'
+import { type DistributionType, DISTRIBUTION_LABELS } from '../types'
 
 interface ForecastSummaryProps {
   results: QuadResults
@@ -31,6 +21,7 @@ interface ForecastSummaryProps {
   milestoneResultsState?: MilestoneResults | null
   cumulativeThresholds?: number[]
   hasBootstrap: boolean
+  forecastMode: ForecastMode
   modelScopeGrowth?: boolean
   scopeGrowthMode?: 'calculated' | 'custom'
   scopeGrowthPerSprint?: number
@@ -103,6 +94,7 @@ export function ForecastSummary({
   milestoneResultsState,
   cumulativeThresholds = [],
   hasBootstrap,
+  forecastMode,
   modelScopeGrowth,
   scopeGrowthMode,
   scopeGrowthPerSprint,
@@ -111,10 +103,13 @@ export function ForecastSummary({
   const [selectedPercentile, setSelectedPercentile] = useState(80)
 
   const distributionOptions = useMemo(() => {
+    if (forecastMode === 'subjective') {
+      return ['truncatedNormal', 'lognormal', 'triangular', 'uniform'] as DistributionType[]
+    }
     const options: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma']
     if (hasBootstrap) options.push('bootstrap')
     return options
-  }, [hasBootstrap])
+  }, [hasBootstrap, forecastMode])
 
   // Get the result for the selected distribution and percentile
   const selectedResult = useMemo(() => {
