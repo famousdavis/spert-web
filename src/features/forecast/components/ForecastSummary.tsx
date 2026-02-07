@@ -104,7 +104,7 @@ export function ForecastSummary({
 
   const distributionOptions = useMemo(() => {
     if (forecastMode === 'subjective') {
-      return ['truncatedNormal', 'lognormal', 'triangular', 'uniform'] as DistributionType[]
+      return ['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'uniform'] as DistributionType[]
     }
     const options: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma']
     if (hasBootstrap) options.push('bootstrap')
