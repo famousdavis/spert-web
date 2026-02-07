@@ -13,9 +13,10 @@ interface ForecastModeToggleProps {
 export function ForecastModeToggle({
   mode,
   onModeChange,
-  canUseHistory,
   includedSprintCount,
 }: ForecastModeToggleProps) {
+  const hasHistory = includedSprintCount > 0
+
   return (
     <div className="flex items-center gap-2 mb-3">
       <span className="text-xs font-medium text-spert-text-muted">Mode:</span>
@@ -23,17 +24,17 @@ export function ForecastModeToggle({
         <button
           type="button"
           onClick={() => onModeChange('history')}
-          disabled={!canUseHistory}
+          disabled={!hasHistory}
           title={
-            canUseHistory
+            hasHistory
               ? 'Forecast from sprint history'
-              : `Need ${5 - includedSprintCount} more sprint(s) for history mode`
+              : 'Add sprints to use history mode'
           }
           className={cn(
             'px-3 py-1 text-xs font-medium transition-colors duration-150',
             mode === 'history'
               ? 'bg-spert-blue text-white'
-              : canUseHistory
+              : hasHistory
                 ? 'bg-transparent text-spert-text-muted dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 : 'bg-transparent text-gray-300 dark:text-gray-600 cursor-not-allowed'
           )}
