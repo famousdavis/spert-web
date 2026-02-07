@@ -8,15 +8,17 @@ interface ForecastModeToggleProps {
   onModeChange: (mode: ForecastMode) => void
   canUseHistory: boolean
   includedSprintCount: number
+  calculatedStdDev: number
 }
 
 export function ForecastModeToggle({
   mode,
   onModeChange,
   includedSprintCount,
+  calculatedStdDev,
 }: ForecastModeToggleProps) {
-  // Need 2+ sprints for a meaningful std dev (1 sprint → SD=0 → false certainty)
-  const canSelectHistory = includedSprintCount >= 2
+  // Need 2+ sprints AND non-zero SD (identical velocities → SD=0 → false certainty)
+  const canSelectHistory = includedSprintCount >= 2 && calculatedStdDev > 0
 
   return (
     <div className="flex items-center gap-2 mb-3">
@@ -29,7 +31,9 @@ export function ForecastModeToggle({
           title={
             canSelectHistory
               ? 'Forecast from sprint history'
-              : 'Need 2+ sprints for history mode'
+              : includedSprintCount < 2
+                ? 'Need 2+ sprints for history mode'
+                : 'Sprints have identical velocity — use Subjective mode to express uncertainty'
           }
           className={cn(
             'px-3 py-1 text-xs font-medium transition-colors duration-150',

@@ -115,6 +115,7 @@ export function ForecastForm({
         onModeChange={onForecastModeChange}
         canUseHistory={canUseHistory}
         includedSprintCount={includedSprintCount}
+        calculatedStdDev={calculatedStdDev}
       />
       <div className="flex gap-4 items-end flex-wrap">
         {/* Remaining Backlog */}
