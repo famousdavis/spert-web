@@ -30,8 +30,8 @@ export function useTheme() {
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-    const initialTheme = stored || 'system'
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const initialTheme: Theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
     setThemeState(initialTheme)
     applyTheme(initialTheme)
     setIsInitialized(true)

@@ -7,6 +7,8 @@ export interface CdfDataPoint {
   lognormal: number
   gamma: number
   bootstrap?: number
+  triangular?: number
+  uniform?: number
 }
 
 export interface HistogramBin {
@@ -18,6 +20,8 @@ export interface HistogramBin {
   lognormal: number
   gamma: number
   bootstrap?: number
+  triangular?: number
+  uniform?: number
 }
 
 /**
@@ -66,29 +70,29 @@ export function mergeDistributions(
   gamma: number[],
   bootstrap: number[] | null,
   startDate: string,
-  sprintCadenceWeeks: number
+  sprintCadenceWeeks: number,
+  triangular?: number[],
+  uniform?: number[]
 ): CdfDataPoint[] {
   const tNormalCdf = buildCdfPoints(tNormal)
   const lognormalCdf = buildCdfPoints(lognormal)
   const gammaCdf = buildCdfPoints(gamma)
   const bootstrapCdf = bootstrap ? buildCdfPoints(bootstrap) : null
+  const triangularCdf = triangular ? buildCdfPoints(triangular) : null
+  const uniformCdf = uniform ? buildCdfPoints(uniform) : null
 
   // Get all unique sprint values
   const allSprints = new Set<number>()
   tNormalCdf.forEach((_, sprints) => allSprints.add(sprints))
   lognormalCdf.forEach((_, sprints) => allSprints.add(sprints))
   gammaCdf.forEach((_, sprints) => allSprints.add(sprints))
-  if (bootstrapCdf) {
-    bootstrapCdf.forEach((_, sprints) => allSprints.add(sprints))
-  }
+  if (bootstrapCdf) bootstrapCdf.forEach((_, sprints) => allSprints.add(sprints))
+  if (triangularCdf) triangularCdf.forEach((_, sprints) => allSprints.add(sprints))
+  if (uniformCdf) uniformCdf.forEach((_, sprints) => allSprints.add(sprints))
 
   const sortedSprints = Array.from(allSprints).sort((a, b) => a - b)
 
-  // For each sprint value, find the cumulative probability
-  // by counting how many trials completed in that many sprints or fewer
   return sortedSprints.map((sprints) => {
-    // Calculate finish date: startDate is when sprint 1 of remaining work begins
-    // sprints = how many more sprints needed, so sprint N starts at calculateSprintStartDate(startDate, N, cadence)
     const sprintStart = calculateSprintStartDate(startDate, sprints, sprintCadenceWeeks)
     const finishDate = calculateSprintFinishDate(sprintStart, sprintCadenceWeeks)
     const point: CdfDataPoint = {
@@ -98,9 +102,9 @@ export function mergeDistributions(
       lognormal: calculateCumulativePercentage(lognormal, sprints),
       gamma: calculateCumulativePercentage(gamma, sprints),
     }
-    if (bootstrap) {
-      point.bootstrap = calculateCumulativePercentage(bootstrap, sprints)
-    }
+    if (bootstrap) point.bootstrap = calculateCumulativePercentage(bootstrap, sprints)
+    if (triangular) point.triangular = calculateCumulativePercentage(triangular, sprints)
+    if (uniform) point.uniform = calculateCumulativePercentage(uniform, sprints)
     return point
   })
 }
@@ -150,10 +154,12 @@ export function buildHistogramBins(
   bootstrap: number[] | null,
   startDate: string,
   sprintCadenceWeeks: number,
-  binCount: number = 15
+  binCount: number = 15,
+  triangular?: number[],
+  uniform?: number[]
 ): HistogramBin[] {
   // Find global min and max across all distributions
-  const allData = [tNormal, lognormal, gamma, ...(bootstrap ? [bootstrap] : [])]
+  const allData = [tNormal, lognormal, gamma, ...(bootstrap ? [bootstrap] : []), ...(triangular ? [triangular] : []), ...(uniform ? [uniform] : [])]
   const globalMin = Math.min(...allData.map(d => d[0]))
   const globalMax = Math.max(...allData.map(d => d[d.length - 1]))
 
@@ -187,9 +193,9 @@ export function buildHistogramBins(
       gamma: (countInRange(gamma, sprintMin, sprintMax) / trialCount) * 100,
     }
 
-    if (bootstrap) {
-      bin.bootstrap = (countInRange(bootstrap, sprintMin, sprintMax) / trialCount) * 100
-    }
+    if (bootstrap) bin.bootstrap = (countInRange(bootstrap, sprintMin, sprintMax) / trialCount) * 100
+    if (triangular) bin.triangular = (countInRange(triangular, sprintMin, sprintMax) / trialCount) * 100
+    if (uniform) bin.uniform = (countInRange(uniform, sprintMin, sprintMax) / trialCount) * 100
 
     bins.push(bin)
   }

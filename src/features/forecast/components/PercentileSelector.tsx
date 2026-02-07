@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import type { ForecastResult, Milestone } from '@/shared/types'
+import type { ForecastResult, Milestone, ForecastMode } from '@/shared/types'
 import { cn } from '@/lib/utils'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
@@ -13,6 +13,9 @@ interface PercentileSelectorProps {
   lognormalResult: ForecastResult | null
   gammaResult: ForecastResult | null
   bootstrapResult: ForecastResult | null
+  triangularResult: ForecastResult | null
+  uniformResult: ForecastResult | null
+  forecastMode: ForecastMode
   completedSprintCount: number
   onPercentileChange: (percentile: number) => void
   selectorRef?: RefObject<HTMLDivElement | null>
@@ -21,21 +24,49 @@ interface PercentileSelectorProps {
   onMilestoneIndexChange?: (index: number) => void
 }
 
-export function PercentileSelector({
-  percentile,
-  truncatedNormalResult,
-  lognormalResult,
-  gammaResult,
-  bootstrapResult,
-  completedSprintCount,
-  onPercentileChange,
-  selectorRef,
-  milestones = [],
-  selectedMilestoneIndex = 0,
-  onMilestoneIndexChange,
-}: PercentileSelectorProps) {
-  const hasResults = truncatedNormalResult && lognormalResult && gammaResult
-  const hasBootstrap = bootstrapResult !== null
+interface DistCard {
+  label: string
+  result: ForecastResult | null
+}
+
+function getDistCards(
+  forecastMode: ForecastMode,
+  props: PercentileSelectorProps
+): DistCard[] {
+  if (forecastMode === 'subjective') {
+    return [
+      { label: 'T-Normal', result: props.truncatedNormalResult },
+      { label: 'Lognorm', result: props.lognormalResult },
+      { label: 'Triangular', result: props.triangularResult },
+      { label: 'Uniform', result: props.uniformResult },
+    ]
+  }
+  const cards: DistCard[] = [
+    { label: 'T-Normal', result: props.truncatedNormalResult },
+    { label: 'Lognorm', result: props.lognormalResult },
+    { label: 'Gamma', result: props.gammaResult },
+  ]
+  if (props.bootstrapResult !== null) {
+    cards.push({ label: 'Bootstrap', result: props.bootstrapResult })
+  }
+  return cards
+}
+
+export function PercentileSelector(props: PercentileSelectorProps) {
+  const {
+    percentile,
+    forecastMode,
+    completedSprintCount,
+    onPercentileChange,
+    selectorRef,
+    milestones = [],
+    selectedMilestoneIndex = 0,
+    onMilestoneIndexChange,
+  } = props
+
+  const cards = getDistCards(forecastMode, props)
+  const baseResult = cards[0]?.result
+  const hasResults = cards.every((c) => c.result !== null)
 
   return (
     <div className="relative">
@@ -79,100 +110,37 @@ export function PercentileSelector({
       </div>
 
       {hasResults && (
-        <div className={`grid gap-4 ${hasBootstrap ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
-          {/* Truncated Normal Distribution Results */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              T-Normal
-            </p>
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-sm text-muted-foreground">Finish Date</p>
-              <p className="text-base font-semibold">{formatDate(truncatedNormalResult.finishDate)}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sprint {truncatedNormalResult.sprintsRequired + completedSprintCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Lognormal Distribution Results */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Lognorm
-            </p>
-            <div
-              className={cn(
-                'rounded-lg bg-muted/50 p-3',
-                truncatedNormalResult.finishDate !== lognormalResult.finishDate && 'border-l-[3px] border-l-spert-blue'
-              )}
-            >
-              <p className="text-sm text-muted-foreground">Finish Date</p>
-              <p
-                className={cn(
-                  'text-base font-semibold',
-                  truncatedNormalResult.finishDate !== lognormalResult.finishDate && 'text-spert-blue'
-                )}
-              >
-                {formatDate(lognormalResult.finishDate)}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sprint {lognormalResult.sprintsRequired + completedSprintCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Gamma Distribution Results */}
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Gamma
-            </p>
-            <div
-              className={cn(
-                'rounded-lg bg-muted/50 p-3',
-                truncatedNormalResult.finishDate !== gammaResult.finishDate && 'border-l-[3px] border-l-spert-blue'
-              )}
-            >
-              <p className="text-sm text-muted-foreground">Finish Date</p>
-              <p
-                className={cn(
-                  'text-base font-semibold',
-                  truncatedNormalResult.finishDate !== gammaResult.finishDate && 'text-spert-blue'
-                )}
-              >
-                {formatDate(gammaResult.finishDate)}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Sprint {gammaResult.sprintsRequired + completedSprintCount}
-              </p>
-            </div>
-          </div>
-
-          {/* Bootstrap Distribution Results */}
-          {hasBootstrap && bootstrapResult && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Bootstrap
-              </p>
-              <div
-                className={cn(
-                  'rounded-lg bg-muted/50 p-3',
-                  truncatedNormalResult.finishDate !== bootstrapResult.finishDate && 'border-l-[3px] border-l-spert-blue'
-                )}
-              >
-                <p className="text-sm text-muted-foreground">Finish Date</p>
-                <p
+        <div className={`grid gap-4 sm:grid-cols-${cards.length}`}>
+          {cards.map((card, idx) => {
+            const result = card.result!
+            const isDiff = idx > 0 && baseResult && result.finishDate !== baseResult.finishDate
+            return (
+              <div key={card.label} className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {card.label}
+                </p>
+                <div
                   className={cn(
-                    'text-base font-semibold',
-                    truncatedNormalResult.finishDate !== bootstrapResult.finishDate && 'text-spert-blue'
+                    'rounded-lg bg-muted/50 p-3',
+                    isDiff && 'border-l-[3px] border-l-spert-blue'
                   )}
                 >
-                  {formatDate(bootstrapResult.finishDate)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Sprint {bootstrapResult.sprintsRequired + completedSprintCount}
-                </p>
+                  <p className="text-sm text-muted-foreground">Finish Date</p>
+                  <p
+                    className={cn(
+                      'text-base font-semibold',
+                      isDiff && 'text-spert-blue'
+                    )}
+                  >
+                    {formatDate(result.finishDate)}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Sprint {result.sprintsRequired + completedSprintCount}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })}
         </div>
       )}
       </div>

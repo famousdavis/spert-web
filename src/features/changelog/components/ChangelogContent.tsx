@@ -14,6 +14,49 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.17.0',
+    date: '2026-02-07',
+    sections: [
+      {
+        title: 'Subjective Forecasting (Cold-Start Mode)',
+        items: [
+          'Teams with no sprint history can now produce probabilistic forecasts using a velocity estimate and variability level',
+          'Forecast mode toggle: pill-style switch between History and Subjective modes',
+          'Auto-detects mode based on sprint count (5+ sprints → History, otherwise Subjective)',
+          'CV elicitation: 6 radio options with dynamic velocity range labels',
+          'Two new distributions: Triangular and Uniform',
+          'Mode-aware results tables and charts render appropriate distributions per mode',
+          'CSV export includes forecast mode metadata',
+        ],
+      },
+      {
+        title: 'Volatility Adjuster (History Mode)',
+        items: [
+          'Opt-in volatility adjustment: scale the calculated standard deviation with human-readable multipliers',
+          '4 radio options: Less volatile (0.75×), Match history (1.0×), Slightly more volatile (1.25×), Much more volatile (1.5×)',
+          'Each option shows a rounded velocity range preview (e.g., "45–95")',
+          'Inline toggle link in Std Dev helper text — zero layout disruption',
+          'Std Dev field becomes read-only when adjuster is active',
+          'Volatility multiplier included in CSV export when ≠ 1.0',
+        ],
+      },
+      {
+        title: 'Engine',
+        items: [
+          'Six probability distributions (was 4): T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform',
+          'Sampler factory supports optional bounds for Triangular/Uniform',
+          'Effective Std Dev applies volatility multiplier in History mode',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          '363 tests passing (was 338)',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.16.1',
     date: '2026-02-06',
     sections: [

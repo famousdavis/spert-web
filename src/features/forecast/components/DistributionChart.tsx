@@ -17,7 +17,7 @@ import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { COLORS } from '@/shared/lib/colors'
 import { type ChartFontSize, CHART_FONT_SIZES } from '../types'
 import { mergeDistributions } from '../lib/cdf'
-import type { Milestone } from '@/shared/types'
+import type { Milestone, ForecastMode } from '@/shared/types'
 import { ChartToolbar } from './ChartToolbar'
 
 interface DistributionChartProps {
@@ -25,6 +25,9 @@ interface DistributionChartProps {
   lognormal: number[]
   gamma: number[]
   bootstrap: number[] | null
+  triangular: number[]
+  uniform: number[]
+  forecastMode: ForecastMode
   customPercentile: number
   startDate: string
   sprintCadenceWeeks: number
@@ -44,6 +47,9 @@ export function DistributionChart({
   lognormal,
   gamma,
   bootstrap,
+  triangular,
+  uniform,
+  forecastMode,
   customPercentile,
   startDate,
   sprintCadenceWeeks,
@@ -57,10 +63,11 @@ export function DistributionChart({
 }: DistributionChartProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const fontSizes = CHART_FONT_SIZES[fontSize]
+  const isSubjective = forecastMode === 'subjective'
 
   const chartData = useMemo(
-    () => mergeDistributions(truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks),
-    [truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks]
+    () => mergeDistributions(truncatedNormal, lognormal, gamma, bootstrap, startDate, sprintCadenceWeeks, triangular, uniform),
+    [truncatedNormal, lognormal, gamma, bootstrap, triangular, uniform, startDate, sprintCadenceWeeks]
   )
 
   const hasBootstrap = bootstrap !== null
@@ -177,20 +184,42 @@ export function DistributionChart({
                 dot={false}
                 strokeWidth={2.5}
               />
-              <Line
-                type="stepAfter"
-                dataKey="gamma"
-                name="Gamma"
-                stroke={CHART_COLORS.gamma}
-                dot={false}
-                strokeWidth={2.5}
-              />
-              {hasBootstrap && (
+              {!isSubjective && (
+                <Line
+                  type="stepAfter"
+                  dataKey="gamma"
+                  name="Gamma"
+                  stroke={CHART_COLORS.gamma}
+                  dot={false}
+                  strokeWidth={2.5}
+                />
+              )}
+              {!isSubjective && hasBootstrap && (
                 <Line
                   type="stepAfter"
                   dataKey="bootstrap"
                   name="Bootstrap"
                   stroke={CHART_COLORS.bootstrap}
+                  dot={false}
+                  strokeWidth={2.5}
+                />
+              )}
+              {isSubjective && (
+                <Line
+                  type="stepAfter"
+                  dataKey="triangular"
+                  name="Triangular"
+                  stroke={CHART_COLORS.triangular}
+                  dot={false}
+                  strokeWidth={2.5}
+                />
+              )}
+              {isSubjective && (
+                <Line
+                  type="stepAfter"
+                  dataKey="uniform"
+                  name="Uniform"
+                  stroke={CHART_COLORS.uniform}
                   dot={false}
                   strokeWidth={2.5}
                 />

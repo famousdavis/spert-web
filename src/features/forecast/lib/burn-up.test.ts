@@ -34,6 +34,8 @@ const simData: QuadSimulationData = {
   lognormal: [3, 4, 4, 5, 5, 5, 6, 6, 7, 8],
   gamma: [3, 4, 4, 5, 5, 5, 6, 6, 7, 8],
   bootstrap: null,
+  triangular: [3, 4, 4, 5, 5, 5, 6, 6, 7, 8],
+  uniform: [3, 4, 4, 5, 5, 5, 6, 6, 7, 8],
 }
 
 describe('calculateBurnUpData', () => {

@@ -1,0 +1,129 @@
+import { describe, it, expect } from 'vitest'
+import { getRoundingIncrement, roundToNearest, roundRange, VOLATILITY_OPTIONS, DEFAULT_VOLATILITY_MULTIPLIER } from './constants'
+
+describe('getRoundingIncrement', () => {
+  it('returns 2 for velocity < 50', () => {
+    expect(getRoundingIncrement(5)).toBe(2)
+    expect(getRoundingIncrement(15)).toBe(2)
+    expect(getRoundingIncrement(30)).toBe(2)
+    expect(getRoundingIncrement(49)).toBe(2)
+  })
+
+  it('returns 5 for velocity 50–99', () => {
+    expect(getRoundingIncrement(50)).toBe(5)
+    expect(getRoundingIncrement(70)).toBe(5)
+    expect(getRoundingIncrement(99)).toBe(5)
+  })
+
+  it('returns 10 for velocity >= 100', () => {
+    expect(getRoundingIncrement(100)).toBe(10)
+    expect(getRoundingIncrement(200)).toBe(10)
+    expect(getRoundingIncrement(10000)).toBe(10)
+  })
+})
+
+describe('roundToNearest', () => {
+  it('rounds to nearest 5', () => {
+    expect(roundToNearest(45.5, 5)).toBe(45)
+    expect(roundToNearest(47.5, 5)).toBe(50)
+    expect(roundToNearest(94.5, 5)).toBe(95)
+  })
+
+  it('rounds to nearest 10', () => {
+    expect(roundToNearest(145, 10)).toBe(150)
+    expect(roundToNearest(254, 10)).toBe(250)
+  })
+
+  it('rounds to nearest 2', () => {
+    expect(roundToNearest(9.75, 2)).toBe(10)
+    expect(roundToNearest(5.25, 2)).toBe(6)
+  })
+})
+
+describe('roundRange', () => {
+  it('V=70, CV=0.35 → (45, 95)', () => {
+    const result = roundRange(70, 0.35)
+    expect(result.displayLower).toBe(45)
+    expect(result.displayUpper).toBe(95)
+  })
+
+  it('V=70, CV=0.15 → (60, 80)', () => {
+    const result = roundRange(70, 0.15)
+    expect(result.displayLower).toBe(60)
+    expect(result.displayUpper).toBe(80)
+  })
+
+  it('V=70, CV=0.65 → (25, 115)', () => {
+    const result = roundRange(70, 0.65)
+    expect(result.displayLower).toBe(25)
+    expect(result.displayUpper).toBe(115)
+  })
+
+  it('V=200, CV=0.25 → (150, 250)', () => {
+    const result = roundRange(200, 0.25)
+    expect(result.displayLower).toBe(150)
+    expect(result.displayUpper).toBe(250)
+  })
+
+  it('V=15, CV=0.35 → (10, 20)', () => {
+    const result = roundRange(15, 0.35)
+    expect(result.displayLower).toBe(10)
+    expect(result.displayUpper).toBe(20)
+  })
+
+  it('floors lower bound at 0 for high CV with small velocity', () => {
+    // V=10, CV=0.65: raw lower = 3.5, round to nearest 2 = 4
+    const result = roundRange(10, 0.65)
+    expect(result.displayLower).toBe(4)
+    expect(result.displayUpper).toBeGreaterThan(0)
+  })
+
+  it('lower bound never goes negative', () => {
+    // V=3, CV=0.65: raw lower = max(0, 3 - 1.95) = 1.05, round to nearest 2 = 2
+    const result = roundRange(3, 0.65)
+    expect(result.displayLower).toBeGreaterThanOrEqual(0)
+  })
+
+  it('floors at 0 when raw lower is truly negative', () => {
+    // V=2, CV=0.65: raw lower = max(0, 2 - 1.3) = 0.7, round to nearest 2 = 0
+    const result = roundRange(2, 0.65)
+    expect(result.displayLower).toBe(0)
+  })
+})
+
+describe('VOLATILITY_OPTIONS', () => {
+  it('has 4 options', () => {
+    expect(VOLATILITY_OPTIONS).toHaveLength(4)
+  })
+
+  it('multipliers are in ascending order', () => {
+    const multipliers = VOLATILITY_OPTIONS.map((o) => o.multiplier)
+    for (let i = 1; i < multipliers.length; i++) {
+      expect(multipliers[i]).toBeGreaterThan(multipliers[i - 1])
+    }
+  })
+
+  it('includes a 1.0 multiplier (match history)', () => {
+    const matchHistory = VOLATILITY_OPTIONS.find((o) => o.multiplier === 1.0)
+    expect(matchHistory).toBeDefined()
+    expect(matchHistory!.label).toBe('Match history')
+  })
+
+  it('all multipliers are positive', () => {
+    for (const opt of VOLATILITY_OPTIONS) {
+      expect(opt.multiplier).toBeGreaterThan(0)
+    }
+  })
+
+  it('all labels are non-empty', () => {
+    for (const opt of VOLATILITY_OPTIONS) {
+      expect(opt.label.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('DEFAULT_VOLATILITY_MULTIPLIER', () => {
+  it('equals 1.0', () => {
+    expect(DEFAULT_VOLATILITY_MULTIPLIER).toBe(1.0)
+  })
+})

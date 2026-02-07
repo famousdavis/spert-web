@@ -2,13 +2,14 @@
 
 import { useMemo } from 'react'
 import { useProjectStore, selectViewingProject } from '@/shared/state/project-store'
-import type { VelocityStats } from '@/shared/types'
+import type { VelocityStats, ForecastMode } from '@/shared/types'
+import { DEFAULT_CV, DEFAULT_VOLATILITY_MULTIPLIER, MIN_SPRINTS_FOR_HISTORY } from '../constants'
 
 /**
- * Form state for the forecast: backlog, velocity overrides, and milestone-derived values.
- * Persisted per project via the project store.
+ * Form state for the forecast: backlog, velocity overrides, subjective inputs,
+ * and milestone-derived values. Persisted per project via the project store.
  */
-export function useForecastInputs(calculatedStats: VelocityStats) {
+export function useForecastInputs(calculatedStats: VelocityStats, includedSprintCount: number) {
   const selectedProject = useProjectStore(selectViewingProject)
   const setForecastInput = useProjectStore((state) => state.setForecastInput)
   const forecastInputs = useProjectStore((state) =>
@@ -42,6 +43,14 @@ export function useForecastInputs(calculatedStats: VelocityStats) {
   const velocityMean = forecastInputs?.velocityMean ?? ''
   const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
 
+  // Subjective mode inputs
+  const forecastMode = forecastInputs?.forecastMode as ForecastMode | undefined
+  const velocityEstimate = forecastInputs?.velocityEstimate ?? ''
+  const selectedCV = forecastInputs?.selectedCV ?? DEFAULT_CV
+
+  // History mode volatility adjustment
+  const volatilityMultiplier = forecastInputs?.volatilityMultiplier ?? DEFAULT_VOLATILITY_MULTIPLIER
+
   const setRemainingBacklog = (value: string) => {
     if (selectedProject && !hasMilestones) setForecastInput(selectedProject.id, 'remainingBacklog', value)
   }
@@ -51,10 +60,41 @@ export function useForecastInputs(calculatedStats: VelocityStats) {
   const setVelocityStdDev = (value: string) => {
     if (selectedProject) setForecastInput(selectedProject.id, 'velocityStdDev', value)
   }
+  const setForecastMode = (mode: ForecastMode) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'forecastMode', mode)
+  }
+  const setVelocityEstimate = (value: string) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'velocityEstimate', value)
+  }
+  const setSelectedCV = (cv: number) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'selectedCV', cv)
+  }
+  const setVolatilityMultiplier = (multiplier: number) => {
+    if (selectedProject) setForecastInput(selectedProject.id, 'volatilityMultiplier', multiplier)
+  }
 
-  // Effective values (user overrides or calculated)
-  const effectiveMean = velocityMean ? Number(velocityMean) : calculatedStats.mean
-  const effectiveStdDev = velocityStdDev ? Number(velocityStdDev) : calculatedStats.standardDeviation
+  // Resolve effective forecast mode: stored value or auto-detect from sprint count
+  const canUseHistory = includedSprintCount >= MIN_SPRINTS_FOR_HISTORY
+  const resolvedMode: ForecastMode = forecastMode
+    ? forecastMode
+    : (canUseHistory ? 'history' : 'subjective')
+
+  // Effective values depend on forecast mode
+  // In subjective mode (when no manual override): use velocity estimate and CV-derived std dev
+  // In history mode or with manual overrides: use calculated stats or overrides
+  const velocityEstimateNum = Number(velocityEstimate) || 0
+
+  const effectiveMean = velocityMean
+    ? Number(velocityMean)
+    : (resolvedMode === 'subjective' && velocityEstimateNum > 0)
+      ? velocityEstimateNum
+      : calculatedStats.mean
+
+  const effectiveStdDev = velocityStdDev
+    ? Number(velocityStdDev)
+    : (resolvedMode === 'subjective' && velocityEstimateNum > 0)
+      ? velocityEstimateNum * selectedCV
+      : calculatedStats.standardDeviation * volatilityMultiplier
 
   return {
     milestones,
@@ -66,8 +106,16 @@ export function useForecastInputs(calculatedStats: VelocityStats) {
     velocityStdDev,
     effectiveMean,
     effectiveStdDev,
+    forecastMode,
+    velocityEstimate,
+    selectedCV,
     setRemainingBacklog,
     setVelocityMean,
     setVelocityStdDev,
+    setForecastMode,
+    setVelocityEstimate,
+    setSelectedCV,
+    volatilityMultiplier,
+    setVolatilityMultiplier,
   }
 }

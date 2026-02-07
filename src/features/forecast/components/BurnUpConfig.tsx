@@ -25,10 +25,10 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
     onChange({ ...config, lines: newLines })
   }
 
-  // Available distributions (bootstrap only if available)
+  // Available distributions (all 6 always available; bootstrap only if historical data exists)
   const availableDistributions: DistributionType[] = hasBootstrap
-    ? ['truncatedNormal', 'lognormal', 'gamma', 'bootstrap']
-    : ['truncatedNormal', 'lognormal', 'gamma']
+    ? ['truncatedNormal', 'lognormal', 'gamma', 'bootstrap', 'triangular', 'uniform']
+    : ['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'uniform']
 
   return (
     <div className="mb-4">

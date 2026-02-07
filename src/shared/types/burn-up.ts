@@ -3,7 +3,7 @@
 
 import { COLORS } from '@/shared/lib/colors'
 
-export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
+export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap' | 'triangular' | 'uniform'
 
 export interface ForecastLineConfig {
   label: string
@@ -35,6 +35,8 @@ export const DISTRIBUTION_LABELS: Record<DistributionType, string> = {
   lognormal: 'Lognorm',
   gamma: 'Gamma',
   bootstrap: 'Bootstrap',
+  triangular: 'Triangular',
+  uniform: 'Uniform',
 }
 
 // Chart font size configuration

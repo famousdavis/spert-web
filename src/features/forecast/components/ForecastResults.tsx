@@ -1,16 +1,14 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import type { PercentileResults } from '../lib/monte-carlo'
+import type { PercentileResults, QuadResults } from '../lib/monte-carlo'
 import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDate } from '@/shared/lib/dates'
-import type { Milestone } from '@/shared/types'
+import type { Milestone, ForecastMode } from '@/shared/types'
 
 interface ForecastResultsProps {
-  truncatedNormalResults: PercentileResults
-  lognormalResults: PercentileResults
-  gammaResults: PercentileResults
-  bootstrapResults: PercentileResults | null
+  results: QuadResults
+  forecastMode: ForecastMode
   completedSprintCount: number
   onExport?: () => void
   milestones?: Milestone[]
@@ -19,28 +17,66 @@ interface ForecastResultsProps {
   unitOfMeasure?: string
 }
 
-function buildPercentileRows(
-  truncatedNormalResults: PercentileResults,
-  lognormalResults: PercentileResults,
-  gammaResults: PercentileResults,
-  bootstrapResults: PercentileResults | null
-) {
-  return [
-    { key: 'p50', label: 'P50', truncatedNormal: truncatedNormalResults.p50, lognormal: lognormalResults.p50, gamma: gammaResults.p50, bootstrap: bootstrapResults?.p50 ?? null },
-    { key: 'p60', label: 'P60', truncatedNormal: truncatedNormalResults.p60, lognormal: lognormalResults.p60, gamma: gammaResults.p60, bootstrap: bootstrapResults?.p60 ?? null },
-    { key: 'p70', label: 'P70', truncatedNormal: truncatedNormalResults.p70, lognormal: lognormalResults.p70, gamma: gammaResults.p70, bootstrap: bootstrapResults?.p70 ?? null },
-    { key: 'p80', label: 'P80', truncatedNormal: truncatedNormalResults.p80, lognormal: lognormalResults.p80, gamma: gammaResults.p80, bootstrap: bootstrapResults?.p80 ?? null },
-    { key: 'p90', label: 'P90', truncatedNormal: truncatedNormalResults.p90, lognormal: lognormalResults.p90, gamma: gammaResults.p90, bootstrap: bootstrapResults?.p90 ?? null },
+interface DistColumn {
+  key: keyof QuadResults
+  label: string
+}
+
+function getDistributionColumns(forecastMode: ForecastMode, hasBootstrap: boolean): DistColumn[] {
+  if (forecastMode === 'subjective') {
+    return [
+      { key: 'truncatedNormal', label: 'T-Normal' },
+      { key: 'lognormal', label: 'Lognorm' },
+      { key: 'triangular', label: 'Triangular' },
+      { key: 'uniform', label: 'Uniform' },
+    ]
+  }
+  const cols: DistColumn[] = [
+    { key: 'truncatedNormal', label: 'T-Normal' },
+    { key: 'lognormal', label: 'Lognorm' },
+    { key: 'gamma', label: 'Gamma' },
   ]
+  if (hasBootstrap) cols.push({ key: 'bootstrap', label: 'Bootstrap' })
+  return cols
+}
+
+type PercentileKey = 'p50' | 'p60' | 'p70' | 'p80' | 'p90'
+
+interface PercentileRow {
+  key: string
+  label: string
+  values: ({ sprintsRequired: number; finishDate: string } | null)[]
+}
+
+function buildPercentileRows(
+  results: QuadResults,
+  columns: DistColumn[]
+): PercentileRow[] {
+  const percentiles: { key: PercentileKey; label: string }[] = [
+    { key: 'p50', label: 'P50' },
+    { key: 'p60', label: 'P60' },
+    { key: 'p70', label: 'P70' },
+    { key: 'p80', label: 'P80' },
+    { key: 'p90', label: 'P90' },
+  ]
+  return percentiles.map(({ key, label }) => ({
+    key,
+    label,
+    values: columns.map((col) => {
+      const distResults = results[col.key]
+      if (!distResults) return null
+      return (distResults as PercentileResults)[key]
+    }),
+  }))
 }
 
 function ResultsTable({
-  percentiles,
-  hasBootstrap,
+  rows,
+  columns,
   completedSprintCount,
 }: {
-  percentiles: ReturnType<typeof buildPercentileRows>
-  hasBootstrap: boolean
+  rows: PercentileRow[]
+  columns: DistColumn[]
   completedSprintCount: number
 }) {
   return (
@@ -48,64 +84,41 @@ function ResultsTable({
       <thead>
         <tr className="border-b border-border">
           <th rowSpan={2} className="px-2 py-3 text-left text-sm font-medium text-muted-foreground align-bottom">Conf.</th>
-          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">T-Normal</th>
-          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Lognorm</th>
-          <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Gamma</th>
-          {hasBootstrap && (
-            <th colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">Bootstrap</th>
-          )}
+          {columns.map((col) => (
+            <th key={col.key} colSpan={2} className="px-2 py-2 text-center text-sm font-medium text-muted-foreground border-b border-border">
+              {col.label}
+            </th>
+          ))}
         </tr>
         <tr className="border-b border-border">
-          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
-          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
-          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
-          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
-          <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
-          <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
-          {hasBootstrap && (
-            <>
-              <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>
-            </>
-          )}
+          {columns.map((col) => [
+            <th key={`${col.key}-sprint`} className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">Sprint</th>,
+            <th key={`${col.key}-date`} className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>,
+          ])}
         </tr>
       </thead>
       <tbody>
-        {percentiles.map(({ key, label, truncatedNormal, lognormal, gamma, bootstrap }) => {
-          const lognormalDiffSprints = truncatedNormal.sprintsRequired !== lognormal.sprintsRequired
-          const lognormalDiffDate = truncatedNormal.finishDate !== lognormal.finishDate
-          const gammaDiffSprints = truncatedNormal.sprintsRequired !== gamma.sprintsRequired
-          const gammaDiffDate = truncatedNormal.finishDate !== gamma.finishDate
-          const bootstrapDiffSprints = bootstrap && truncatedNormal.sprintsRequired !== bootstrap.sprintsRequired
-          const bootstrapDiffDate = bootstrap && truncatedNormal.finishDate !== bootstrap.finishDate
-
+        {rows.map((row) => {
+          const baseResult = row.values[0]
           return (
-            <tr key={key} className="border-b border-border">
-              <td className="px-2 py-3 text-sm font-medium dark:text-gray-100">{label}</td>
-              <td className="px-2 py-3 text-right text-sm dark:text-gray-100">{truncatedNormal.sprintsRequired + completedSprintCount}</td>
-              <td className="px-2 py-3 text-sm dark:text-gray-100">{formatDate(truncatedNormal.finishDate)}</td>
-              <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', lognormalDiffSprints && 'text-spert-blue font-medium')}>
-                {lognormal.sprintsRequired + completedSprintCount}
-              </td>
-              <td className={cn('px-2 py-3 text-sm dark:text-gray-100', lognormalDiffDate && 'text-spert-blue font-medium')}>
-                {formatDate(lognormal.finishDate)}
-              </td>
-              <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', gammaDiffSprints && 'text-spert-blue font-medium')}>
-                {gamma.sprintsRequired + completedSprintCount}
-              </td>
-              <td className={cn('px-2 py-3 text-sm dark:text-gray-100', gammaDiffDate && 'text-spert-blue font-medium')}>
-                {formatDate(gamma.finishDate)}
-              </td>
-              {hasBootstrap && bootstrap && (
-                <>
-                  <td className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', bootstrapDiffSprints && 'text-spert-blue font-medium')}>
-                    {bootstrap.sprintsRequired + completedSprintCount}
-                  </td>
-                  <td className={cn('px-2 py-3 text-sm dark:text-gray-100', bootstrapDiffDate && 'text-spert-blue font-medium')}>
-                    {formatDate(bootstrap.finishDate)}
-                  </td>
-                </>
-              )}
+            <tr key={row.key} className="border-b border-border">
+              <td className="px-2 py-3 text-sm font-medium dark:text-gray-100">{row.label}</td>
+              {row.values.map((result, colIdx) => {
+                const col = columns[colIdx]
+                if (!result) return (
+                  <td key={col.key} colSpan={2} className="px-2 py-3 text-sm text-muted-foreground text-center">—</td>
+                )
+                const diffSprints = colIdx > 0 && baseResult && result.sprintsRequired !== baseResult.sprintsRequired
+                const diffDate = colIdx > 0 && baseResult && result.finishDate !== baseResult.finishDate
+                return [
+                  <td key={`${col.key}-sprint`} className={cn('px-2 py-3 text-right text-sm dark:text-gray-100', diffSprints && 'text-spert-blue font-medium')}>
+                    {result.sprintsRequired + completedSprintCount}
+                  </td>,
+                  <td key={`${col.key}-date`} className={cn('px-2 py-3 text-sm dark:text-gray-100', diffDate && 'text-spert-blue font-medium')}>
+                    {formatDate(result.finishDate)}
+                  </td>,
+                ]
+              })}
             </tr>
           )
         })}
@@ -115,10 +128,8 @@ function ResultsTable({
 }
 
 export function ForecastResults({
-  truncatedNormalResults,
-  lognormalResults,
-  gammaResults,
-  bootstrapResults,
+  results,
+  forecastMode,
   completedSprintCount,
   onExport,
   milestones = [],
@@ -126,7 +137,8 @@ export function ForecastResults({
   cumulativeThresholds = [],
   unitOfMeasure = '',
 }: ForecastResultsProps) {
-  const hasBootstrap = bootstrapResults !== null
+  const hasBootstrap = results.bootstrap !== null
+  const columns = getDistributionColumns(forecastMode, hasBootstrap)
   const hasMilestones = milestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
 
   return (
@@ -134,7 +146,6 @@ export function ForecastResults({
       <h3 className="font-medium dark:text-gray-100">Forecast Results</h3>
 
       {hasMilestones ? (
-        // Milestone-grouped results
         <div className="space-y-6">
           {milestones.map((milestone, idx) => {
             const milestoneResult = milestoneResultsState.milestoneResults[idx]
@@ -142,12 +153,7 @@ export function ForecastResults({
 
             const isLast = idx === milestones.length - 1
             const cumulativeBacklog = cumulativeThresholds[idx] ?? 0
-            const percentiles = buildPercentileRows(
-              milestoneResult.truncatedNormal,
-              milestoneResult.lognormal,
-              milestoneResult.gamma,
-              milestoneResult.bootstrap
-            )
+            const rows = buildPercentileRows(milestoneResult as QuadResults, columns)
 
             return (
               <div key={milestone.id}>
@@ -171,8 +177,8 @@ export function ForecastResults({
                 </div>
                 <div className="overflow-x-auto">
                   <ResultsTable
-                    percentiles={percentiles}
-                    hasBootstrap={hasBootstrap}
+                    rows={rows}
+                    columns={columns}
                     completedSprintCount={completedSprintCount}
                   />
                 </div>
@@ -181,11 +187,10 @@ export function ForecastResults({
           })}
         </div>
       ) : (
-        // Simple mode — single table
         <div className="overflow-x-auto">
           <ResultsTable
-            percentiles={buildPercentileRows(truncatedNormalResults, lognormalResults, gammaResults, bootstrapResults)}
-            hasBootstrap={hasBootstrap}
+            rows={buildPercentileRows(results, columns)}
+            columns={columns}
             completedSprintCount={completedSprintCount}
           />
         </div>
@@ -198,12 +203,23 @@ export function ForecastResults({
             percentiles are more conservative.
           </p>
           <p>
-            <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
-            <strong>Lognorm</strong>: right-skewed.{' '}
-            <strong>Gamma</strong>: flexible shape.
-            {hasBootstrap && (
+            {forecastMode === 'subjective' ? (
               <>
-                {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+                <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                <strong>Lognorm</strong>: right-skewed.{' '}
+                <strong>Triangular</strong>: peak at estimate.{' '}
+                <strong>Uniform</strong>: equal probability across range.
+              </>
+            ) : (
+              <>
+                <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                <strong>Lognorm</strong>: right-skewed.{' '}
+                <strong>Gamma</strong>: flexible shape.
+                {hasBootstrap && (
+                  <>
+                    {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+                  </>
+                )}
               </>
             )}
           </p>

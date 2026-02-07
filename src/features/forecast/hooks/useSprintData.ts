@@ -62,6 +62,7 @@ export function useSprintData() {
   return {
     projectSprints,
     includedSprints,
+    includedSprintCount: includedSprints.length,
     calculatedStats,
     scopeChangeStats,
     completedSprintCount,

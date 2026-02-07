@@ -48,6 +48,8 @@ describe.each([
   { distribution: 'truncatedNormal' as const },
   { distribution: 'lognormal' as const },
   { distribution: 'gamma' as const },
+  { distribution: 'triangular' as const },
+  { distribution: 'uniform' as const },
 ])('runTrial with $distribution sampler', ({ distribution }) => {
   it('returns a positive number of sprints', () => {
     const sampler = createSampler(distribution, 20, 5)
@@ -130,6 +132,8 @@ describe.each([
   { dist: 'truncatedNormal' as const },
   { dist: 'lognormal' as const },
   { dist: 'gamma' as const },
+  { dist: 'triangular' as const },
+  { dist: 'uniform' as const },
 ])('runSimulation with $dist distribution', ({ dist }) => {
   it('returns the correct number of trials', () => {
     const result = runSimulation({ ...stochasticConfig, distributionType: dist })
@@ -262,7 +266,7 @@ describe('runQuadrupleForecast', () => {
 
   it('all distributions produce reasonable P50 results', () => {
     const result = runQuadrupleForecast({ ...stochasticConfig, trialCount: 10000 })
-    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma]) {
+    for (const dist of [result.truncatedNormal, result.lognormal, result.gamma, result.triangular, result.uniform]) {
       expect(dist.results.p50.sprintsRequired).toBeGreaterThanOrEqual(4)
       expect(dist.results.p50.sprintsRequired).toBeLessThanOrEqual(7)
       expect(dist.results.p90.sprintsRequired).toBeGreaterThanOrEqual(dist.results.p50.sprintsRequired)
@@ -313,6 +317,37 @@ describe('edge cases', () => {
     const result = runSimulation({ ...stochasticConfig, remainingBacklog: 50, velocityMean: 10, velocityStdDev: 2, trialCount: 1 })
     expect(result.sprintsRequired).toHaveLength(1)
     expect(result.sprintsRequired[0]).toBeGreaterThan(0)
+  })
+
+  it('uniform sampler never produces negative velocities when 2*sd > mean', () => {
+    // mean=10, sd=8 → 2*sd=16 > mean=10 → bounds should be [0, 20]
+    const sampler = createSampler('uniform', 10, 8)
+    for (let i = 0; i < 500; i++) {
+      const v = sampler()
+      expect(v).toBeGreaterThanOrEqual(0)
+      expect(v).toBeLessThanOrEqual(20) // 2 * mean
+    }
+  })
+
+  it('triangular sampler preserves mean when 2*sd > mean (symmetric bounds)', () => {
+    // mean=10, sd=8 → bounds = [0, 20], triangular mean = (0+10+20)/3 = 10
+    const sampler = createSampler('triangular', 10, 8)
+    let sum = 0
+    const n = 50000
+    for (let i = 0; i < n; i++) sum += sampler()
+    const sampleMean = sum / n
+    expect(sampleMean).toBeGreaterThan(9)
+    expect(sampleMean).toBeLessThan(11)
+  })
+
+  it('uniform bounds are symmetric when 2*sd <= mean', () => {
+    // mean=30, sd=5 → 2*sd=10 < 30 → bounds = [20, 40]
+    const sampler = createSampler('uniform', 30, 5)
+    for (let i = 0; i < 500; i++) {
+      const v = sampler()
+      expect(v).toBeGreaterThanOrEqual(20)
+      expect(v).toBeLessThanOrEqual(40)
+    }
   })
 })
 

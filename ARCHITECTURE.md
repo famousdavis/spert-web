@@ -25,10 +25,13 @@ src/
 │   ├── about/                  # About tab content
 │   ├── changelog/              # Changelog display component
 │   ├── forecast/               # Monte Carlo simulation & charts
-│   │   ├── components/         # UI: ForecastTab, charts, forms, ChartToolbar
+│   │   ├── components/         # UI: ForecastTab, charts, forms, mode toggle, ChartToolbar
 │   │   │   ├── BurnUpChart.tsx           # Burn-up orchestration (config, data prep)
 │   │   │   ├── BurnUpChartCanvas.tsx     # Pure Recharts burn-up rendering
 │   │   │   ├── ForecastForm.tsx          # Forecast input form
+│   │   │   ├── ForecastModeToggle.tsx    # History/Subjective pill-style toggle
+│   │   │   ├── SubjectiveInputs.tsx      # CV elicitation for Subjective mode
+│   │   │   ├── VolatilityAdjuster.tsx    # SD multiplier radio panel for History mode
 │   │   │   ├── ScopeGrowthSection.tsx    # Scope growth modeling controls
 │   │   │   └── ...                       # Results, CDF, histogram, milestones, etc.
 │   │   ├── hooks/              # State orchestration
@@ -77,7 +80,7 @@ src/
 **Pure simulation logic**: Monte Carlo simulation, productivity calculations, burn-up projections, and CSV export are pure functions in `lib/` directories with colocated tests. The simulation engine uses:
 - **Sampler factory pattern** (`createSampler`, `createBootstrapSampler`) to decouple distribution selection from trial execution
 - **`SimulationContext`** interface to group related simulation parameters (config, velocities, productivity factors, scope growth)
-- **`runAllDistributions<T>()`** generic helper to sweep all four distributions with a single callback, making new distribution additions a one-line change
+- **`runAllDistributions<T>()`** generic helper to sweep all six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform) with a single callback
 
 **Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge).
 
@@ -89,8 +92,8 @@ src/
 
 1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key)
 2. **Global settings** (trial count, auto-recalc, chart defaults, theme) persisted separately (`spert-settings` key)
-3. **Forecast inputs** (backlog, velocity overrides) are session-only state per project
-4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across four distributions
+3. **Forecast inputs** (backlog, velocity overrides, forecast mode, CV selection, volatility multiplier) are session-only state per project
+4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform); UI displays four per mode
 5. **Scope growth modeling** resolves per-sprint scope injection from calculated or custom rates via `resolveScopeGrowthPerSprint()`
 6. **Productivity adjustments** modify velocity per sprint based on date-range overlap
 7. **Milestone forecasts** use cumulative thresholds with remaining-backlog checks, correctly accounting for scope growth

@@ -2,13 +2,14 @@ import {
   randomTruncatedNormal,
   randomLognormalFromMeanStdDev,
   randomGammaFromMeanStdDev,
+  randomTriangular,
+  randomUniform,
   percentileFromSorted,
 } from '@/shared/lib/math'
 import { calculateSprintStartDate, calculateSprintFinishDate } from '@/shared/lib/dates'
 import type { ForecastConfig, ForecastResult } from '@/shared/types'
+import type { DistributionType } from '../types'
 import { MAX_TRIAL_SPRINTS } from '../constants'
-
-export type DistributionType = 'truncatedNormal' | 'lognormal' | 'gamma' | 'bootstrap'
 
 export interface SimulationInput {
   remainingBacklog: number
@@ -44,14 +45,47 @@ export type VelocitySampler = () => number
 // ============================================================================
 
 /**
- * Create a velocity sampler for a parametric distribution type.
+ * Bounds for triangular/uniform distributions.
+ * Derived from mean ± stdDev (which equals V ± CV*V in subjective mode).
  */
-export function createSampler(distributionType: DistributionType, mean: number, stdDev: number): VelocitySampler {
+export interface DistributionBounds {
+  lower: number
+  mode: number
+  upper: number
+}
+
+/**
+ * Compute symmetric ±2 SD bounds, capped so the lower bound never goes negative.
+ * When 2*sd > mean, the half-width is capped at mean → bounds = [0, 2*mean].
+ */
+function defaultBounds(mean: number, stdDev: number): DistributionBounds {
+  const hw = Math.min(2 * stdDev, mean)
+  return { lower: mean - hw, mode: mean, upper: mean + hw }
+}
+
+/**
+ * Create a velocity sampler for a parametric distribution type.
+ * For triangular/uniform, bounds default to ±2 SD (symmetric, non-negative).
+ */
+export function createSampler(
+  distributionType: DistributionType,
+  mean: number,
+  stdDev: number,
+  bounds?: DistributionBounds
+): VelocitySampler {
   switch (distributionType) {
     case 'lognormal':
       return () => randomLognormalFromMeanStdDev(mean, stdDev)
     case 'gamma':
       return () => randomGammaFromMeanStdDev(mean, stdDev)
+    case 'triangular': {
+      const b = bounds ?? defaultBounds(mean, stdDev)
+      return () => randomTriangular(b.lower, b.mode, b.upper)
+    }
+    case 'uniform': {
+      const b = bounds ?? defaultBounds(mean, stdDev)
+      return () => randomUniform(b.lower, b.upper)
+    }
     case 'truncatedNormal':
     default:
       return () => randomTruncatedNormal(mean, stdDev, 0)
@@ -281,27 +315,43 @@ export interface SimulationContext {
 // ============================================================================
 
 /**
- * Quadruple simulation data structure (raw sprint counts from each distribution)
+ * Percentile results for all distributions (used by results table, summary, etc.)
+ */
+export interface QuadResults {
+  truncatedNormal: PercentileResults
+  lognormal: PercentileResults
+  gamma: PercentileResults
+  bootstrap: PercentileResults | null
+  triangular: PercentileResults
+  uniform: PercentileResults
+}
+
+/**
+ * Simulation data structure (raw sprint counts from each distribution)
  */
 export interface QuadSimulationData {
   truncatedNormal: number[]
   lognormal: number[]
   gamma: number[]
   bootstrap: number[] | null
+  triangular: number[]
+  uniform: number[]
 }
 
 /**
- * Quadruple custom percentile results
+ * Custom percentile results for all distributions
  */
 export interface QuadCustomResults {
   truncatedNormal: ForecastResult | null
   lognormal: ForecastResult | null
   gamma: ForecastResult | null
   bootstrap: ForecastResult | null
+  triangular: ForecastResult | null
+  uniform: ForecastResult | null
 }
 
 /**
- * Calculate custom percentile for all distributions in a quadruple forecast
+ * Calculate custom percentile for all distributions
  */
 export function calculateAllCustomPercentiles(
   data: QuadSimulationData,
@@ -316,6 +366,8 @@ export function calculateAllCustomPercentiles(
     bootstrap: data.bootstrap
       ? calculatePercentileResult(data.bootstrap, percentile, startDate, sprintCadenceWeeks)
       : null,
+    triangular: calculatePercentileResult(data.triangular, percentile, startDate, sprintCadenceWeeks),
+    uniform: calculatePercentileResult(data.uniform, percentile, startDate, sprintCadenceWeeks),
   }
 }
 
@@ -323,46 +375,34 @@ export function calculateAllCustomPercentiles(
 // Distribution sweep (R3 — single place to add new distributions)
 // ============================================================================
 
-/** The three parametric distribution types that always run */
-const PARAMETRIC_DISTRIBUTIONS: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma']
-
 /**
- * Run a callback for each parametric distribution + optional bootstrap.
- * Adding a new distribution requires only appending to PARAMETRIC_DISTRIBUTIONS.
+ * Run a callback for each distribution + optional bootstrap.
+ * All 6 parametric distributions always run; the UI layer filters which to display.
  */
 function runAllDistributions<T>(
   ctx: SimulationContext,
   runOne: (sampler: VelocitySampler) => T,
-): { truncatedNormal: T; lognormal: T; gamma: T; bootstrap: T | null } {
+): { truncatedNormal: T; lognormal: T; gamma: T; bootstrap: T | null; triangular: T; uniform: T } {
   const { config, historicalVelocities } = ctx
-  const [truncatedNormal, lognormal, gamma] = PARAMETRIC_DISTRIBUTIONS.map((dist) =>
-    runOne(createSampler(dist, config.velocityMean, config.velocityStdDev))
-  )
+  const { velocityMean: m, velocityStdDev: sd } = config
+  const bounds = defaultBounds(m, sd)
+
+  const truncatedNormal = runOne(createSampler('truncatedNormal', m, sd))
+  const lognormal = runOne(createSampler('lognormal', m, sd))
+  const gamma = runOne(createSampler('gamma', m, sd))
+  const triangular = runOne(createSampler('triangular', m, sd, bounds))
+  const uniform = runOne(createSampler('uniform', m, sd, bounds))
 
   let bootstrap: T | null = null
   if (historicalVelocities && historicalVelocities.length > 0) {
     bootstrap = runOne(createBootstrapSampler(historicalVelocities))
   }
 
-  return { truncatedNormal, lognormal, gamma, bootstrap }
+  return { truncatedNormal, lognormal, gamma, bootstrap, triangular, uniform }
 }
 
 /**
- * Helper to run a simulation for one distribution type and extract percentile results
- */
-function runDistributionSimulation(
-  baseInput: SimulationInput,
-  distributionType: DistributionType,
-  productivityFactors?: number[],
-  scopeGrowthPerSprint?: number
-): { results: PercentileResults; sprintsRequired: number[] } {
-  const sim = runSimulation({ ...baseInput, distributionType }, productivityFactors, scopeGrowthPerSprint)
-  const results = extractPercentileResults(sim.sprintsRequired, baseInput.startDate, baseInput.sprintCadenceWeeks)
-  return { results, sprintsRequired: sim.sprintsRequired }
-}
-
-/**
- * Run quadruple forecasts using truncated normal, lognormal, gamma, and bootstrap distributions.
+ * Run forecasts across all distributions (T-Normal, Lognormal, Gamma, Triangular, Uniform + Bootstrap).
  * Bootstrap is only included if historical velocities are provided.
  */
 export function runQuadrupleForecast(
@@ -375,6 +415,8 @@ export function runQuadrupleForecast(
   lognormal: { results: PercentileResults; sprintsRequired: number[] }
   gamma: { results: PercentileResults; sprintsRequired: number[] }
   bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null
+  triangular: { results: PercentileResults; sprintsRequired: number[] }
+  uniform: { results: PercentileResults; sprintsRequired: number[] }
 } {
   const ctx: SimulationContext = { config, historicalVelocities, productivityFactors, scopeGrowthPerSprint }
   const factors = productivityFactors && productivityFactors.length > 0 ? productivityFactors : undefined
@@ -401,20 +443,22 @@ export interface MilestoneDistributionResult {
 }
 
 /**
- * Full quadruple forecast result with milestone data
+ * Full forecast result with milestone data for all distributions
  */
 export interface QuadMilestoneForecastResult {
   truncatedNormal: MilestoneDistributionResult
   lognormal: MilestoneDistributionResult
   gamma: MilestoneDistributionResult
   bootstrap: MilestoneDistributionResult | null
+  triangular: MilestoneDistributionResult
+  uniform: MilestoneDistributionResult
 }
 
 /**
  * Milestone-aware simulation data (raw sprint counts per milestone per distribution)
  */
 export interface QuadMilestoneSimulationData {
-  /** milestoneData[milestoneIdx] = { truncatedNormal, lognormal, gamma, bootstrap } sorted arrays */
+  /** milestoneData[milestoneIdx] = sorted arrays per distribution */
   milestoneData: QuadSimulationData[]
 }
 

@@ -10,6 +10,8 @@ export type QuadForecastResult = {
   lognormal: { results: PercentileResults; sprintsRequired: number[] }
   gamma: { results: PercentileResults; sprintsRequired: number[] }
   bootstrap: { results: PercentileResults; sprintsRequired: number[] } | null
+  triangular: { results: PercentileResults; sprintsRequired: number[] }
+  uniform: { results: PercentileResults; sprintsRequired: number[] }
 }
 
 type WorkerResult = QuadForecastResult | QuadMilestoneForecastResult
