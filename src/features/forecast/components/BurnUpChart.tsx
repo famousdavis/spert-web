@@ -54,23 +54,7 @@ export function BurnUpChart({
     [sprints]
   )
 
-  // Find the top-most visible milestone to cap forecast lines
-  const topVisibleMilestoneThreshold = useMemo(() => {
-    if (milestones.length === 0 || cumulativeThresholds.length === 0) return null
-    const visibleMilestones = milestones
-      .map((m, idx) => ({ milestone: m, threshold: cumulativeThresholds[idx] }))
-      .filter(({ milestone: m }) => m.showOnChart !== false)
-    if (visibleMilestones.length === 0) return null
-    return Math.max(...visibleMilestones.map((v) => v.threshold))
-  }, [milestones, cumulativeThresholds])
-
-  // Effective forecast backlog: capped to top visible milestone when not all milestones are shown
-  const effectiveBacklog = useMemo(() => {
-    if (topVisibleMilestoneThreshold !== null && topVisibleMilestoneThreshold < forecastBacklog) {
-      return topVisibleMilestoneThreshold
-    }
-    return forecastBacklog
-  }, [forecastBacklog, topVisibleMilestoneThreshold])
+  // Scope line uses the user-entered backlog directly — milestones are independent reference lines
 
   // Milestone reference lines on Y-axis — show all visible milestones
   const milestoneRefLines = useMemo(() => {
@@ -92,14 +76,14 @@ export function BurnUpChart({
     () =>
       calculateBurnUpData({
         sprints,
-        forecastBacklog: effectiveBacklog,
+        forecastBacklog,
         simulationData,
         config,
         sprintCadenceWeeks,
         firstSprintStartDate,
         completedSprintCount,
       }),
-    [sprints, effectiveBacklog, simulationData, config, sprintCadenceWeeks, firstSprintStartDate, completedSprintCount]
+    [sprints, forecastBacklog, simulationData, config, sprintCadenceWeeks, firstSprintStartDate, completedSprintCount]
   )
 
   // Calculate Y-axis domain based on data
