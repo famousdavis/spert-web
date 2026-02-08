@@ -34,6 +34,7 @@ export function useChartSettings() {
 
   // Refs for copy-to-clipboard functionality
   const forecastInputsResultsRef = useRef<HTMLDivElement>(null)
+  const forecastResultsRef = useRef<HTMLDivElement>(null)
   const distributionChartRef = useRef<HTMLDivElement>(null)
   const histogramChartRef = useRef<HTMLDivElement>(null)
   const percentileSelectorRef = useRef<HTMLDivElement>(null)
@@ -49,6 +50,7 @@ export function useChartSettings() {
     histogramFontSize,
     setHistogramFontSize,
     forecastInputsResultsRef,
+    forecastResultsRef,
     distributionChartRef,
     histogramChartRef,
     percentileSelectorRef,

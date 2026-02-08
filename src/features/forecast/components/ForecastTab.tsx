@@ -66,6 +66,7 @@ export function ForecastTab() {
     histogramFontSize,
     setHistogramFontSize,
     forecastInputsResultsRef,
+    forecastResultsRef,
     distributionChartRef,
     histogramChartRef,
     percentileSelectorRef,
@@ -180,23 +181,31 @@ export function ForecastTab() {
                   velocityStdDev={velocityStdDev}
                   volatilityMultiplier={volatilityMultiplier}
                 />
-                <div className="mt-8">
-                  <ForecastResults
-                    results={results}
-                    forecastMode={forecastMode}
-                    completedSprintCount={completedSprintCount}
-                    onExport={handleExportCsv}
-                    milestones={milestones}
-                    milestoneResultsState={milestoneResultsState}
-                    cumulativeThresholds={cumulativeThresholds}
-                    unitOfMeasure={selectedProject.unitOfMeasure}
-                    effectiveMean={effectiveMean}
-                    effectiveStdDev={effectiveStdDev}
-                    velocityMean={velocityMean}
-                    velocityStdDev={velocityStdDev}
-                    selectedCV={selectedCV}
-                    volatilityMultiplier={volatilityMultiplier}
-                  />
+                <div className="mt-8 relative">
+                  <div ref={forecastResultsRef} className="bg-white dark:bg-gray-900">
+                    <ForecastResults
+                      results={results}
+                      forecastMode={forecastMode}
+                      completedSprintCount={completedSprintCount}
+                      onExport={handleExportCsv}
+                      milestones={milestones}
+                      milestoneResultsState={milestoneResultsState}
+                      cumulativeThresholds={cumulativeThresholds}
+                      unitOfMeasure={selectedProject.unitOfMeasure}
+                      effectiveMean={effectiveMean}
+                      effectiveStdDev={effectiveStdDev}
+                      velocityMean={velocityMean}
+                      velocityStdDev={velocityStdDev}
+                      selectedCV={selectedCV}
+                      volatilityMultiplier={volatilityMultiplier}
+                    />
+                  </div>
+                  <div className="absolute top-0 right-0">
+                    <CopyImageButton
+                      targetRef={forecastResultsRef}
+                      title="Copy results as image"
+                    />
+                  </div>
                 </div>
               </div>
             )}

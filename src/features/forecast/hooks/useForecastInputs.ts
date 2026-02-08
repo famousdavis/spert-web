@@ -2,14 +2,14 @@
 
 import { useMemo } from 'react'
 import { useProjectStore, selectViewingProject } from '@/shared/state/project-store'
-import type { VelocityStats, ForecastMode } from '@/shared/types'
+import type { VelocityStats, ForecastMode, Sprint } from '@/shared/types'
 import { DEFAULT_CV, DEFAULT_VOLATILITY_MULTIPLIER, MIN_SPRINTS_FOR_HISTORY } from '../constants'
 
 /**
  * Form state for the forecast: backlog, velocity overrides, subjective inputs,
  * and milestone-derived values. Persisted per project via the project store.
  */
-export function useForecastInputs(calculatedStats: VelocityStats, includedSprintCount: number) {
+export function useForecastInputs(calculatedStats: VelocityStats, includedSprintCount: number, sprints: Sprint[]) {
   const selectedProject = useProjectStore(selectViewingProject)
   const setForecastInput = useProjectStore((state) => state.setForecastInput)
   const forecastInputs = useProjectStore((state) =>
@@ -36,10 +36,11 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
     ? cumulativeThresholds[cumulativeThresholds.length - 1]
     : 0
 
-  // Form values
+  // Form values — pre-fill backlog from last sprint when user hasn't entered a value
+  const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
   const remainingBacklog = hasMilestones
     ? String(milestoneTotal)
-    : (forecastInputs?.remainingBacklog ?? '')
+    : (forecastInputs?.remainingBacklog ?? (lastSprintBacklog !== undefined ? String(lastSprintBacklog) : ''))
   const velocityMean = forecastInputs?.velocityMean ?? ''
   const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
 

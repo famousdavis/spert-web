@@ -100,7 +100,7 @@ export function useForecastState() {
 
   // Composed hooks
   const sprintData = useSprintData()
-  const inputs = useForecastInputs(sprintData.calculatedStats, sprintData.includedSprintCount)
+  const inputs = useForecastInputs(sprintData.calculatedStats, sprintData.includedSprintCount, sprintData.projectSprints)
   const charts = useChartSettings()
 
   // Forecast mode: auto-detect or user override
