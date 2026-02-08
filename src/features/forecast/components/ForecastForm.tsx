@@ -22,7 +22,6 @@ interface ForecastFormProps {
   effectiveMean: number
   effectiveStdDev: number
   unitOfMeasure: string
-  backlogReadOnly?: boolean // True when milestones control the backlog
   lastSprintBacklog?: number
   sprints: Sprint[]
   scopeChangeStats?: ScopeChangeStats | null
@@ -65,7 +64,6 @@ export function ForecastForm({
   effectiveMean,
   effectiveStdDev,
   unitOfMeasure,
-  backlogReadOnly = false,
   lastSprintBacklog,
   sprints,
   scopeChangeStats,
@@ -119,7 +117,7 @@ export function ForecastForm({
         {/* Remaining Backlog */}
         <div className="flex-[1.5_1_170px] min-w-[120px]">
           <label htmlFor="remainingBacklog" className={labelClass}>
-            Backlog {!backlogReadOnly && <span className="text-spert-error ml-0.5">*</span>}<span className="ml-auto text-xs font-normal italic text-spert-text-muted">{unitOfMeasure}</span>
+            Backlog <span className="text-spert-error ml-0.5">*</span><span className="ml-auto text-xs font-normal italic text-spert-text-muted">{unitOfMeasure}</span>
           </label>
           <input
             id="remainingBacklog"
@@ -129,24 +127,18 @@ export function ForecastForm({
             step="any"
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
-            readOnly={backlogReadOnly}
-            tabIndex={backlogReadOnly ? -1 : undefined}
             className={cn(
               'p-2 text-[0.9rem] rounded w-full dark:text-gray-100',
-              backlogReadOnly
-                ? 'border border-spert-border dark:border-gray-600 bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
-                : remainingBacklog
-                  ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
-                  : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
+              remainingBacklog
+                ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
+                : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
             )}
-            placeholder={backlogReadOnly ? '' : 'Required'}
+            placeholder="Required"
           />
           <p className={helperClass}>
-            {backlogReadOnly
-              ? 'From milestones'
-              : lastSprintBacklog !== undefined
-                ? `Last sprint: ${lastSprintBacklog.toLocaleString()}`
-                : '\u00A0'}
+            {lastSprintBacklog !== undefined
+              ? `Last sprint: ${lastSprintBacklog.toLocaleString()}`
+              : '\u00A0'}
           </p>
         </div>
 
