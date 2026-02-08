@@ -108,6 +108,7 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
     cumulativeThresholds,
     milestoneTotal,
     remainingBacklog,
+    lastSprintBacklog,
     velocityMean,
     velocityStdDev,
     effectiveMean,
