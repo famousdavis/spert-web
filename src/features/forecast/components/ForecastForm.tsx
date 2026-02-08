@@ -92,6 +92,7 @@ export function ForecastForm({
   const isSubjective = forecastMode === 'subjective'
   const estimateNum = Number(velocityEstimate) || 0
   const [adjusterOpen, setAdjusterOpen] = useState(false)
+  const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
   const isAdjusterActive = !isSubjective && adjusterOpen && calculatedStdDev > 0
 
   const handleToggleAdjuster = () => {
@@ -140,7 +141,11 @@ export function ForecastForm({
             placeholder={backlogReadOnly ? '' : 'Required'}
           />
           <p className={helperClass}>
-            {backlogReadOnly ? 'From milestones' : '\u00A0'}
+            {backlogReadOnly
+              ? 'From milestones'
+              : lastSprintBacklog !== undefined
+                ? `Last sprint: ${lastSprintBacklog.toLocaleString()}`
+                : '\u00A0'}
           </p>
         </div>
 
