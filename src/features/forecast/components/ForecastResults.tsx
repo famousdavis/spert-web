@@ -16,6 +16,12 @@ interface ForecastResultsProps {
   milestoneResultsState?: MilestoneResults | null
   cumulativeThresholds?: number[]
   unitOfMeasure?: string
+  effectiveMean?: number
+  effectiveStdDev?: number
+  velocityMean?: string
+  velocityStdDev?: string
+  selectedCV?: number
+  volatilityMultiplier?: number
 }
 
 interface DistColumn {
@@ -117,6 +123,56 @@ function ResultsTable({
   )
 }
 
+function round1(n: number): string {
+  return n % 1 === 0 ? n.toString() : n.toFixed(1)
+}
+
+function buildModeContext(
+  forecastMode: ForecastMode,
+  effectiveMean?: number,
+  effectiveStdDev?: number,
+  velocityMean?: string,
+  velocityStdDev?: string,
+  selectedCV?: number,
+  volatilityMultiplier?: number,
+): React.ReactNode | null {
+  if (effectiveMean === undefined || effectiveStdDev === undefined) return null
+
+  const mean = round1(effectiveMean)
+  const sd = round1(effectiveStdDev)
+
+  if (forecastMode === 'subjective') {
+    const cvPct = selectedCV !== undefined ? Math.round(selectedCV * 100) : 25
+    return (
+      <>
+        Forecast based on subjective estimate: mean <strong>{mean}</strong>,
+        CV <strong>{cvPct}%</strong> → SD <strong>{sd}</strong>.
+      </>
+    )
+  }
+
+  const hasOverrides = !!(velocityMean || velocityStdDev)
+
+  if (hasOverrides) {
+    return (
+      <>
+        Forecast based on sprint history with manual overrides: mean <strong>{mean}</strong>,
+        SD <strong>{sd}</strong>.
+      </>
+    )
+  }
+
+  const showMultiplier = volatilityMultiplier !== undefined && volatilityMultiplier !== 1
+
+  return (
+    <>
+      Forecast based on sprint history: mean <strong>{mean}</strong>,
+      SD <strong>{sd}</strong>
+      {showMultiplier && <> (×{volatilityMultiplier} volatility)</>}.
+    </>
+  )
+}
+
 export function ForecastResults({
   results,
   forecastMode,
@@ -126,8 +182,15 @@ export function ForecastResults({
   milestoneResultsState,
   cumulativeThresholds = [],
   unitOfMeasure = '',
+  effectiveMean,
+  effectiveStdDev,
+  velocityMean,
+  velocityStdDev,
+  selectedCV,
+  volatilityMultiplier,
 }: ForecastResultsProps) {
   const hasBootstrap = results.bootstrap !== null
+  const modeContext = buildModeContext(forecastMode, effectiveMean, effectiveStdDev, velocityMean, velocityStdDev, selectedCV, volatilityMultiplier)
   const columns = getDistributionColumns(forecastMode, hasBootstrap)
   const hasMilestones = milestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
 
@@ -188,6 +251,7 @@ export function ForecastResults({
 
       <div className="flex justify-between items-start">
         <div className="text-xs text-muted-foreground space-y-1">
+          {modeContext && <p>{modeContext}</p>}
           <p>
             P80 means there is an 80% chance of finishing by that date <em>or sooner</em>. Higher
             percentiles are more conservative.

@@ -44,14 +44,24 @@ const CHANGELOG: ChangelogEntry[] = [
         title: 'Engine',
         items: [
           'Six probability distributions (was 4): T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform',
+          'Triangular and Gamma shown in both History and Subjective modes',
+          'Triangular bounds widened to ±3 SD (was ±2 SD) — linear taper handles tail suppression naturally',
+          'Uniform stays at ±2 SD — equal weighting needs tighter bounds',
           'Sampler factory supports optional bounds for Triangular/Uniform',
           'Effective Std Dev applies volatility multiplier in History mode',
         ],
       },
       {
+        title: 'UX',
+        items: [
+          'Forecast summary shows data source context (sprint history, subjective judgment, or manual overrides)',
+          'Forecast results footer shows effective mean, SD, and CV values used in simulation',
+        ],
+      },
+      {
         title: 'Test Coverage',
         items: [
-          '386 tests passing (was 338)',
+          '387 tests passing (was 338)',
         ],
       },
     ],

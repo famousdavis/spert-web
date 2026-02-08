@@ -176,17 +176,28 @@ export function ForecastTab() {
                   modelScopeGrowth={modelScopeGrowth}
                   scopeGrowthMode={scopeGrowthMode}
                   scopeGrowthPerSprint={scopeGrowthPerSprint}
+                  velocityMean={velocityMean}
+                  velocityStdDev={velocityStdDev}
+                  volatilityMultiplier={volatilityMultiplier}
                 />
-                <ForecastResults
-                  results={results}
-                  forecastMode={forecastMode}
-                  completedSprintCount={completedSprintCount}
-                  onExport={handleExportCsv}
-                  milestones={milestones}
-                  milestoneResultsState={milestoneResultsState}
-                  cumulativeThresholds={cumulativeThresholds}
-                  unitOfMeasure={selectedProject.unitOfMeasure}
-                />
+                <div className="mt-8">
+                  <ForecastResults
+                    results={results}
+                    forecastMode={forecastMode}
+                    completedSprintCount={completedSprintCount}
+                    onExport={handleExportCsv}
+                    milestones={milestones}
+                    milestoneResultsState={milestoneResultsState}
+                    cumulativeThresholds={cumulativeThresholds}
+                    unitOfMeasure={selectedProject.unitOfMeasure}
+                    effectiveMean={effectiveMean}
+                    effectiveStdDev={effectiveStdDev}
+                    velocityMean={velocityMean}
+                    velocityStdDev={velocityStdDev}
+                    selectedCV={selectedCV}
+                    volatilityMultiplier={volatilityMultiplier}
+                  />
+                </div>
               </div>
             )}
           </div>
