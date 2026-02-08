@@ -65,7 +65,7 @@ export function buildSummaryText(
   scopeGrowthMode?: 'calculated' | 'custom'
 ): string {
   const absoluteSprint = sprintsRequired + completedSprintCount
-  let text = `There is a ${percentile}% chance that ${projectName} will finish the ${backlog.toLocaleString()} ${unitOfMeasure} backlog by Sprint ${absoluteSprint} (${formatDateLong(finishDate)}), using the ${distributionLabel} distribution.`
+  let text = `Using the ${distributionLabel} distribution, there is a ${percentile}% chance that ${projectName} will finish the ${backlog.toLocaleString()} ${unitOfMeasure} backlog by Sprint ${absoluteSprint} (${formatDateLong(finishDate)}).`
   if (modelScopeGrowth && scopeGrowthPerSprint !== undefined) {
     const sign = scopeGrowthPerSprint > 0 ? '+' : ''
     const source = scopeGrowthMode === 'custom' ? 'custom' : 'calculated'
