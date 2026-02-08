@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import type { ProductivityAdjustment } from '@/shared/types'
-import { formatDateCompact } from '@/shared/lib/dates'
+import { formatDate } from '@/shared/lib/dates'
 import { ListRowActions } from '@/shared/components/ListRowActions'
 
 interface ProductivityAdjustmentListProps {
@@ -78,7 +78,7 @@ export function ProductivityAdjustmentList({
                 </td>
                 <td className="p-2 font-medium">{adj.name}</td>
                 <td className="p-2 text-[0.8rem]">
-                  {formatDateCompact(adj.startDate)} – {formatDateCompact(adj.endDate)}
+                  {formatDate(adj.startDate)} – {formatDate(adj.endDate)}
                 </td>
                 <td className="p-2 text-center">
                   <span
