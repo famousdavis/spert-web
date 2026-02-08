@@ -212,11 +212,6 @@ export function ForecastTab() {
         </div>
       )}
 
-      {/* Productivity Adjustments - below inputs, set-and-forget */}
-      {selectedProject && (
-        <ProductivityAdjustments projectId={selectedProject.id} />
-      )}
-
       {hasResults && (
         <>
           {/* Custom Percentile */}
@@ -297,6 +292,11 @@ export function ForecastTab() {
             onMilestoneIndexChange={handleMilestoneIndexChange}
           />
         </>
+      )}
+
+      {/* Productivity Adjustments - bottom of page, set-and-forget */}
+      {selectedProject && (
+        <ProductivityAdjustments projectId={selectedProject.id} />
       )}
     </div>
   )
