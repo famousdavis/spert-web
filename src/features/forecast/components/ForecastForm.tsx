@@ -130,6 +130,7 @@ export function ForecastForm({
             value={remainingBacklog}
             onChange={(e) => onRemainingBacklogChange(e.target.value)}
             readOnly={backlogReadOnly}
+            tabIndex={backlogReadOnly ? -1 : undefined}
             className={cn(
               'p-2 text-[0.9rem] rounded w-full dark:text-gray-100',
               backlogReadOnly
@@ -162,7 +163,7 @@ export function ForecastForm({
             step="any"
             value={
               isSubjective
-                ? (estimateNum > 0 ? estimateNum.toFixed(1) : '')
+                ? (effectiveMean > 0 ? effectiveMean.toFixed(1) : '')
                 : velocityMean || (calculatedMean > 0 ? calculatedMean.toFixed(1) : '')
             }
             onChange={(e) => onVelocityMeanChange(e.target.value)}
@@ -199,7 +200,7 @@ export function ForecastForm({
               isAdjusterActive
                 ? effectiveStdDev.toFixed(1)
                 : isSubjective
-                  ? (estimateNum > 0 ? effectiveStdDev.toFixed(1) : '')
+                  ? (effectiveMean > 0 ? effectiveStdDev.toFixed(1) : '')
                   : velocityStdDev || (calculatedStdDev > 0 ? calculatedStdDev.toFixed(1) : '')
             }
             onChange={(e) => onVelocityStdDevChange(e.target.value)}
@@ -210,11 +211,11 @@ export function ForecastForm({
                 ? 'bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed'
                 : 'bg-white dark:bg-gray-700'
             )}
-            placeholder={isSubjective ? (estimateNum > 0 ? '' : 'From CV') : (calculatedStdDev > 0 ? '' : 'No data')}
+            placeholder={isSubjective ? (effectiveMean > 0 ? '' : 'From CV') : (calculatedStdDev > 0 ? '' : 'No data')}
           />
           <p className={helperClass}>
             {isSubjective
-              ? (estimateNum > 0 ? `From CV: ${effectiveStdDev.toFixed(1)}` : '\u00A0')
+              ? (effectiveMean > 0 ? `From CV: ${effectiveStdDev.toFixed(1)}` : '\u00A0')
               : isAdjusterActive && volatilityMultiplier !== DEFAULT_VOLATILITY_MULTIPLIER
                 ? `Adj: ${effectiveStdDev.toFixed(1)} (\u00D7${volatilityMultiplier})`
                 : calculatedStdDev > 0
@@ -252,6 +253,7 @@ export function ForecastForm({
             type="date"
             value={startDate}
             readOnly
+            tabIndex={-1}
             className="p-2 text-[0.9rem] border border-spert-border dark:border-gray-600 rounded w-[130px] bg-spert-bg-disabled dark:bg-gray-700 cursor-not-allowed text-spert-text dark:text-gray-100"
           />
           <p className={helperClass}>
@@ -310,6 +312,7 @@ export function ForecastForm({
           onVelocityEstimateChange={onVelocityEstimateChange}
           onCVChange={onCVChange}
           unitOfMeasure={unitOfMeasure}
+          calculatedMean={calculatedMean}
         />
       )}
 

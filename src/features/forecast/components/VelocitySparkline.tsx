@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 import {
   LineChart,
   Line,
@@ -34,6 +34,15 @@ export function VelocitySparkline({ sprints }: VelocitySparklineProps) {
     }
   }, [sprints])
 
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Remove SVG elements from tab order — Recharts SVGs are focusable by default
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.querySelectorAll('svg').forEach((svg) => svg.setAttribute('focusable', 'false'))
+  })
+
   if (data.length < 2) return null
 
   const velocities = data.map((d) => d.velocity)
@@ -42,7 +51,7 @@ export function VelocitySparkline({ sprints }: VelocitySparklineProps) {
   const padding = (max - min) * 0.2 || 1
 
   return (
-    <div className="rounded-md border border-border dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 py-1.5">
+    <div ref={containerRef} className="rounded-md border border-border dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 py-1.5" aria-hidden="true">
       <div className="flex items-center justify-between mb-0.5">
         <span className="text-[10px] font-medium text-spert-text-secondary dark:text-gray-300">
           Velocity trend
