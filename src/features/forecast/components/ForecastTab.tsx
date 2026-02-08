@@ -23,7 +23,6 @@ export function ForecastTab() {
     forecastStartDate,
     calculatedStats,
     milestones,
-    hasMilestones,
     cumulativeThresholds,
     forecastMode,
     setForecastMode,
@@ -134,7 +133,6 @@ export function ForecastTab() {
               effectiveMean={effectiveMean}
               effectiveStdDev={effectiveStdDev}
               unitOfMeasure={selectedProject.unitOfMeasure}
-              backlogReadOnly={hasMilestones}
               lastSprintBacklog={lastSprintBacklog}
               sprints={projectSprints}
               scopeChangeStats={scopeChangeStats}

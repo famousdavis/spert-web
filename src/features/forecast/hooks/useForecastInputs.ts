@@ -39,9 +39,7 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
   // Form values — pre-fill backlog from last sprint when user hasn't entered a value
   const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
   const storedBacklog = forecastInputs?.remainingBacklog
-  const remainingBacklog = hasMilestones
-    ? String(milestoneTotal)
-    : (storedBacklog || (lastSprintBacklog !== undefined ? String(lastSprintBacklog) : ''))
+  const remainingBacklog = storedBacklog || (lastSprintBacklog !== undefined ? String(lastSprintBacklog) : '')
   const velocityMean = forecastInputs?.velocityMean ?? ''
   const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
 
@@ -54,7 +52,7 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
   const volatilityMultiplier = forecastInputs?.volatilityMultiplier ?? DEFAULT_VOLATILITY_MULTIPLIER
 
   const setRemainingBacklog = (value: string) => {
-    if (selectedProject && !hasMilestones) setForecastInput(selectedProject.id, 'remainingBacklog', value)
+    if (selectedProject) setForecastInput(selectedProject.id, 'remainingBacklog', value)
   }
   const setVelocityMean = (value: string) => {
     if (selectedProject) setForecastInput(selectedProject.id, 'velocityMean', value)
