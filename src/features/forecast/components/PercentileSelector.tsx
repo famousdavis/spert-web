@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { formatDate } from '@/shared/lib/dates'
+import { getVisibleDistributions, DISTRIBUTION_LABELS, type DistributionType } from '../types'
 
 interface PercentileSelectorProps {
   percentile: number
@@ -29,28 +30,24 @@ interface DistCard {
   result: ForecastResult | null
 }
 
+const RESULT_PROP_MAP: Record<DistributionType, keyof PercentileSelectorProps> = {
+  truncatedNormal: 'truncatedNormalResult',
+  lognormal: 'lognormalResult',
+  gamma: 'gammaResult',
+  bootstrap: 'bootstrapResult',
+  triangular: 'triangularResult',
+  uniform: 'uniformResult',
+}
+
 function getDistCards(
   forecastMode: ForecastMode,
   props: PercentileSelectorProps
 ): DistCard[] {
-  if (forecastMode === 'subjective') {
-    return [
-      { label: 'T-Normal', result: props.truncatedNormalResult },
-      { label: 'Lognorm', result: props.lognormalResult },
-      { label: 'Gamma', result: props.gammaResult },
-      { label: 'Triangular', result: props.triangularResult },
-      { label: 'Uniform', result: props.uniformResult },
-    ]
-  }
-  const cards: DistCard[] = [
-    { label: 'T-Normal', result: props.truncatedNormalResult },
-    { label: 'Lognorm', result: props.lognormalResult },
-    { label: 'Gamma', result: props.gammaResult },
-  ]
-  if (props.bootstrapResult !== null) {
-    cards.push({ label: 'Bootstrap', result: props.bootstrapResult })
-  }
-  return cards
+  const hasBootstrap = props.bootstrapResult !== null
+  return getVisibleDistributions(forecastMode, hasBootstrap).map((key) => ({
+    label: DISTRIBUTION_LABELS[key],
+    result: props[RESULT_PROP_MAP[key]] as ForecastResult | null,
+  }))
 }
 
 export function PercentileSelector(props: PercentileSelectorProps) {
@@ -111,7 +108,11 @@ export function PercentileSelector(props: PercentileSelectorProps) {
       </div>
 
       {hasResults && (
-        <div className={`grid gap-4 sm:grid-cols-${cards.length}`}>
+        <div className={cn('grid gap-4', {
+          'sm:grid-cols-3': cards.length === 3,
+          'sm:grid-cols-4': cards.length === 4,
+          'sm:grid-cols-5': cards.length === 5,
+        })}>
           {cards.map((card, idx) => {
             const result = card.result!
             const isDiff = idx > 0 && baseResult && result.finishDate !== baseResult.finishDate

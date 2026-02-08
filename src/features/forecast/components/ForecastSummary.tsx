@@ -6,7 +6,7 @@ import { calculatePercentileResult, type PercentileResults, type QuadResults, ty
 import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDateLong } from '@/shared/lib/dates'
 import type { Milestone, ForecastMode } from '@/shared/types'
-import { type DistributionType, DISTRIBUTION_LABELS } from '../types'
+import { type DistributionType, DISTRIBUTION_LABELS, getVisibleDistributions } from '../types'
 
 interface ForecastSummaryProps {
   results: QuadResults
@@ -102,14 +102,10 @@ export function ForecastSummary({
   const [selectedDistribution, setSelectedDistribution] = useState<DistributionType>('truncatedNormal')
   const [selectedPercentile, setSelectedPercentile] = useState(80)
 
-  const distributionOptions = useMemo(() => {
-    if (forecastMode === 'subjective') {
-      return ['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'uniform'] as DistributionType[]
-    }
-    const options: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma']
-    if (hasBootstrap) options.push('bootstrap')
-    return options
-  }, [hasBootstrap, forecastMode])
+  const distributionOptions = useMemo(
+    () => getVisibleDistributions(forecastMode, hasBootstrap),
+    [hasBootstrap, forecastMode]
+  )
 
   // Get the result for the selected distribution and percentile
   const selectedResult = useMemo(() => {

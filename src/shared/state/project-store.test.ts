@@ -405,6 +405,47 @@ describe('forecastInputs', () => {
     const inputs = getForecastInputs('unknown')
     expect(inputs).toEqual({ remainingBacklog: '', velocityMean: '', velocityStdDev: '' })
   })
+
+  it('stores and retrieves forecastMode', () => {
+    const { setForecastInput, getForecastInputs } = useProjectStore.getState()
+    setForecastInput('proj-1', 'forecastMode', 'subjective')
+
+    const inputs = getForecastInputs('proj-1')
+    expect(inputs.forecastMode).toBe('subjective')
+  })
+
+  it('stores and retrieves velocityEstimate', () => {
+    const { setForecastInput, getForecastInputs } = useProjectStore.getState()
+    setForecastInput('proj-1', 'velocityEstimate', '45')
+
+    const inputs = getForecastInputs('proj-1')
+    expect(inputs.velocityEstimate).toBe('45')
+  })
+
+  it('stores and retrieves selectedCV', () => {
+    const { setForecastInput, getForecastInputs } = useProjectStore.getState()
+    setForecastInput('proj-1', 'selectedCV', 0.45)
+
+    const inputs = getForecastInputs('proj-1')
+    expect(inputs.selectedCV).toBe(0.45)
+  })
+
+  it('stores and retrieves volatilityMultiplier', () => {
+    const { setForecastInput, getForecastInputs } = useProjectStore.getState()
+    setForecastInput('proj-1', 'volatilityMultiplier', 1.5)
+
+    const inputs = getForecastInputs('proj-1')
+    expect(inputs.volatilityMultiplier).toBe(1.5)
+  })
+
+  it('keeps inputs independent across projects', () => {
+    const { setForecastInput, getForecastInputs } = useProjectStore.getState()
+    setForecastInput('proj-1', 'forecastMode', 'subjective')
+    setForecastInput('proj-2', 'forecastMode', 'history')
+
+    expect(getForecastInputs('proj-1').forecastMode).toBe('subjective')
+    expect(getForecastInputs('proj-2').forecastMode).toBe('history')
+  })
 })
 
 describe('burnUpConfig', () => {

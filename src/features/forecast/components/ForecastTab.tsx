@@ -26,7 +26,6 @@ export function ForecastTab() {
     hasMilestones,
     cumulativeThresholds,
     forecastMode,
-    canUseHistory,
     setForecastMode,
     includedSprintCount,
     remainingBacklog,
@@ -140,7 +139,6 @@ export function ForecastTab() {
               scopeGrowthMode={scopeGrowthMode}
               customScopeGrowth={customScopeGrowth}
               forecastMode={forecastMode}
-              canUseHistory={canUseHistory}
               includedSprintCount={includedSprintCount}
               velocityEstimate={velocityEstimate}
               selectedCV={selectedCV}
