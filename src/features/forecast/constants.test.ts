@@ -183,30 +183,31 @@ describe('getVisibleDistributions', () => {
     expect(dists).toHaveLength(5)
   })
 
-  it('returns 3 distributions in history mode without bootstrap', () => {
+  it('returns 4 distributions in history mode without bootstrap', () => {
     const dists = getVisibleDistributions('history', false)
-    expect(dists).toHaveLength(3)
-    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma'])
-  })
-
-  it('returns 4 distributions in history mode with bootstrap', () => {
-    const dists = getVisibleDistributions('history', true)
     expect(dists).toHaveLength(4)
-    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma', 'bootstrap'])
+    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma', 'triangular'])
   })
 
-  it('history mode never includes triangular or uniform', () => {
+  it('returns 5 distributions in history mode with bootstrap', () => {
     const dists = getVisibleDistributions('history', true)
-    expect(dists).not.toContain('triangular')
+    expect(dists).toHaveLength(5)
+    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'bootstrap'])
+  })
+
+  it('history mode never includes uniform', () => {
+    const dists = getVisibleDistributions('history', true)
+    expect(dists).toContain('triangular')
     expect(dists).not.toContain('uniform')
   })
 
-  it('both modes always include T-Normal, Lognormal, and Gamma', () => {
+  it('both modes always include T-Normal, Lognormal, Gamma, and Triangular', () => {
     for (const mode of ['history', 'subjective'] as const) {
       const dists = getVisibleDistributions(mode, false)
       expect(dists).toContain('truncatedNormal')
       expect(dists).toContain('lognormal')
       expect(dists).toContain('gamma')
+      expect(dists).toContain('triangular')
     }
   })
 })

@@ -189,14 +189,12 @@ export function HistogramChart({
                     opacity={0.8}
                   />
                 )}
-                {isSubjective && (
-                  <Bar
-                    dataKey="triangular"
-                    name="Triangular"
-                    fill={CHART_COLORS.triangular}
-                    opacity={0.8}
-                  />
-                )}
+                <Bar
+                  dataKey="triangular"
+                  name="Triangular"
+                  fill={CHART_COLORS.triangular}
+                  opacity={0.8}
+                />
                 {isSubjective && (
                   <Bar
                     dataKey="uniform"

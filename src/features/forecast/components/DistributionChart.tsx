@@ -202,16 +202,14 @@ export function DistributionChart({
                   strokeWidth={2.5}
                 />
               )}
-              {isSubjective && (
-                <Line
-                  type="stepAfter"
-                  dataKey="triangular"
-                  name="Triangular"
-                  stroke={CHART_COLORS.triangular}
-                  dot={false}
-                  strokeWidth={2.5}
-                />
-              )}
+              <Line
+                type="stepAfter"
+                dataKey="triangular"
+                name="Triangular"
+                stroke={CHART_COLORS.triangular}
+                dot={false}
+                strokeWidth={2.5}
+              />
               {isSubjective && (
                 <Line
                   type="stepAfter"
