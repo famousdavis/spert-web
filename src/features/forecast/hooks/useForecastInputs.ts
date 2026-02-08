@@ -38,9 +38,10 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
 
   // Form values — pre-fill backlog from last sprint when user hasn't entered a value
   const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
+  const storedBacklog = forecastInputs?.remainingBacklog
   const remainingBacklog = hasMilestones
     ? String(milestoneTotal)
-    : (forecastInputs?.remainingBacklog ?? (lastSprintBacklog !== undefined ? String(lastSprintBacklog) : ''))
+    : (storedBacklog || (lastSprintBacklog !== undefined ? String(lastSprintBacklog) : ''))
   const velocityMean = forecastInputs?.velocityMean ?? ''
   const velocityStdDev = forecastInputs?.velocityStdDev ?? ''
 
