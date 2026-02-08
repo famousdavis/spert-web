@@ -46,7 +46,7 @@ export type VelocitySampler = () => number
 
 /**
  * Bounds for triangular/uniform distributions.
- * Derived from mean ± stdDev (which equals V ± CV*V in subjective mode).
+ * Triangular uses ±3 SD; Uniform uses ±2 SD.
  */
 export interface DistributionBounds {
   lower: number
@@ -55,17 +55,35 @@ export interface DistributionBounds {
 }
 
 /**
- * Compute symmetric ±2 SD bounds, capped so the lower bound never goes negative.
- * When 2*sd > mean, the half-width is capped at mean → bounds = [0, 2*mean].
+ * Compute symmetric bounds capped so the lower bound never goes negative.
+ * When multiplier*sd > mean, the half-width is capped at mean → bounds = [0, 2*mean].
  */
-function defaultBounds(mean: number, stdDev: number): DistributionBounds {
-  const hw = Math.min(2 * stdDev, mean)
+function computeBounds(mean: number, stdDev: number, sdMultiplier: number): DistributionBounds {
+  const hw = Math.min(sdMultiplier * stdDev, mean)
   return { lower: mean - hw, mode: mean, upper: mean + hw }
 }
 
 /**
+ * Triangular bounds: ±3 SD.
+ * The distribution's linear taper already suppresses values near the edges,
+ * so wider bounds avoid double-penalising the tails.
+ */
+function triangularBounds(mean: number, stdDev: number): DistributionBounds {
+  return computeBounds(mean, stdDev, 3)
+}
+
+/**
+ * Uniform bounds: ±2 SD.
+ * Uniform gives equal weight across the range, so tighter bounds
+ * prevent overweighting extreme values.
+ */
+function uniformBounds(mean: number, stdDev: number): DistributionBounds {
+  return computeBounds(mean, stdDev, 2)
+}
+
+/**
  * Create a velocity sampler for a parametric distribution type.
- * For triangular/uniform, bounds default to ±2 SD (symmetric, non-negative).
+ * Triangular defaults to ±3 SD bounds; Uniform defaults to ±2 SD bounds.
  */
 export function createSampler(
   distributionType: DistributionType,
@@ -79,11 +97,11 @@ export function createSampler(
     case 'gamma':
       return () => randomGammaFromMeanStdDev(mean, stdDev)
     case 'triangular': {
-      const b = bounds ?? defaultBounds(mean, stdDev)
+      const b = bounds ?? triangularBounds(mean, stdDev)
       return () => randomTriangular(b.lower, b.mode, b.upper)
     }
     case 'uniform': {
-      const b = bounds ?? defaultBounds(mean, stdDev)
+      const b = bounds ?? uniformBounds(mean, stdDev)
       return () => randomUniform(b.lower, b.upper)
     }
     case 'truncatedNormal':
@@ -385,13 +403,14 @@ function runAllDistributions<T>(
 ): { truncatedNormal: T; lognormal: T; gamma: T; bootstrap: T | null; triangular: T; uniform: T } {
   const { config, historicalVelocities } = ctx
   const { velocityMean: m, velocityStdDev: sd } = config
-  const bounds = defaultBounds(m, sd)
+  const triBounds = triangularBounds(m, sd)
+  const uniBounds = uniformBounds(m, sd)
 
   const truncatedNormal = runOne(createSampler('truncatedNormal', m, sd))
   const lognormal = runOne(createSampler('lognormal', m, sd))
   const gamma = runOne(createSampler('gamma', m, sd))
-  const triangular = runOne(createSampler('triangular', m, sd, bounds))
-  const uniform = runOne(createSampler('uniform', m, sd, bounds))
+  const triangular = runOne(createSampler('triangular', m, sd, triBounds))
+  const uniform = runOne(createSampler('uniform', m, sd, uniBounds))
 
   let bootstrap: T | null = null
   if (historicalVelocities && historicalVelocities.length > 0) {
