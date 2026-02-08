@@ -54,8 +54,6 @@ export function BurnUpChart({
     [sprints]
   )
 
-  const scopeHidden = config.showScopeLine === false
-
   // Find the top-most visible milestone to cap forecast lines
   const topVisibleMilestoneThreshold = useMemo(() => {
     if (milestones.length === 0 || cumulativeThresholds.length === 0) return null
@@ -74,14 +72,10 @@ export function BurnUpChart({
     return forecastBacklog
   }, [forecastBacklog, topVisibleMilestoneThreshold])
 
-  // Milestone reference lines on Y-axis
+  // Milestone reference lines on Y-axis — show all visible milestones
   const milestoneRefLines = useMemo(() => {
     if (milestones.length === 0 || cumulativeThresholds.length === 0) return []
-    // When scope is shown: exclude last milestone (it equals the scope line)
-    // When scope is hidden: include all visible milestones (last one becomes the ceiling)
-    const candidates = scopeHidden ? milestones : milestones.slice(0, -1)
-    if (candidates.length === 0) return []
-    return candidates
+    return milestones
       .filter((m) => m.showOnChart !== false)
       .map((m) => {
         const idx = milestones.indexOf(m)
@@ -92,7 +86,7 @@ export function BurnUpChart({
           yValue: totalDone + cumulativeThresholds[idx],
         }
       })
-  }, [milestones, cumulativeThresholds, totalDone, scopeHidden])
+  }, [milestones, cumulativeThresholds, totalDone])
 
   const chartData = useMemo(
     () =>
