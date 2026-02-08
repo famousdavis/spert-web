@@ -329,8 +329,9 @@ describe('edge cases', () => {
     }
   })
 
-  it('triangular sampler preserves mean when 2*sd > mean (symmetric bounds)', () => {
-    // mean=10, sd=8 → bounds = [0, 20], triangular mean = (0+10+20)/3 = 10
+  it('triangular sampler preserves mean when 3*sd > mean (capped bounds)', () => {
+    // mean=10, sd=8 → 3*sd=24 > mean=10 → hw capped at 10 → bounds = [0, 20]
+    // triangular mean = (0+10+20)/3 = 10
     const sampler = createSampler('triangular', 10, 8)
     let sum = 0
     const n = 50000
@@ -338,6 +339,25 @@ describe('edge cases', () => {
     const sampleMean = sum / n
     expect(sampleMean).toBeGreaterThan(9)
     expect(sampleMean).toBeLessThan(11)
+  })
+
+  it('triangular uses ±3 SD bounds (wider than uniform ±2 SD)', () => {
+    // mean=30, sd=5 → triangular: 3*sd=15 → bounds = [15, 45]
+    //                  uniform:    2*sd=10 → bounds = [20, 40]
+    const triSampler = createSampler('triangular', 30, 5)
+    const uniSampler = createSampler('uniform', 30, 5)
+    let triMin = Infinity, triMax = -Infinity
+    let uniMin = Infinity, uniMax = -Infinity
+    for (let i = 0; i < 5000; i++) {
+      const tv = triSampler(); triMin = Math.min(triMin, tv); triMax = Math.max(triMax, tv)
+      const uv = uniSampler(); uniMin = Math.min(uniMin, uv); uniMax = Math.max(uniMax, uv)
+    }
+    // Triangular should reach values below 20 and above 40 (uniform's bounds)
+    expect(triMin).toBeLessThan(20)
+    expect(triMax).toBeGreaterThan(40)
+    // Uniform should stay within [20, 40]
+    expect(uniMin).toBeGreaterThanOrEqual(20)
+    expect(uniMax).toBeLessThanOrEqual(40)
   })
 
   it('uniform bounds are symmetric when 2*sd <= mean', () => {
