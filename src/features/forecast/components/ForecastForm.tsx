@@ -23,6 +23,7 @@ interface ForecastFormProps {
   effectiveStdDev: number
   unitOfMeasure: string
   backlogReadOnly?: boolean // True when milestones control the backlog
+  lastSprintBacklog?: number
   sprints: Sprint[]
   scopeChangeStats?: ScopeChangeStats | null
   modelScopeGrowth: boolean
@@ -65,6 +66,7 @@ export function ForecastForm({
   effectiveStdDev,
   unitOfMeasure,
   backlogReadOnly = false,
+  lastSprintBacklog,
   sprints,
   scopeChangeStats,
   modelScopeGrowth,
@@ -90,9 +92,7 @@ export function ForecastForm({
   isSimulating,
 }: ForecastFormProps) {
   const isSubjective = forecastMode === 'subjective'
-  const estimateNum = Number(velocityEstimate) || 0
   const [adjusterOpen, setAdjusterOpen] = useState(false)
-  const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
   const isAdjusterActive = !isSubjective && adjusterOpen && calculatedStdDev > 0
 
   const handleToggleAdjuster = () => {

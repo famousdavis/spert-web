@@ -28,6 +28,7 @@ export function ForecastTab() {
     forecastMode,
     setForecastMode,
     includedSprintCount,
+    lastSprintBacklog,
     remainingBacklog,
     velocityMean,
     velocityStdDev,
@@ -134,6 +135,7 @@ export function ForecastTab() {
               effectiveStdDev={effectiveStdDev}
               unitOfMeasure={selectedProject.unitOfMeasure}
               backlogReadOnly={hasMilestones}
+              lastSprintBacklog={lastSprintBacklog}
               sprints={projectSprints}
               scopeChangeStats={scopeChangeStats}
               modelScopeGrowth={modelScopeGrowth}

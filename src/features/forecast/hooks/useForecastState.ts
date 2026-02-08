@@ -379,6 +379,7 @@ export function useForecastState() {
     setForecastMode: inputs.setForecastMode,
 
     // Form state (from useForecastInputs)
+    lastSprintBacklog: inputs.lastSprintBacklog,
     remainingBacklog: inputs.remainingBacklog,
     velocityMean: inputs.velocityMean,
     velocityStdDev: inputs.velocityStdDev,
