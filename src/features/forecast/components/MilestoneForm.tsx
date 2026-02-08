@@ -104,20 +104,47 @@ export function MilestoneForm({
         </div>
 
         {/* Color */}
-        <div className="flex-[0_0_80px]">
-          <label
-            htmlFor="milestoneColor"
-            className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
-          >
+        <div className="flex-[0_0_auto]">
+          <span className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary">
             Color
-          </label>
-          <input
-            id="milestoneColor"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="h-[34px] w-full cursor-pointer rounded border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700 p-0.5"
-          />
+          </span>
+          <div className="flex items-center gap-1.5 h-[34px]">
+            {DEFAULT_MILESTONE_COLORS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setColor(preset)}
+                className={cn(
+                  'size-7 rounded-full cursor-pointer border-2 transition-[border-color,box-shadow] duration-150',
+                  color === preset
+                    ? 'border-gray-800 dark:border-white shadow-[0_0_0_1px_rgba(0,0,0,0.15)]'
+                    : 'border-transparent hover:border-gray-400 dark:hover:border-gray-500'
+                )}
+                style={{ backgroundColor: preset }}
+                title={preset}
+              />
+            ))}
+            <label
+              className={cn(
+                'relative size-7 rounded-full cursor-pointer border-2 overflow-hidden transition-[border-color,box-shadow] duration-150',
+                !DEFAULT_MILESTONE_COLORS.includes(color as typeof DEFAULT_MILESTONE_COLORS[number])
+                  ? 'border-gray-800 dark:border-white shadow-[0_0_0_1px_rgba(0,0,0,0.15)]'
+                  : 'border-transparent hover:border-gray-400 dark:hover:border-gray-500'
+              )}
+              style={{ backgroundColor: color }}
+              title="Custom color"
+            >
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+                +
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 
