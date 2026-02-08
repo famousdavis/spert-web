@@ -9,6 +9,7 @@ interface SubjectiveInputsProps {
   onVelocityEstimateChange: (value: string) => void
   onCVChange: (cv: number) => void
   unitOfMeasure: string
+  calculatedMean?: number
 }
 
 export function SubjectiveInputs({
@@ -17,8 +18,10 @@ export function SubjectiveInputs({
   onVelocityEstimateChange,
   onCVChange,
   unitOfMeasure,
+  calculatedMean = 0,
 }: SubjectiveInputsProps) {
-  const estimateNum = Number(velocityEstimate) || 0
+  // Use estimate if provided, otherwise fall back to calculated mean for range previews
+  const estimateNum = Number(velocityEstimate) || calculatedMean
 
   return (
     <div className="mt-3 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 p-3">
@@ -43,7 +46,7 @@ export function SubjectiveInputs({
                 ? 'border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700'
                 : 'border-2 border-spert-blue bg-spert-bg-highlight dark:bg-blue-900/30'
             )}
-            placeholder="e.g. 30"
+            placeholder={calculatedMean > 0 ? `Calc: ${calculatedMean.toFixed(1)}` : 'e.g. 30'}
           />
         </div>
 

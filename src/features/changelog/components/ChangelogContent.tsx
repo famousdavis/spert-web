@@ -56,6 +56,9 @@ const CHANGELOG: ChangelogEntry[] = [
         items: [
           'Forecast summary shows data source context (sprint history, subjective judgment, or manual overrides)',
           'Forecast results footer shows effective mean, SD, and CV values used in simulation',
+          'Last sprint backlog shown under Backlog field as helper text',
+          'Subjective mode pre-seeds velocity from calculated history when available',
+          'Tab order skips read-only fields (Start Date, milestone-controlled Backlog) and decorative elements (sparkline chart)',
         ],
       },
       {
