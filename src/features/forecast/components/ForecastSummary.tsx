@@ -25,6 +25,9 @@ interface ForecastSummaryProps {
   modelScopeGrowth?: boolean
   scopeGrowthMode?: 'calculated' | 'custom'
   scopeGrowthPerSprint?: number
+  velocityMean?: string
+  velocityStdDev?: string
+  volatilityMultiplier?: number
 }
 
 const PERCENTILE_OPTIONS = [50, 60, 70, 80, 85, 90, 95] as const
@@ -98,6 +101,9 @@ export function ForecastSummary({
   modelScopeGrowth,
   scopeGrowthMode,
   scopeGrowthPerSprint,
+  velocityMean,
+  velocityStdDev,
+  volatilityMultiplier,
 }: ForecastSummaryProps) {
   const [selectedDistribution, setSelectedDistribution] = useState<DistributionType>('truncatedNormal')
   const [selectedPercentile, setSelectedPercentile] = useState(80)
@@ -212,6 +218,15 @@ export function ForecastSummary({
       </div>
       <p className="text-sm text-spert-text dark:text-gray-200 leading-relaxed">
         {summaryText}
+      </p>
+      <p className="text-xs text-spert-text-muted dark:text-gray-400 mt-1 italic">
+        {forecastMode === 'subjective'
+          ? 'Based on subjective judgment.'
+          : velocityMean || velocityStdDev
+            ? 'Based on sprint history with manual overrides.'
+            : volatilityMultiplier !== undefined && volatilityMultiplier !== 1
+              ? `Based on sprint history (×${volatilityMultiplier} volatility).`
+              : 'Based on sprint history.'}
       </p>
       {milestoneTexts.length > 0 && (
         <div className="mt-2 pl-3 border-l-2 border-blue-200 dark:border-blue-700">
