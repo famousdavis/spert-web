@@ -2,7 +2,10 @@
 
 import type { BurnUpConfig, DistributionType, ForecastLineConfig, ChartFontSize } from '../types'
 import { DISTRIBUTION_LABELS, CHART_FONT_SIZE_LABELS } from '../types'
-import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
+// Slider-specific range: step by 5 from 5–95 for easier thumb control
+const SLIDER_MIN = 5
+const SLIDER_MAX = 95
+const SLIDER_STEP = 5
 
 const FONT_SIZES: ChartFontSize[] = ['small', 'medium', 'large']
 
@@ -143,8 +146,9 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
       {/* Percentile slider */}
       <input
         type="range"
-        min={MIN_PERCENTILE}
-        max={MAX_PERCENTILE}
+        min={SLIDER_MIN}
+        max={SLIDER_MAX}
+        step={SLIDER_STEP}
         value={line.percentile}
         onChange={(e) => onChange({ percentile: Number(e.target.value) })}
         className="w-[60px] cursor-pointer"

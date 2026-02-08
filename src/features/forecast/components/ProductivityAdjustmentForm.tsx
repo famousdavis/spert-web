@@ -114,8 +114,17 @@ export function ProductivityAdjustmentForm({
             type="date"
             value={startDate}
             onChange={(e) => {
-              setStartDate(e.target.value)
+              const newStart = e.target.value
+              setStartDate(newStart)
               setStartDateError('')
+              // Auto-seed end date to start + 1 day when empty or before the new start
+              if (newStart && (!endDate || endDate < newStart)) {
+                const next = new Date(newStart + 'T00:00:00')
+                next.setDate(next.getDate() + 1)
+                const nextStr = next.toISOString().slice(0, 10)
+                setEndDate(nextStr)
+                setEndDateError('')
+              }
             }}
             onBlur={validateStartDate}
             min="2000-01-01"
