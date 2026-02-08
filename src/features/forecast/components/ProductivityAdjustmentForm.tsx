@@ -78,7 +78,7 @@ export function ProductivityAdjustmentForm({
       {/* Single row: All inputs */}
       <div className="flex flex-wrap items-start gap-3">
         {/* Name */}
-        <div className="min-w-[150px] flex-[2_1_180px]">
+        <div className="min-w-[120px] flex-[1_1_140px]">
           <label
             htmlFor="adjName"
             className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
@@ -207,7 +207,7 @@ export function ProductivityAdjustmentForm({
         </div>
 
         {/* Memo */}
-        <div className="min-w-[60px] flex-[0_0_80px]">
+        <div className="min-w-[80px] flex-[2_1_160px]">
           <label
             htmlFor="adjReason"
             className="mb-1 block text-[0.8rem] font-semibold text-spert-text-secondary"
