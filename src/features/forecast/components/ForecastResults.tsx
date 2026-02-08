@@ -205,7 +205,8 @@ export function ForecastResults({
               <>
                 <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
                 <strong>Lognorm</strong>: right-skewed.{' '}
-                <strong>Gamma</strong>: flexible shape.
+                <strong>Gamma</strong>: flexible shape.{' '}
+                <strong>Triangular</strong>: peak at mean.
                 {hasBootstrap && (
                   <>
                     {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).

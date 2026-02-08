@@ -18,8 +18,9 @@ import type { ForecastMode } from '@/shared/types'
 /**
  * Returns the list of distributions to display for a given forecast mode.
  *
- * Subjective: T-Normal, Lognorm, Gamma, Triangular, Uniform (5)
- * History:    T-Normal, Lognorm, Gamma, + Bootstrap if available (3-4)
+ * Both modes share: T-Normal, Lognorm, Gamma, Triangular (4 common)
+ * Subjective adds: Uniform (5 total — no Bootstrap without history)
+ * History adds:    Bootstrap if 5+ sprints (4-5 total — no Uniform)
  */
 export function getVisibleDistributions(
   forecastMode: ForecastMode,
@@ -28,7 +29,7 @@ export function getVisibleDistributions(
   if (forecastMode === 'subjective') {
     return ['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'uniform']
   }
-  const dists: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma']
+  const dists: DistributionType[] = ['truncatedNormal', 'lognormal', 'gamma', 'triangular']
   if (hasBootstrap) dists.push('bootstrap')
   return dists
 }
