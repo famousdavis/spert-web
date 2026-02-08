@@ -6,7 +6,6 @@ import type { ForecastMode } from '@/shared/types'
 interface ForecastModeToggleProps {
   mode: ForecastMode
   onModeChange: (mode: ForecastMode) => void
-  canUseHistory: boolean
   includedSprintCount: number
   calculatedStdDev: number
 }

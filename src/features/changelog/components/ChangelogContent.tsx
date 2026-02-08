@@ -51,7 +51,7 @@ const CHANGELOG: ChangelogEntry[] = [
       {
         title: 'Test Coverage',
         items: [
-          '363 tests passing (was 338)',
+          '386 tests passing (was 338)',
         ],
       },
     ],

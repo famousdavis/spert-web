@@ -376,7 +376,6 @@ export function useForecastState() {
 
     // Forecast mode
     forecastMode: effectiveForecastMode,
-    canUseHistory,
     setForecastMode: inputs.setForecastMode,
 
     // Form state (from useForecastInputs)

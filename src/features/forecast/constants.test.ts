@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getRoundingIncrement, roundToNearest, roundRange, VOLATILITY_OPTIONS, DEFAULT_VOLATILITY_MULTIPLIER } from './constants'
+import { getRoundingIncrement, roundToNearest, roundRange, VOLATILITY_OPTIONS, DEFAULT_VOLATILITY_MULTIPLIER, CV_OPTIONS, DEFAULT_CV } from './constants'
+import { getVisibleDistributions } from './types'
 
 describe('getRoundingIncrement', () => {
   it('returns 2 for velocity < 50', () => {
@@ -125,5 +126,87 @@ describe('VOLATILITY_OPTIONS', () => {
 describe('DEFAULT_VOLATILITY_MULTIPLIER', () => {
   it('equals 1.0', () => {
     expect(DEFAULT_VOLATILITY_MULTIPLIER).toBe(1.0)
+  })
+})
+
+describe('CV_OPTIONS', () => {
+  it('has 6 options', () => {
+    expect(CV_OPTIONS).toHaveLength(6)
+  })
+
+  it('CVs are in ascending order', () => {
+    for (let i = 1; i < CV_OPTIONS.length; i++) {
+      expect(CV_OPTIONS[i].cv).toBeGreaterThan(CV_OPTIONS[i - 1].cv)
+    }
+  })
+
+  it('has correct boundary CV values', () => {
+    expect(CV_OPTIONS[0].cv).toBe(0.15)
+    expect(CV_OPTIONS[CV_OPTIONS.length - 1].cv).toBe(0.65)
+  })
+
+  it('all labels are non-empty', () => {
+    for (const opt of CV_OPTIONS) {
+      expect(opt.label.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('includes steady and uncertain extremes', () => {
+    const labels = CV_OPTIONS.map((o) => o.label)
+    expect(labels[0]).toBe('Very steady')
+    expect(labels[labels.length - 1]).toBe('Wildly uncertain')
+  })
+})
+
+describe('DEFAULT_CV', () => {
+  it('equals 0.35 (Somewhat variable)', () => {
+    expect(DEFAULT_CV).toBe(0.35)
+  })
+
+  it('matches a valid CV_OPTIONS entry', () => {
+    const match = CV_OPTIONS.find((o) => o.cv === DEFAULT_CV)
+    expect(match).toBeDefined()
+    expect(match!.label).toBe('Somewhat variable')
+  })
+})
+
+describe('getVisibleDistributions', () => {
+  it('returns 5 distributions in subjective mode', () => {
+    const dists = getVisibleDistributions('subjective', false)
+    expect(dists).toHaveLength(5)
+    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma', 'triangular', 'uniform'])
+  })
+
+  it('subjective mode never includes bootstrap regardless of hasBootstrap', () => {
+    const dists = getVisibleDistributions('subjective', true)
+    expect(dists).not.toContain('bootstrap')
+    expect(dists).toHaveLength(5)
+  })
+
+  it('returns 3 distributions in history mode without bootstrap', () => {
+    const dists = getVisibleDistributions('history', false)
+    expect(dists).toHaveLength(3)
+    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma'])
+  })
+
+  it('returns 4 distributions in history mode with bootstrap', () => {
+    const dists = getVisibleDistributions('history', true)
+    expect(dists).toHaveLength(4)
+    expect(dists).toEqual(['truncatedNormal', 'lognormal', 'gamma', 'bootstrap'])
+  })
+
+  it('history mode never includes triangular or uniform', () => {
+    const dists = getVisibleDistributions('history', true)
+    expect(dists).not.toContain('triangular')
+    expect(dists).not.toContain('uniform')
+  })
+
+  it('both modes always include T-Normal, Lognormal, and Gamma', () => {
+    for (const mode of ['history', 'subjective'] as const) {
+      const dists = getVisibleDistributions(mode, false)
+      expect(dists).toContain('truncatedNormal')
+      expect(dists).toContain('lognormal')
+      expect(dists).toContain('gamma')
+    }
   })
 })

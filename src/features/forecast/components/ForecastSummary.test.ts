@@ -105,6 +105,29 @@ describe('buildSummaryText', () => {
     )
     expect(text).toContain('12,500')
   })
+
+  it('works with all distribution labels', () => {
+    const labels = ['T-Normal', 'Lognorm', 'Gamma', 'Bootstrap', 'Triangular', 'Uniform']
+    for (const label of labels) {
+      const text = buildSummaryText('P', 100, 'pts', 80, 10, '2026-05-01', 0, label)
+      expect(text).toContain(label)
+    }
+  })
+
+  it('handles completedSprintCount = 0', () => {
+    const text = buildSummaryText('P', 50, 'pts', 80, 5, '2026-03-01', 0, 'T-Normal')
+    expect(text).toContain('Sprint 5')
+  })
+
+  it('handles sprintsRequired = 0', () => {
+    const text = buildSummaryText('P', 0, 'pts', 80, 0, '2026-03-01', 3, 'T-Normal')
+    expect(text).toContain('Sprint 3')
+  })
+
+  it('formats date across year boundary', () => {
+    const text = buildSummaryText('P', 100, 'pts', 80, 10, '2027-01-15', 0, 'T-Normal')
+    expect(text).toContain('January 15, 2027')
+  })
 })
 
 describe('buildMilestoneSummaryText', () => {
@@ -126,5 +149,16 @@ describe('buildMilestoneSummaryText', () => {
       0
     )
     expect(text).toBe('Beta Release: Sprint 12 (June 1, 2026)')
+  })
+
+  it('handles milestone names with special characters', () => {
+    const text = buildMilestoneSummaryText(
+      'Release v2.0 (GA)',
+      10,
+      '2026-07-15',
+      5
+    )
+    expect(text).toContain('Release v2.0 (GA)')
+    expect(text).toContain('Sprint 15')
   })
 })

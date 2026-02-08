@@ -5,6 +5,7 @@ import type { PercentileResults, QuadResults } from '../lib/monte-carlo'
 import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDate } from '@/shared/lib/dates'
 import type { Milestone, ForecastMode } from '@/shared/types'
+import { getVisibleDistributions, DISTRIBUTION_LABELS } from '../types'
 
 interface ForecastResultsProps {
   results: QuadResults
@@ -23,22 +24,10 @@ interface DistColumn {
 }
 
 function getDistributionColumns(forecastMode: ForecastMode, hasBootstrap: boolean): DistColumn[] {
-  if (forecastMode === 'subjective') {
-    return [
-      { key: 'truncatedNormal', label: 'T-Normal' },
-      { key: 'lognormal', label: 'Lognorm' },
-      { key: 'gamma', label: 'Gamma' },
-      { key: 'triangular', label: 'Triangular' },
-      { key: 'uniform', label: 'Uniform' },
-    ]
-  }
-  const cols: DistColumn[] = [
-    { key: 'truncatedNormal', label: 'T-Normal' },
-    { key: 'lognormal', label: 'Lognorm' },
-    { key: 'gamma', label: 'Gamma' },
-  ]
-  if (hasBootstrap) cols.push({ key: 'bootstrap', label: 'Bootstrap' })
-  return cols
+  return getVisibleDistributions(forecastMode, hasBootstrap).map((key) => ({
+    key,
+    label: DISTRIBUTION_LABELS[key],
+  }))
 }
 
 type PercentileKey = 'p50' | 'p60' | 'p70' | 'p80' | 'p90'

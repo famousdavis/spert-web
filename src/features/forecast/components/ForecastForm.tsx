@@ -29,7 +29,6 @@ interface ForecastFormProps {
   scopeGrowthMode: 'calculated' | 'custom'
   customScopeGrowth: string
   forecastMode: ForecastMode
-  canUseHistory: boolean
   includedSprintCount: number
   velocityEstimate: string
   selectedCV: number
@@ -72,7 +71,6 @@ export function ForecastForm({
   scopeGrowthMode,
   customScopeGrowth,
   forecastMode,
-  canUseHistory,
   includedSprintCount,
   velocityEstimate,
   selectedCV,
@@ -113,7 +111,6 @@ export function ForecastForm({
       <ForecastModeToggle
         mode={forecastMode}
         onModeChange={onForecastModeChange}
-        canUseHistory={canUseHistory}
         includedSprintCount={includedSprintCount}
         calculatedStdDev={calculatedStdDev}
       />
