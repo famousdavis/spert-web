@@ -28,7 +28,11 @@ export function AboutTab() {
           statistical modeling accessible to project managers, Scrum Masters, students,
           businesspeople, and others who need to model uncertain outcomes using a lightweight,
           highly accessible approach. PERT stands for Program Evaluation and Review Technique,
-          a classic project management method.
+          a classic project management technique to model project uncertainties, like project
+          duration and budget. Statistical PERT (SPERT) is a modern approach to estimating
+          project uncertainties using a variety of statistical probability distributions, Monte
+          Carlo simulation, and unique approaches that operate with subjective expert judgement
+          or historical data (when it&apos;s available).
         </p>
       </section>
 
