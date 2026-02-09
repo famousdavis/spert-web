@@ -82,9 +82,9 @@ src/
 - **`SimulationContext`** interface to group related simulation parameters (config, velocities, productivity factors, scope growth)
 - **`runAllDistributions<T>()`** generic helper to sweep all six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform) with a single callback
 
-**Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge).
+**Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge). It maintains separate `simulationData` (swapped per milestone for CDF/histogram) and `overallSimulationData` (always total-backlog, used by burn-up chart).
 
-**Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup.
+**Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup. Both MilestoneList and ProjectList support HTML5 drag-and-drop reordering with the same pattern (draggedIndex/dragOverIndex state, splice-based reorder).
 
 **Date handling**: UTC for arithmetic (avoids DST drift), local timezone for user-facing display. Sprint finish dates always land on business days.
 
@@ -96,7 +96,7 @@ src/
 4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform); History mode displays five (T-Normal, Lognormal, Gamma, Triangular, Bootstrap), Subjective mode displays five (T-Normal, Lognormal, Gamma, Triangular, Uniform)
 5. **Scope growth modeling** resolves per-sprint scope injection from calculated or custom rates via `resolveScopeGrowthPerSprint()`
 6. **Productivity adjustments** modify velocity per sprint based on date-range overlap
-7. **Milestone forecasts** use cumulative thresholds with remaining-backlog checks, correctly accounting for scope growth
+7. **Milestone forecasts** use cumulative thresholds with remaining-backlog checks, correctly accounting for scope growth. Backlog is independent of milestones (never auto-overridden). The Custom Percentile dropdown filters to chart-visible milestones, mapping `originalIndex` for correct simulation data lookup
 8. **Auto-recalculation** (when enabled) debounces text inputs at 400ms, triggers immediately for toggles/dropdowns
 9. **Charts** (CDF, burn-up, histogram) render from simulation results using Recharts
 
