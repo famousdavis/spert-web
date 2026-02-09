@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.17.1 - 2026-02-09
+
+### Bug Fixes
+
+- **Burn-up chart milestone data**: burn-up chart now uses overall simulation data instead of per-milestone data, so selecting a milestone in the Custom Percentile dropdown no longer corrupts forecast lines
+- **Milestone dropdown index sync**: selecting the first visible milestone in Custom Percentile now shows correct results (auto-corrects stale index when milestones are filtered)
+- **Burn-up scope line**: scope line no longer capped to milestone threshold when backlog exceeds it
+- **Productivity adjustment date display**: restored year in date range display while keeping compact font
+
+### Enhancements
+
+- **Preset color swatches**: milestone color picker now shows 5 quick-pick swatches alongside the full custom color picker
+- **Milestone dropdown filtering**: Custom Percentile dropdown only shows milestones checked for chart display
+- **Milestone drag reorder**: milestones can be reordered via drag handles in the milestone list
+- **Forecast summary sentence**: reordered to lead with distribution type ("Using the X distribution, there is a Y% chance...")
+- **Burn-up chart sliders**: percentile sliders now step by 5 (range P5-P95) for easier control
+- **Productivity end date auto-seed**: end date auto-adjusts to start + 1 day when creating/editing adjustments
+- **Productivity form layout**: Name field shrunk, Memo field expanded for better space utilization
+- **About page**: expanded SPERT description with full context on PERT origins and modern approach
+
+### Decoupling
+
+- **Backlog independence**: backlog field is fully decoupled from milestones — always editable, never auto-overridden by milestone totals
+
+### Refactoring
+
+- Introduced `overallSimulationData` state to separate burn-up chart data from per-milestone CDF/histogram data
+- Removed dead `milestoneTotal` from `useForecastInputs` (leftover from backlog/milestone coupling)
+- Hoisted duplicate `escCsv` helper to module scope in `export-csv.ts`
+- Extracted milestone visibility filtering with `originalIndex` mapping for correct simulation data lookup
+
+### Test Coverage
+
+- Added test for CSV export with per-milestone data (`PER-MILESTONE PERCENTILE RESULTS` section)
+- Added float-parsing edge cases for scope growth custom input
+- Added sentence-order assertion for forecast summary text
+- 390 tests passing (was 363)
+
 ## v0.17.0 - 2026-02-07
 
 ### Features
