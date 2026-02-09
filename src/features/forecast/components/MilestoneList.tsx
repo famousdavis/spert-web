@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import type { Milestone } from '@/shared/types'
 import { ListRowActions } from '@/shared/components/ListRowActions'
 
@@ -9,6 +11,7 @@ interface MilestoneListProps {
   onEdit: (milestone: Milestone) => void
   onDelete: (id: string) => void
   onToggleChart?: (id: string, showOnChart: boolean) => void
+  onReorder?: (milestoneIds: string[]) => void
 }
 
 export function MilestoneList({
@@ -17,13 +20,55 @@ export function MilestoneList({
   onEdit,
   onDelete,
   onToggleChart,
+  onReorder,
 }: MilestoneListProps) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
   if (milestones.length === 0) {
     return (
       <p className="text-sm italic text-spert-text-muted">
         No milestones defined. Add milestones to forecast individual release dates.
       </p>
     )
+  }
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', index.toString())
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    const newOrder = milestones.map((m) => m.id)
+    const [removed] = newOrder.splice(draggedIndex, 1)
+    newOrder.splice(dropIndex, 0, removed)
+    onReorder?.(newOrder)
+
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
   }
 
   // Compute cumulative backlog for display
@@ -40,6 +85,7 @@ export function MilestoneList({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b-2 border-spert-border-light">
+            {onReorder && <th className="w-[30px] p-2" />}
             <th className="w-[40px] p-2 text-center font-semibold text-spert-text-secondary">
               #
             </th>
@@ -64,8 +110,44 @@ export function MilestoneList({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ milestone: m, index, cumulative: cum }) => (
-            <tr key={m.id} className="border-b border-spert-border-light">
+          {rows.map(({ milestone: m, index, cumulative: cum }, rowIdx) => (
+            <tr
+              key={m.id}
+              draggable={!!onReorder}
+              onDragStart={(e) => handleDragStart(e, rowIdx)}
+              onDragOver={(e) => handleDragOver(e, rowIdx)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, rowIdx)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                'border-b border-spert-border-light',
+                dragOverIndex === rowIdx && 'border-b-2 border-b-spert-blue',
+                draggedIndex === rowIdx && 'opacity-50'
+              )}
+            >
+              {onReorder && (
+                <td className="p-1 text-center">
+                  <span
+                    className="inline-flex cursor-grab active:cursor-grabbing text-spert-text-light"
+                    title="Drag to reorder"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <circle cx="9" cy="6" r="1.5" />
+                      <circle cx="15" cy="6" r="1.5" />
+                      <circle cx="9" cy="12" r="1.5" />
+                      <circle cx="15" cy="12" r="1.5" />
+                      <circle cx="9" cy="18" r="1.5" />
+                      <circle cx="15" cy="18" r="1.5" />
+                    </svg>
+                  </span>
+                </td>
+              )}
               <td className="p-2 text-center text-spert-text-muted">{index}</td>
               <td className="p-2 font-medium dark:text-gray-100">{m.name}</td>
               <td className="whitespace-nowrap p-2 text-right dark:text-gray-100">
@@ -97,6 +179,7 @@ export function MilestoneList({
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-spert-border-light">
+            {onReorder && <td />}
             <td colSpan={2} className="p-2 text-right font-semibold text-spert-text-secondary">
               Total remaining:
             </td>
