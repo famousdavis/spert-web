@@ -32,10 +32,6 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
     })
   }, [milestones])
 
-  const milestoneTotal = cumulativeThresholds.length > 0
-    ? cumulativeThresholds[cumulativeThresholds.length - 1]
-    : 0
-
   // Form values — pre-fill backlog from last sprint when user hasn't entered a value
   const lastSprintBacklog = sprints.length > 0 ? sprints[sprints.length - 1].backlogAtSprintEnd : undefined
   const storedBacklog = forecastInputs?.remainingBacklog
@@ -105,7 +101,6 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
     milestones,
     hasMilestones,
     cumulativeThresholds,
-    milestoneTotal,
     remainingBacklog,
     lastSprintBacklog,
     velocityMean,

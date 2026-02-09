@@ -2,6 +2,11 @@ import type { PercentileResults } from './monte-carlo'
 import type { ProductivityAdjustment, Milestone, ForecastMode } from '@/shared/types'
 import { today } from '@/shared/lib/dates'
 
+/** Escape a string for CSV: double quotes and collapse newlines */
+function escCsv(s: string): string {
+  return s.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')
+}
+
 interface ExportConfig {
   projectName: string
   remainingBacklog: number
@@ -141,7 +146,6 @@ export function generateForecastCsv(data: ExportData): string {
   } else {
     lines.push('Name,Start Date,End Date,Factor,Reason')
     for (const adj of adjustments) {
-      const escCsv = (s: string) => s.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')
       const reason = adj.reason ? `"${escCsv(adj.reason)}"` : ''
       lines.push(`"${escCsv(adj.name)}",${adj.startDate},${adj.endDate},${Math.round(adj.factor * 100)}%,${reason}`)
     }
@@ -157,7 +161,6 @@ export function generateForecastCsv(data: ExportData): string {
     for (let i = 0; i < milestones.length; i++) {
       const m = milestones[i]
       cumulative += m.backlogSize
-      const escCsv = (s: string) => s.replace(/"/g, '""').replace(/[\r\n]+/g, ' ')
       lines.push(`${i + 1},"${escCsv(m.name)}",${m.backlogSize},${cumulative}`)
     }
     lines.push('')

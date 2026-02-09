@@ -240,6 +240,42 @@ describe('generateForecastCsv', () => {
     expect(csv).not.toContain('Volatility Adjustment')
   })
 
+  it('includes per-milestone percentile results when milestoneData provided', () => {
+    const data = {
+      ...baseExportData,
+      config: {
+        ...baseExportData.config,
+        milestones: [
+          { id: 'm1', name: 'MVP', backlogSize: 40, color: '#10b981', showOnChart: true, createdAt: '', updatedAt: '' },
+          { id: 'm2', name: 'GA Release', backlogSize: 60, color: '#3b82f6', showOnChart: true, createdAt: '', updatedAt: '' },
+        ],
+      },
+      milestoneData: {
+        milestones: [
+          { name: 'MVP', backlogSize: 40, cumulativeBacklog: 40 },
+          { name: 'GA Release', backlogSize: 60, cumulativeBacklog: 100 },
+        ],
+        distributions: {
+          truncatedNormal: [makePercentileResults(3), makePercentileResults(5)],
+          lognormal: [makePercentileResults(3), makePercentileResults(5)],
+          gamma: [makePercentileResults(3), makePercentileResults(5)],
+          bootstrap: null,
+          triangular: [makePercentileResults(3), makePercentileResults(5)],
+          uniform: [makePercentileResults(3), makePercentileResults(5)],
+        },
+      },
+    }
+    const csv = generateForecastCsv(data)
+    expect(csv).toContain('PER-MILESTONE PERCENTILE RESULTS')
+    expect(csv).toContain('Milestone: MVP')
+    expect(csv).toContain('Milestone: GA Release')
+    expect(csv).toContain('(Total)')
+    // Should contain per-milestone percentile data rows
+    const lines = csv.split('\n')
+    const milestoneSection = lines.filter((l) => l.includes('Milestone:'))
+    expect(milestoneSection).toHaveLength(2)
+  })
+
   it('includes scope growth info when provided', () => {
     const data = {
       ...baseExportData,
