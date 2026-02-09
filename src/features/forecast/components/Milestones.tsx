@@ -22,6 +22,7 @@ export function Milestones({ projectId, unitOfMeasure }: MilestonesProps) {
   const addMilestone = useProjectStore((state) => state.addMilestone)
   const updateMilestone = useProjectStore((state) => state.updateMilestone)
   const deleteMilestone = useProjectStore((state) => state.deleteMilestone)
+  const reorderMilestones = useProjectStore((state) => state.reorderMilestones)
 
   const handleDelete = useCallback(
     (id: string) => deleteMilestone(projectId, id),
@@ -33,6 +34,11 @@ export function Milestones({ projectId, unitOfMeasure }: MilestonesProps) {
       updateMilestone(projectId, milestoneId, { showOnChart })
     },
     [updateMilestone, projectId]
+  )
+
+  const handleReorder = useCallback(
+    (milestoneIds: string[]) => reorderMilestones(projectId, milestoneIds),
+    [reorderMilestones, projectId]
   )
 
   return (
@@ -64,6 +70,7 @@ export function Milestones({ projectId, unitOfMeasure }: MilestonesProps) {
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleChart={handleToggleChart}
+          onReorder={handleReorder}
         />
       )}
       addButtonLabel="+ Add Milestone"
