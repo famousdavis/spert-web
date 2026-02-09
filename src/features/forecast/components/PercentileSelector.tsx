@@ -1,6 +1,6 @@
 'use client'
 
-import type { RefObject } from 'react'
+import { useEffect, useMemo, type RefObject } from 'react'
 import type { ForecastResult, Milestone, ForecastMode } from '@/shared/types'
 import { cn } from '@/lib/utils'
 import { MIN_PERCENTILE, MAX_PERCENTILE } from '../constants'
@@ -66,32 +66,46 @@ export function PercentileSelector(props: PercentileSelectorProps) {
   const baseResult = cards[0]?.result
   const hasResults = cards.every((c) => c.result !== null)
 
+  // Compute visible milestones (chart-checked only) with their original indices
+  const visibleMilestones = useMemo(
+    () => milestones
+      .map((m, idx) => ({ milestone: m, originalIndex: idx }))
+      .filter(({ milestone: m }) => m.showOnChart !== false),
+    [milestones]
+  )
+
+  // Auto-correct selected index when it's not among the visible milestones
+  useEffect(() => {
+    if (visibleMilestones.length === 0 || !onMilestoneIndexChange) return
+    const isValid = visibleMilestones.some((v) => v.originalIndex === selectedMilestoneIndex)
+    if (!isValid) {
+      onMilestoneIndexChange(visibleMilestones[0].originalIndex)
+    }
+  }, [visibleMilestones, selectedMilestoneIndex, onMilestoneIndexChange])
+
+  const lastVisibleIdx = visibleMilestones.length > 0
+    ? visibleMilestones[visibleMilestones.length - 1].originalIndex
+    : -1
+
   return (
     <div className="relative">
       <div ref={selectorRef} className="space-y-4 rounded-lg border border-border dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
         <div className="flex items-center gap-3">
           <h3 className="font-medium dark:text-gray-100">Custom Percentile</h3>
-          {milestones.length > 0 && onMilestoneIndexChange && (() => {
-            const visibleMilestones = milestones
-              .map((m, idx) => ({ milestone: m, originalIndex: idx }))
-              .filter(({ milestone: m }) => m.showOnChart !== false)
-            if (visibleMilestones.length === 0) return null
-            const lastVisibleIdx = visibleMilestones[visibleMilestones.length - 1].originalIndex
-            return (
-              <select
-                value={selectedMilestoneIndex}
-                onChange={(e) => onMilestoneIndexChange(Number(e.target.value))}
-                className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
-                aria-label="Select milestone for custom percentile"
-              >
-                {visibleMilestones.map(({ milestone: m, originalIndex }) => (
-                  <option key={m.id} value={originalIndex}>
-                    {m.name}{originalIndex === lastVisibleIdx && visibleMilestones.length > 1 ? ' (Total)' : ''}
-                  </option>
-                ))}
-              </select>
-            )
-          })()}
+          {visibleMilestones.length > 0 && onMilestoneIndexChange && (
+            <select
+              value={selectedMilestoneIndex}
+              onChange={(e) => onMilestoneIndexChange(Number(e.target.value))}
+              className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
+              aria-label="Select milestone for custom percentile"
+            >
+              {visibleMilestones.map(({ milestone: m, originalIndex }) => (
+                <option key={m.id} value={originalIndex}>
+                  {m.name}{originalIndex === lastVisibleIdx && visibleMilestones.length > 1 ? ' (Total)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
       <div className="flex items-center gap-4">
