@@ -23,7 +23,7 @@ src/
 │   └── changelog/page.tsx      # Changelog route
 ├── features/                   # Feature-first modules
 │   ├── about/                  # About tab content
-│   ├── changelog/              # Changelog display component
+│   ├── changelog/              # Changelog page (parses CHANGELOG.md at build time)
 │   ├── forecast/               # Monte Carlo simulation & charts
 │   │   ├── components/         # UI: ForecastTab, charts, forms, mode toggle, ChartToolbar
 │   │   │   ├── BurnUpChart.tsx           # Burn-up orchestration (config, data prep)
@@ -85,6 +85,8 @@ src/
 **Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge). It maintains separate `simulationData` (swapped per milestone for CDF/histogram) and `overallSimulationData` (always total-backlog, used by burn-up chart).
 
 **Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup. Both MilestoneList and ProjectList support HTML5 drag-and-drop reordering with the same pattern (draggedIndex/dragOverIndex state, splice-based reorder).
+
+**Single-source changelog**: `CHANGELOG.md` is the single source of truth. The `/changelog` page is a server component that reads and parses the markdown at build time via `parseChangelog()`, passing structured entries to the client `ChangelogContent` component. No hardcoded array to maintain.
 
 **Date handling**: UTC for arithmetic (avoids DST drift), local timezone for user-facing display. Sprint finish dates always land on business days.
 

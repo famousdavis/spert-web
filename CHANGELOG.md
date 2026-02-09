@@ -71,6 +71,14 @@
 - Expanded `QuadSimulationData`, `QuadCustomResults`, and milestone types for 6 distributions
 - `effectiveStdDev` in History mode now applies `calculatedStdDev * volatilityMultiplier`
 
+### UX
+
+- Forecast summary shows data source context (sprint history, subjective judgment, or manual overrides)
+- Forecast results footer shows effective mean, SD, and CV values used in simulation
+- Last sprint backlog shown under Backlog field as helper text
+- Subjective mode pre-seeds velocity from calculated history when available
+- Tab order skips read-only fields (Start Date, milestone-controlled Backlog) and decorative elements (sparkline chart)
+
 ### Test Coverage
 
 - New tests for `randomTriangular`, `randomUniform`, CV rounding helpers
@@ -98,8 +106,11 @@
 ### Features
 
 - Custom scope growth override: choose between calculated rate (from sprint history) or a user-specified custom rate
-- Radio button UI with inline calculated stats and custom numeric input
-- Summary text shows source label: "(calculated)" or "(custom)"
+- Radio button selection between Calculated and Custom when scope growth is enabled
+- Custom input allows negative values for scope shrinking scenarios
+- Warning indicator applies to whichever mode is active (calculated or custom)
+- Summary text indicates source: "(calculated)" or "(custom)"
+- Auto-recalculation supports both modes with debounced custom input
 
 ### Bug Fixes
 
@@ -128,11 +139,18 @@
 
 ### Settings
 
-- Settings tab with persisted global preferences
-- Auto-recalculate toggle (debounced 400ms for text, immediate for toggles)
-- Configurable trial count (1K-50K, default 10K)
-- Default chart font size and custom percentile preferences
-- Theme selector moved from header to Settings
+- New Settings tab with persisted global preferences
+- Auto-recalculate toggle: re-runs forecast automatically when inputs change (after first manual run)
+- Configurable simulation trial count (1,000–50,000) with default of 10,000
+- Default chart font size preference (Small/Medium/Large)
+- Default custom percentile preference (1–99)
+- Theme selector (Light/Dark/System) moved from header to Settings
+
+### User Experience
+
+- Debounced auto-recalculation (400ms) for text inputs, immediate for toggles and dropdowns
+- Productivity Adjustments moved below forecast form as a set-and-forget section
+- Keyboard shortcut 4 → Settings, 5 → About
 
 ### Forecast Enhancements
 
@@ -140,32 +158,50 @@
 - Velocity Sparkline on forecast form
 - Velocity Trend Chart on Sprint History tab
 - Scope creep forecasting with growth model
-- Productivity Adjustments moved below forecast form
+
+### Architecture
+
+- New settings-store (Zustand + localStorage) separate from project data store
+- Trial count now configurable via settings instead of hard-coded constant
 
 ### Refactoring
 
 - Decomposed `useForecastState` into focused hooks (useSprintData, useForecastInputs, useChartSettings)
-- New settings-store (Zustand + localStorage) separate from project data
 
 ## v0.14.0 - 2026-02-03
 
 ### Milestones
 
 - Ordered release milestones with per-milestone forecast dates
-- Milestone reference lines on burn-up chart with show/hide toggles
-- Scope line visibility control
-- Milestone selectors on CDF and histogram charts
+- Per-milestone forecast dates at all percentiles (P50, P60, P70, P80, P90)
+- Single simulation with checkpoint recording preserves statistical correlation between milestones
+- Milestone reference lines on burn-up chart at cumulative scope levels
+- Milestone dropdown selector on CDF and histogram charts to view per-milestone distributions
+- Custom percentile selector supports per-milestone results
+- Remaining Backlog auto-computed from milestones when defined (read-only)
+
+### Chart Controls
+
+- Show/hide individual milestone lines on burn-up chart via checkbox toggle
+- Show/hide scope line on burn-up chart for cleaner visualization
+
+### Data & Export
+
+- CSV export includes milestone definitions, per-milestone percentile results
+- Import/export validation supports milestone data
+- Milestone CRUD with edit, delete, and confirmation dialogs
 
 ### Refactoring
 
-- Extracted `CollapsibleCrudPanel` generic component (~200 LOC saved)
-- Extracted import validation module from project-store
+- Extracted generic `CollapsibleCrudPanel` component, reducing Milestones and Productivity Adjustments by ~200 LOC
+- Extracted import validation from project-store into dedicated module (~170 LOC moved)
 - Consolidated Monte Carlo simulation with sampler factory pattern (665 → 445 LOC)
-- Extracted shared `ChartToolbar` component
+- Extracted shared `ChartToolbar` component for CDF and histogram charts (~90 LOC saved)
+- Removed dead code and unused props across forecast components
 
 ### Test Coverage
 
-- 271 tests passing
+- Added 10 new tests for milestone-aware simulation logic (264 → 271 net, 3 removed with dead code)
 
 ## v0.13.0 - 2026-02-03
 
@@ -183,6 +219,79 @@
 ### Test Coverage
 
 - Added 22 new tests (242 → 264 total) for histogram binning and scope analysis
+
+## v0.12.0 - 2026-02-03
+
+### Accessibility
+
+- Added ARIA attributes to all collapsible sections (aria-expanded, aria-controls, aria-label)
+- Replaced browser confirm dialogs with accessible modal dialog component
+- Added aria-label to icon-only buttons (copy, export)
+- Added keyboard support (Enter/Space) to sortable column header
+- Added aria-label to sprint include/exclude checkboxes
+
+### Security
+
+- Strengthened import validation with numeric ranges, string length limits, and date format validation
+- Added file type and size validation (10MB limit) on import
+- Added Content-Security-Policy header for defense-in-depth
+- Improved JSON parse error messages with specific failure context
+- Added duplicate ID detection in import validation
+
+### UI Polish
+
+- Responsive padding and text sizing for mobile devices
+
+### Refactoring
+
+- Extracted CDF chart helpers to lib/cdf.ts (component now 232 LOC)
+- Removed console.log statements from CopyImageButton
+
+### Test Coverage
+
+- Added 5 new validation tests (237 → 242 total)
+
+## v0.11.0 - 2026-02-02
+
+### Enhancements
+
+- Toast notifications for export, import, and clipboard operations (Sonner)
+- Monte Carlo simulation moved to Web Worker for non-blocking UI
+- Real loading state feedback during simulation runs
+- Form validation tightened with max value constraints and NaN guards
+
+### Refactoring
+
+- Centralized 43 hardcoded colors into shared color constants
+- Added SPERT color palette to Tailwind CSS theme
+- Migrated 258 inline styles to Tailwind classes across 23 components
+
+## v0.10.0 - 2026-02-02
+
+### Bug Fixes
+
+- Fixed viewingProjectId not reset when deleting the viewed project
+- Fixed package.json version mismatch
+- Added missing viewport export for mobile rendering
+- Fixed changelog date formatting to use shared utility
+
+### Resilience
+
+- Added import data validation with descriptive error messages
+- Added clipboard API availability check before copy-to-image
+- Added delete confirmations for projects, sprints, and productivity adjustments
+- Added gamma distribution iteration limit to prevent infinite loops
+- Added truncated normal rejection sampling fallback warning
+- Added React error boundaries around all tab components
+- Added HTTP security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+
+### Refactoring
+
+- Extracted ForecastTab state and logic into useForecastState hook (410 → 186 LOC)
+
+### Test Coverage
+
+- Added 74 new tests (151 → 225 total) covering store selectors, mutations, import validation, math edge cases, date utilities, and simulation boundaries
 
 ## v0.9.0 - 2026-02-02
 
