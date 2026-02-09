@@ -14,6 +14,46 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.17.1',
+    date: '2026-02-09',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        items: [
+          'Burn-up chart now uses overall simulation data — selecting a milestone in Custom Percentile no longer corrupts forecast lines',
+          'Milestone dropdown auto-corrects stale index when milestones are filtered by chart visibility',
+          'Burn-up scope line no longer capped to milestone threshold when backlog exceeds it',
+          'Restored year in productivity adjustment date range display',
+        ],
+      },
+      {
+        title: 'Enhancements',
+        items: [
+          'Preset color swatches: 5 quick-pick colors alongside the full custom color picker for milestones',
+          'Custom Percentile dropdown only shows milestones checked for chart display',
+          'Milestones can be reordered via drag handles',
+          'Forecast summary leads with distribution type ("Using the X distribution, there is a Y% chance...")',
+          'Burn-up chart percentile sliders step by 5 (range P5–P95) for easier control',
+          'Productivity adjustment end date auto-seeds to start + 1 day',
+          'Productivity form: Name field shrunk, Memo field expanded',
+          'Expanded SPERT description on About page',
+        ],
+      },
+      {
+        title: 'Decoupling',
+        items: [
+          'Backlog field is fully independent of milestones — always editable, never auto-overridden by milestone totals',
+        ],
+      },
+      {
+        title: 'Test Coverage',
+        items: [
+          '390 tests passing (was 363)',
+        ],
+      },
+    ],
+  },
+  {
     version: '0.17.0',
     date: '2026-02-07',
     sections: [
