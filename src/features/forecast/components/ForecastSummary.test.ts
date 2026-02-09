@@ -128,6 +128,11 @@ describe('buildSummaryText', () => {
     const text = buildSummaryText('P', 100, 'pts', 80, 10, '2027-01-15', 0, 'T-Normal')
     expect(text).toContain('January 15, 2027')
   })
+
+  it('starts with "Using the" distribution phrase', () => {
+    const text = buildSummaryText('P', 100, 'pts', 80, 10, '2026-05-01', 0, 'T-Normal')
+    expect(text.startsWith('Using the ')).toBe(true)
+  })
 })
 
 describe('buildMilestoneSummaryText', () => {

@@ -29,4 +29,9 @@ describe('resolveScopeGrowthPerSprint', () => {
   it('ignores calculated value in custom mode', () => {
     expect(resolveScopeGrowthPerSprint(true, 'custom', '10', 99.9)).toBe(10)
   })
+
+  it('handles float edge cases in custom mode', () => {
+    expect(resolveScopeGrowthPerSprint(true, 'custom', '3.', 5.0)).toBe(3)
+    expect(resolveScopeGrowthPerSprint(true, 'custom', '.5', 5.0)).toBe(0.5)
+  })
 })
