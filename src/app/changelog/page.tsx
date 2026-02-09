@@ -1,7 +1,13 @@
 import Link from 'next/link'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import { parseChangelog } from '@/features/changelog/lib/parse-changelog'
 import { ChangelogContent } from '@/features/changelog'
 
 export default function ChangelogPage() {
+  const markdown = readFileSync(join(process.cwd(), 'CHANGELOG.md'), 'utf-8')
+  const entries = parseChangelog(markdown)
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -15,7 +21,7 @@ export default function ChangelogPage() {
         </div>
       </header>
       <main className="max-w-[1200px] mx-auto px-6 py-6">
-        <ChangelogContent />
+        <ChangelogContent entries={entries} />
       </main>
     </div>
   )
