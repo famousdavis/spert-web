@@ -53,6 +53,7 @@ export function ForecastTab() {
     isSimulating,
     results,
     simulationData,
+    overallSimulationData,
     milestoneResultsState,
     customPercentile,
     customResults,
@@ -245,7 +246,7 @@ export function ForecastTab() {
           <BurnUpChart
             sprints={projectSprints}
             forecastBacklog={Number(remainingBacklog) || 0}
-            simulationData={simulationData}
+            simulationData={overallSimulationData ?? simulationData}
             sprintCadenceWeeks={selectedProject!.sprintCadenceWeeks!}
             firstSprintStartDate={selectedProject!.firstSprintStartDate!}
             completedSprintCount={completedSprintCount}

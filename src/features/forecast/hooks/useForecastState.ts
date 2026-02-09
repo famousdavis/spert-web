@@ -124,6 +124,8 @@ export function useForecastState() {
   // Results state
   const [results, setResults] = useState<QuadResults | null>(null)
   const [simulationData, setSimulationData] = useState<QuadSimulationData | null>(null)
+  // Overall (total backlog) simulation data — used by burn-up chart; not swapped by milestone dropdown
+  const [overallSimulationData, setOverallSimulationData] = useState<QuadSimulationData | null>(null)
   const [milestoneResultsState, setMilestoneResultsState] = useState<MilestoneResults | null>(null)
   const defaultPercentile = useSettingsStore((s) => s.defaultCustomPercentile)
   const [customPercentile, setCustomPercentile] = useState(defaultPercentile)
@@ -140,6 +142,7 @@ export function useForecastState() {
     if (prevProjectIdRef.current !== selectedProject?.id) {
       setResults(null)
       setSimulationData(null)
+      setOverallSimulationData(null)
       setMilestoneResultsState(null)
       setCustomResults(EMPTY_CUSTOM_RESULTS)
       setSelectedMilestoneIndex(0)
@@ -196,6 +199,7 @@ export function useForecastState() {
         setMilestoneResultsState({ milestoneResults: perMilestoneResults, milestoneSimulationData: perMilestoneSimData })
 
         const lastIdx = perMilestoneResults.length - 1
+        setOverallSimulationData(perMilestoneSimData[lastIdx])
         setSimulationData(perMilestoneSimData[lastIdx])
         setResults(perMilestoneResults[lastIdx])
         setSelectedMilestoneIndex(lastIdx)
@@ -214,6 +218,7 @@ export function useForecastState() {
         setMilestoneResultsState(null)
 
         const { results: quadResultsMapped, simData } = extractQuadData(quadResults)
+        setOverallSimulationData(simData)
         setSimulationData(simData)
         setResults(quadResultsMapped)
         setCustomResults(calculateAllCustomPercentiles(
@@ -410,6 +415,7 @@ export function useForecastState() {
     // Results
     results,
     simulationData,
+    overallSimulationData,
     milestoneResultsState,
     customPercentile,
     customResults,
