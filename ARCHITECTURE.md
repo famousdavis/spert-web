@@ -93,8 +93,9 @@ src/
 ## Data Flow
 
 1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key)
-2. **Global settings** (trial count, auto-recalc, chart defaults, theme) persisted separately (`spert-settings` key)
+2. **Global settings** (trial count, auto-recalc, chart defaults, results percentile selection, custom percentile defaults, theme) persisted separately (`spert-settings` key)
 3. **Forecast inputs** (backlog, velocity overrides, forecast mode, CV selection, volatility multiplier) are session-only state per project
+3a. **Results table percentiles** (P10–P90 toggle chips) and **dual custom percentile sliders** are session-only state initialized from settings defaults. Dynamic percentile computation uses `calculatePercentileResult()` on-the-fly from sorted simulation arrays — no pre-computed `PercentileResults` needed
 4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform); History mode displays five (T-Normal, Lognormal, Gamma, Triangular, Bootstrap), Subjective mode displays five (T-Normal, Lognormal, Gamma, Triangular, Uniform)
 5. **Scope growth modeling** resolves per-sprint scope injection from calculated or custom rates via `resolveScopeGrowthPerSprint()`
 6. **Productivity adjustments** modify velocity per sprint based on date-range overlap
