@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { storage } from './storage'
 import { type ChartFontSize, DEFAULT_CHART_FONT_SIZE } from '@/shared/types/burn-up'
-import { DEFAULT_TRIAL_COUNT } from '@/features/forecast/constants'
+import { DEFAULT_TRIAL_COUNT, DEFAULT_SELECTED_PERCENTILES, SELECTABLE_PERCENTILES } from '@/features/forecast/constants'
 
 const SETTINGS_STORAGE_KEY = 'spert-settings'
 
@@ -24,12 +24,16 @@ interface SettingsState {
   // Chart defaults
   defaultChartFontSize: ChartFontSize
   defaultCustomPercentile: number // 1-99
+  defaultCustomPercentile2: number // 1-99
+  defaultResultsPercentiles: number[] // subset of [10,20,...,90]
 
   // Actions
   setAutoRecalculate: (value: boolean) => void
   setTrialCount: (value: TrialCount) => void
   setDefaultChartFontSize: (value: ChartFontSize) => void
   setDefaultCustomPercentile: (value: number) => void
+  setDefaultCustomPercentile2: (value: number) => void
+  setDefaultResultsPercentiles: (value: number[]) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -40,6 +44,8 @@ export const useSettingsStore = create<SettingsState>()(
       trialCount: DEFAULT_TRIAL_COUNT as TrialCount,
       defaultChartFontSize: DEFAULT_CHART_FONT_SIZE,
       defaultCustomPercentile: 85,
+      defaultCustomPercentile2: 50,
+      defaultResultsPercentiles: [...DEFAULT_SELECTED_PERCENTILES],
 
       // Actions
       setAutoRecalculate: (value) => set({ autoRecalculate: value }),
@@ -47,6 +53,14 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultChartFontSize: (value) => set({ defaultChartFontSize: value }),
       setDefaultCustomPercentile: (value) =>
         set({ defaultCustomPercentile: Math.max(1, Math.min(99, Math.round(value))) }),
+      setDefaultCustomPercentile2: (value) =>
+        set({ defaultCustomPercentile2: Math.max(1, Math.min(99, Math.round(value))) }),
+      setDefaultResultsPercentiles: (value) =>
+        set({
+          defaultResultsPercentiles: value
+            .filter((p) => (SELECTABLE_PERCENTILES as readonly number[]).includes(p))
+            .sort((a, b) => a - b),
+        }),
     }),
     {
       name: SETTINGS_STORAGE_KEY,

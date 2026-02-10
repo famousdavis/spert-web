@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import type { PercentileResults, QuadResults } from '../lib/monte-carlo'
+import type { PercentileResults, QuadResults, QuadSimulationData } from '../lib/monte-carlo'
+import { calculatePercentileResult } from '../lib/monte-carlo'
 import type { MilestoneResults } from '../hooks/useForecastState'
 import { formatDate } from '@/shared/lib/dates'
 import type { Milestone, ForecastMode } from '@/shared/types'
-import { getVisibleDistributions, DISTRIBUTION_LABELS } from '../types'
+import { getVisibleDistributions, DISTRIBUTION_LABELS, type DistributionType } from '../types'
+import { SELECTABLE_PERCENTILES } from '../constants'
 
 interface ForecastResultsProps {
   results: QuadResults
@@ -22,10 +25,16 @@ interface ForecastResultsProps {
   velocityStdDev?: string
   selectedCV?: number
   volatilityMultiplier?: number
+  // Dynamic percentile props
+  simulationData?: QuadSimulationData | null
+  selectedPercentiles?: number[]
+  onSelectedPercentilesChange?: (percentiles: number[]) => void
+  startDate?: string
+  sprintCadenceWeeks?: number
 }
 
 interface DistColumn {
-  key: keyof QuadResults
+  key: DistributionType
   label: string
 }
 
@@ -36,14 +45,35 @@ function getDistributionColumns(forecastMode: ForecastMode, hasBootstrap: boolea
   }))
 }
 
-type PercentileKey = 'p50' | 'p60' | 'p70' | 'p80' | 'p90'
-
 interface PercentileRow {
   key: string
   label: string
   values: ({ sprintsRequired: number; finishDate: string } | null)[]
 }
 
+/** Build rows dynamically from simulation data for any set of percentiles */
+export function buildDynamicPercentileRows(
+  simulationData: QuadSimulationData,
+  percentiles: number[],
+  columns: DistColumn[],
+  startDate: string,
+  sprintCadenceWeeks: number,
+): PercentileRow[] {
+  return percentiles.map((p) => ({
+    key: `p${p}`,
+    label: `P${p}`,
+    values: columns.map((col) => {
+      const sprintsArray = simulationData[col.key]
+      if (!sprintsArray) return null
+      const result = calculatePercentileResult(sprintsArray, p, startDate, sprintCadenceWeeks)
+      return { sprintsRequired: result.sprintsRequired, finishDate: result.finishDate }
+    }),
+  }))
+}
+
+type PercentileKey = 'p50' | 'p60' | 'p70' | 'p80' | 'p90'
+
+/** Legacy fallback: build rows from pre-computed QuadResults */
 function buildPercentileRows(
   results: QuadResults,
   columns: DistColumn[]
@@ -64,6 +94,37 @@ function buildPercentileRows(
       return (distResults as PercentileResults)[key]
     }),
   }))
+}
+
+function PercentileChips({
+  selectedPercentiles,
+  onToggle,
+}: {
+  selectedPercentiles: number[]
+  onToggle: (p: number) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {SELECTABLE_PERCENTILES.map((p) => {
+        const isSelected = selectedPercentiles.includes(p)
+        return (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onToggle(p)}
+            className={cn(
+              'px-3 py-1 text-xs font-medium rounded-full border cursor-pointer transition-colors duration-150',
+              isSelected
+                ? 'bg-spert-blue text-white border-spert-blue'
+                : 'bg-transparent text-muted-foreground border-spert-border dark:border-gray-600 hover:border-spert-blue hover:text-spert-blue'
+            )}
+          >
+            P{p}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 function ResultsTable({
@@ -188,123 +249,179 @@ export function ForecastResults({
   velocityStdDev,
   selectedCV,
   volatilityMultiplier,
+  simulationData,
+  selectedPercentiles,
+  onSelectedPercentilesChange,
+  startDate,
+  sprintCadenceWeeks,
 }: ForecastResultsProps) {
+  const [isExpanded, setIsExpanded] = useState(true)
+
   const hasBootstrap = results.bootstrap !== null
   const modeContext = buildModeContext(forecastMode, effectiveMean, effectiveStdDev, velocityMean, velocityStdDev, selectedCV, volatilityMultiplier)
   const columns = getDistributionColumns(forecastMode, hasBootstrap)
   const hasMilestones = milestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
 
+  // Dynamic percentile mode: we have simulation data and user-selectable percentiles
+  const useDynamic = !!(simulationData && selectedPercentiles && startDate && sprintCadenceWeeks)
+
+  const handleTogglePercentile = (p: number) => {
+    if (!selectedPercentiles || !onSelectedPercentilesChange) return
+    const isSelected = selectedPercentiles.includes(p)
+    if (isSelected) {
+      // Don't allow deselecting the last one
+      if (selectedPercentiles.length <= 1) return
+      onSelectedPercentilesChange(selectedPercentiles.filter((v) => v !== p))
+    } else {
+      onSelectedPercentilesChange([...selectedPercentiles, p].sort((a, b) => a - b))
+    }
+  }
+
+  const buildRows = (resultsForRows: QuadResults, simDataForRows?: QuadSimulationData | null) => {
+    if (useDynamic && simDataForRows) {
+      return buildDynamicPercentileRows(simDataForRows, selectedPercentiles!, columns, startDate!, sprintCadenceWeeks!)
+    }
+    return buildPercentileRows(resultsForRows, columns)
+  }
+
   return (
     <div className="space-y-4">
-      <h3 className="font-medium dark:text-gray-100">Forecast Results</h3>
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 font-medium dark:text-gray-100 cursor-pointer bg-transparent border-none p-0 text-inherit text-base"
+      >
+        <span
+          className={cn(
+            'inline-block text-xs transition-transform duration-200',
+            isExpanded ? 'rotate-90' : 'rotate-0'
+          )}
+        >
+          ▶
+        </span>
+        Forecast Results
+      </button>
 
-      {hasMilestones ? (
-        <div className="space-y-6">
-          {milestones.map((milestone, idx) => {
-            const milestoneResult = milestoneResultsState.milestoneResults[idx]
-            if (!milestoneResult) return null
+      {isExpanded && (
+        <>
+          {/* Percentile toggle chips */}
+          {useDynamic && onSelectedPercentilesChange && (
+            <PercentileChips
+              selectedPercentiles={selectedPercentiles!}
+              onToggle={handleTogglePercentile}
+            />
+          )}
 
-            const isLast = idx === milestones.length - 1
-            const cumulativeBacklog = cumulativeThresholds[idx] ?? 0
-            const rows = buildPercentileRows(milestoneResult as QuadResults, columns)
+          {hasMilestones ? (
+            <div className="space-y-6">
+              {milestones.map((milestone, idx) => {
+                const milestoneResult = milestoneResultsState.milestoneResults[idx]
+                if (!milestoneResult) return null
 
-            return (
-              <div key={milestone.id}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="inline-block size-3 rounded-full"
-                    style={{ backgroundColor: milestone.color }}
-                  />
-                  <h4 className="text-sm font-semibold dark:text-gray-100">
-                    {milestone.name}
-                    <span className="ml-2 font-normal text-spert-text-muted">
-                      ({milestone.backlogSize.toLocaleString()} {unitOfMeasure} remaining
-                      {!isLast && ` \u2022 ${cumulativeBacklog.toLocaleString()} cumulative`})
-                    </span>
-                    {isLast && (
-                      <span className="ml-2 text-xs font-normal text-spert-text-muted italic">
-                        Total
-                      </span>
-                    )}
-                  </h4>
-                </div>
-                <div className="overflow-x-auto">
-                  <ResultsTable
-                    rows={rows}
-                    columns={columns}
-                    completedSprintCount={completedSprintCount}
-                  />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <ResultsTable
-            rows={buildPercentileRows(results, columns)}
-            columns={columns}
-            completedSprintCount={completedSprintCount}
-          />
-        </div>
-      )}
+                const milestoneSimData = milestoneResultsState.milestoneSimulationData?.[idx] ?? null
+                const isLast = idx === milestones.length - 1
+                const cumulativeBacklog = cumulativeThresholds[idx] ?? 0
+                const rows = buildRows(milestoneResult as QuadResults, milestoneSimData)
 
-      <div className="flex justify-between items-start">
-        <div className="text-xs text-muted-foreground space-y-1">
-          {modeContext && <p>{modeContext}</p>}
-          <p>
-            P80 means there is an 80% chance of finishing by that date <em>or sooner</em>. Higher
-            percentiles are more conservative.
-          </p>
-          <p>
-            {forecastMode === 'subjective' ? (
-              <>
-                <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
-                <strong>Lognorm</strong>: right-skewed.{' '}
-                <strong>Gamma</strong>: flexible shape.{' '}
-                <strong>Triangular</strong>: peak at estimate.{' '}
-                <strong>Uniform</strong>: equal probability across range.
-              </>
-            ) : (
-              <>
-                <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
-                <strong>Lognorm</strong>: right-skewed.{' '}
-                <strong>Gamma</strong>: flexible shape.{' '}
-                <strong>Triangular</strong>: peak at mean.
-                {hasBootstrap && (
+                return (
+                  <div key={milestone.id}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="inline-block size-3 rounded-full"
+                        style={{ backgroundColor: milestone.color }}
+                      />
+                      <h4 className="text-sm font-semibold dark:text-gray-100">
+                        {milestone.name}
+                        <span className="ml-2 font-normal text-spert-text-muted">
+                          ({milestone.backlogSize.toLocaleString()} {unitOfMeasure} remaining
+                          {!isLast && ` \u2022 ${cumulativeBacklog.toLocaleString()} cumulative`})
+                        </span>
+                        {isLast && (
+                          <span className="ml-2 text-xs font-normal text-spert-text-muted italic">
+                            Total
+                          </span>
+                        )}
+                      </h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <ResultsTable
+                        rows={rows}
+                        columns={columns}
+                        completedSprintCount={completedSprintCount}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <ResultsTable
+                rows={buildRows(results, simulationData)}
+                columns={columns}
+                completedSprintCount={completedSprintCount}
+              />
+            </div>
+          )}
+
+          <div className="flex justify-between items-start">
+            <div className="text-xs text-muted-foreground space-y-1">
+              {modeContext && <p>{modeContext}</p>}
+              <p>
+                P<em>X</em> means there is an <em>X</em>% chance of finishing by that date <em>or sooner</em>. Higher
+                percentiles are more conservative.
+              </p>
+              <p>
+                {forecastMode === 'subjective' ? (
                   <>
-                    {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+                    <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                    <strong>Lognorm</strong>: right-skewed.{' '}
+                    <strong>Gamma</strong>: flexible shape.{' '}
+                    <strong>Triangular</strong>: peak at estimate.{' '}
+                    <strong>Uniform</strong>: equal probability across range.
+                  </>
+                ) : (
+                  <>
+                    <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                    <strong>Lognorm</strong>: right-skewed.{' '}
+                    <strong>Gamma</strong>: flexible shape.{' '}
+                    <strong>Triangular</strong>: peak at mean.
+                    {hasBootstrap && (
+                      <>
+                        {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+                      </>
+                    )}
                   </>
                 )}
-              </>
+              </p>
+            </div>
+            {onExport && (
+              <button
+                onClick={onExport}
+                title="Export simulation data to CSV"
+                aria-label="Export simulation data to CSV"
+                className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
             )}
-          </p>
-        </div>
-        {onExport && (
-          <button
-            onClick={onExport}
-            title="Export simulation data to CSV"
-            aria-label="Export simulation data to CSV"
-            className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </button>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

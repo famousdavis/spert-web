@@ -6,6 +6,12 @@ export const DEFAULT_PERCENTILES = [50, 60, 70, 80, 90] as const
 export const MIN_PERCENTILE = 1
 export const MAX_PERCENTILE = 99
 
+/** All selectable percentile values for the results table toggle chips */
+export const SELECTABLE_PERCENTILES = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const
+
+/** Default selected percentiles for new sessions */
+export const DEFAULT_SELECTED_PERCENTILES: readonly number[] = [10, 20, 50, 80, 90] as const
+
 // Minimum number of included sprints required for bootstrap simulation
 export const MIN_SPRINTS_FOR_BOOTSTRAP = 5
 

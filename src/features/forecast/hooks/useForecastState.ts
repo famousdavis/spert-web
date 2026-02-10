@@ -23,7 +23,7 @@ import { useScopeGrowthState } from './useScopeGrowthState'
 import { preCalculateSprintFactors } from '../lib/productivity'
 import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/export-csv'
 import { safeParseNumber } from '@/shared/lib/validation'
-import { MIN_SPRINTS_FOR_HISTORY } from '../constants'
+import { MIN_SPRINTS_FOR_HISTORY, DEFAULT_SELECTED_PERCENTILES } from '../constants'
 import type { ForecastMode } from '@/shared/types'
 
 /** Per-milestone QuadResults and QuadSimulationData */
@@ -131,6 +131,17 @@ export function useForecastState() {
   const [customPercentile, setCustomPercentile] = useState(defaultPercentile)
   const [customResults, setCustomResults] = useState<QuadCustomResults>(EMPTY_CUSTOM_RESULTS)
 
+  // Second custom percentile slider (Feature 3)
+  const defaultPercentile2 = useSettingsStore((s) => s.defaultCustomPercentile2)
+  const [customPercentile2, setCustomPercentile2] = useState(defaultPercentile2)
+  const [customResults2, setCustomResults2] = useState<QuadCustomResults>(EMPTY_CUSTOM_RESULTS)
+
+  // User-selectable results table percentiles (Feature 2)
+  const defaultResultsPercentiles = useSettingsStore((s) => s.defaultResultsPercentiles)
+  const [selectedResultsPercentiles, setSelectedResultsPercentiles] = useState<number[]>(
+    () => defaultResultsPercentiles?.length > 0 ? [...defaultResultsPercentiles] : [...DEFAULT_SELECTED_PERCENTILES]
+  )
+
   // Scope growth modeling (session only, extracted hook)
   const scopeGrowth = useScopeGrowthState(sprintData.scopeChangeStats?.averageScopeInjection)
 
@@ -145,6 +156,7 @@ export function useForecastState() {
       setOverallSimulationData(null)
       setMilestoneResultsState(null)
       setCustomResults(EMPTY_CUSTOM_RESULTS)
+      setCustomResults2(EMPTY_CUSTOM_RESULTS)
       setSelectedMilestoneIndex(0)
       scopeGrowth.resetScopeGrowth()
       hasRunOnceRef.current = false
@@ -207,6 +219,10 @@ export function useForecastState() {
           perMilestoneSimData[lastIdx], customPercentile,
           sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
+        setCustomResults2(calculateAllCustomPercentiles(
+          perMilestoneSimData[lastIdx], customPercentile2,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
+        ))
       } else {
         const quadResults = await runSimulation({
           config,
@@ -223,6 +239,10 @@ export function useForecastState() {
         setResults(quadResultsMapped)
         setCustomResults(calculateAllCustomPercentiles(
           simData, customPercentile,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
+        ))
+        setCustomResults2(calculateAllCustomPercentiles(
+          simData, customPercentile2,
           sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
       }
@@ -280,6 +300,21 @@ export function useForecastState() {
     }
   }
 
+  const handleCustomPercentile2Change = (percentile: number) => {
+    setCustomPercentile2(percentile)
+
+    const activeSimData = milestoneResultsState && selectedMilestoneIndex < milestoneResultsState.milestoneSimulationData.length
+      ? milestoneResultsState.milestoneSimulationData[selectedMilestoneIndex]
+      : simulationData
+
+    if (activeSimData && selectedProject?.sprintCadenceWeeks) {
+      setCustomResults2(calculateAllCustomPercentiles(
+        activeSimData, percentile,
+        sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
+      ))
+    }
+  }
+
   const handleMilestoneIndexChange = (index: number) => {
     setSelectedMilestoneIndex(index)
 
@@ -291,6 +326,10 @@ export function useForecastState() {
       if (selectedProject?.sprintCadenceWeeks) {
         setCustomResults(calculateAllCustomPercentiles(
           simData, customPercentile,
+          sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
+        ))
+        setCustomResults2(calculateAllCustomPercentiles(
+          simData, customPercentile2,
           sprintData.forecastStartDate, selectedProject.sprintCadenceWeeks
         ))
       }
@@ -419,6 +458,10 @@ export function useForecastState() {
     milestoneResultsState,
     customPercentile,
     customResults,
+    customPercentile2,
+    customResults2,
+    selectedResultsPercentiles,
+    setSelectedResultsPercentiles,
     selectedMilestoneIndex,
 
     // Chart settings (from useChartSettings)
@@ -427,6 +470,7 @@ export function useForecastState() {
     // Handlers
     handleRunForecast,
     handleCustomPercentileChange,
+    handleCustomPercentile2Change,
     handleMilestoneIndexChange,
     handleExportCsv,
     handleProjectChange,

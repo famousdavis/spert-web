@@ -57,6 +57,10 @@ export function ForecastTab() {
     milestoneResultsState,
     customPercentile,
     customResults,
+    customPercentile2,
+    customResults2,
+    selectedResultsPercentiles,
+    setSelectedResultsPercentiles,
     selectedMilestoneIndex,
     burnUpConfig,
     handleBurnUpConfigChange,
@@ -74,6 +78,7 @@ export function ForecastTab() {
     burnUpChartRef,
     handleRunForecast,
     handleCustomPercentileChange,
+    handleCustomPercentile2Change,
     handleMilestoneIndexChange,
     handleExportCsv,
     handleProjectChange,
@@ -199,6 +204,11 @@ export function ForecastTab() {
                       velocityStdDev={velocityStdDev}
                       selectedCV={selectedCV}
                       volatilityMultiplier={volatilityMultiplier}
+                      simulationData={simulationData}
+                      selectedPercentiles={selectedResultsPercentiles}
+                      onSelectedPercentilesChange={setSelectedResultsPercentiles}
+                      startDate={forecastStartDate}
+                      sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
                     />
                   </div>
                   <div className="absolute top-0 right-0">
@@ -233,6 +243,14 @@ export function ForecastTab() {
             bootstrapResult={customResults.bootstrap}
             triangularResult={customResults.triangular}
             uniformResult={customResults.uniform}
+            percentile2={customPercentile2}
+            truncatedNormalResult2={customResults2.truncatedNormal}
+            lognormalResult2={customResults2.lognormal}
+            gammaResult2={customResults2.gamma}
+            bootstrapResult2={customResults2.bootstrap}
+            triangularResult2={customResults2.triangular}
+            uniformResult2={customResults2.uniform}
+            onPercentile2Change={handleCustomPercentile2Change}
             forecastMode={forecastMode}
             completedSprintCount={completedSprintCount}
             onPercentileChange={handleCustomPercentileChange}
