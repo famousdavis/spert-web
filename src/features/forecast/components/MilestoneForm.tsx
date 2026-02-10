@@ -64,6 +64,7 @@ export function MilestoneForm({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., MVP"
             maxLength={50}
+            autoFocus
             className={cn(
               'w-full rounded p-[0.4rem] text-[0.85rem] dark:text-gray-100',
               name

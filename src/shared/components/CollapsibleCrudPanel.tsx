@@ -135,31 +135,38 @@ export function CollapsibleCrudPanel<T extends CrudItem>({
 
           {headerExtra}
 
-          {/* Add button */}
+          {/* List — always visible so users retain context while adding/editing */}
+          {renderList({
+            items,
+            onEdit: handleEdit,
+            onDelete: handleDeleteRequest,
+          })}
+
+          {/* Add button — below list */}
           {!showForm && canAdd && (
             <button
               onClick={() => setIsAdding(true)}
-              className="mb-4 cursor-pointer rounded border-none dark:border dark:border-blue-600 bg-spert-blue dark:bg-blue-900/30 px-4 py-2 text-sm font-medium text-white dark:text-blue-400"
+              className="mt-4 cursor-pointer rounded border-none dark:border dark:border-blue-600 bg-spert-blue dark:bg-blue-900/30 px-4 py-2 text-sm font-medium text-white dark:text-blue-400"
             >
               {addButtonLabel}
             </button>
           )}
 
           {showSoftWarning && !showForm && softLimitMessage && (
-            <p className="mb-4 text-xs text-spert-warning-dark dark:text-yellow-400">
+            <p className="mt-2 text-xs text-spert-warning-dark dark:text-yellow-400">
               {softLimitMessage}
             </p>
           )}
 
           {maxItems !== undefined && !canAdd && !showForm && (
-            <p className="mb-4 text-xs text-spert-text-muted">
+            <p className="mt-2 text-xs text-spert-text-muted">
               Maximum of {maxItems} items reached.
             </p>
           )}
 
-          {/* Form */}
+          {/* Form — below list and add button */}
           {showForm && (
-            <div className="mb-4">
+            <div className="mt-4">
               {renderForm({
                 editingItem,
                 onSubmitDone: handleSubmitDone,
@@ -167,14 +174,6 @@ export function CollapsibleCrudPanel<T extends CrudItem>({
               })}
             </div>
           )}
-
-          {/* List */}
-          {!showForm &&
-            renderList({
-              items,
-              onEdit: handleEdit,
-              onDelete: handleDeleteRequest,
-            })}
         </div>
       )}
 
