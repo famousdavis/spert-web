@@ -7,7 +7,7 @@ export const MIN_PERCENTILE = 1
 export const MAX_PERCENTILE = 99
 
 /** All selectable percentile values for the results table toggle chips */
-export const SELECTABLE_PERCENTILES = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const
+export const SELECTABLE_PERCENTILES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95] as const
 
 /** Default selected percentiles for new sessions */
 export const DEFAULT_SELECTED_PERCENTILES: readonly number[] = [10, 20, 50, 80, 90] as const
