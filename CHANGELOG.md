@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.17.3 - 2026-02-10
+
+### Enhancements
+
+- **Collapsible Forecast Results**: disclosure triangle on the "Forecast Results" heading to expand/collapse the results table
+- **User-selectable confidence percentiles**: P10–P90 toggle chips replace the fixed P50–P90 columns — default selection: P10/P20/P50/P80/P90
+- **Dual Custom Percentile sliders**: two independent sliders with their own finish-date cards for quick confidence interval lookups
+- Default percentile selections and both slider defaults are configurable in Settings and persist across sessions
+
+### Test Coverage
+
+- 404 tests passing (was 398)
+
 ## v0.17.2 - 2026-02-09
 
 ### UX
