@@ -104,7 +104,7 @@ function PercentileChips({
   onToggle: (p: number) => void
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="copy-image-button flex flex-wrap gap-1.5">
       {SELECTABLE_PERCENTILES.map((p) => {
         const isSelected = selectedPercentiles.includes(p)
         return (
