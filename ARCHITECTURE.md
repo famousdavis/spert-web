@@ -84,7 +84,7 @@ src/
 
 **Hook decomposition**: `useForecastState` orchestrates forecast lifecycle by composing focused hooks: `useSprintData` (statistics), `useForecastInputs` (form state), `useChartSettings` (chart config), `useScopeGrowthState` (scope growth state + resolution), and `useSimulationWorker` (Web Worker bridge). It maintains separate `simulationData` (swapped per milestone for CDF/histogram) and `overallSimulationData` (always total-backlog, used by burn-up chart).
 
-**Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. `ListRowActions` provides shared Edit/Delete button markup. Both MilestoneList and ProjectList support HTML5 drag-and-drop reordering with the same pattern (draggedIndex/dragOverIndex state, splice-based reorder).
+**Reusable CRUD pattern**: `CollapsibleCrudPanel<T>` provides a generic expand/collapse panel with add/edit/delete state machine, used by Milestones and Productivity Adjustments. The list always remains visible while adding or editing — the form renders below the list to preserve context. Name fields auto-focus on form open. `ListRowActions` provides shared Edit/Delete button markup. Both MilestoneList and ProjectList support HTML5 drag-and-drop reordering with the same pattern (draggedIndex/dragOverIndex state, splice-based reorder).
 
 **Single-source changelog**: `CHANGELOG.md` is the single source of truth. The `/changelog` page is a server component that reads and parses the markdown at build time via `parseChangelog()`, passing structured entries to the client `ChangelogContent` component. No hardcoded array to maintain.
 

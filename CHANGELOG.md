@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.17.2 - 2026-02-09
+
+### UX
+
+- **Milestone list stays visible during add/edit**: clicking "+ Add Milestone" or Edit no longer hides existing milestones — the form appears below the list so users retain full context
+- **Auto-focus on form open**: Name field auto-focuses when adding or editing milestones and productivity adjustments
+- Both improvements also apply to Productivity Adjustments (shared `CollapsibleCrudPanel`)
+
+### Infrastructure
+
+- **Single-source changelog**: `/changelog` page now parses `CHANGELOG.md` at build time instead of maintaining a separate hardcoded array — one file to update, no more drift
+- Added `parseChangelog()` utility with 8 unit tests for markdown parsing
+- Restored 3 missing version entries (v0.10.0, v0.11.0, v0.12.0) and enriched detail for v0.14.0–v0.17.0 that were lost during consolidation
+
+### Test Coverage
+
+- 398 tests passing (was 390)
+
 ## v0.17.1 - 2026-02-09
 
 ### Bug Fixes
