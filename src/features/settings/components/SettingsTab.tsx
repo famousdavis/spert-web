@@ -3,7 +3,8 @@
 import { useSettingsStore, TRIAL_COUNT_OPTIONS, type TrialCount } from '@/shared/state/settings-store'
 import { CHART_FONT_SIZE_LABELS, type ChartFontSize } from '@/shared/types/burn-up'
 import { useTheme, type Theme } from '@/shared/hooks/useTheme'
-import { MIN_PERCENTILE, MAX_PERCENTILE } from '@/features/forecast/constants'
+import { MIN_PERCENTILE, MAX_PERCENTILE, SELECTABLE_PERCENTILES } from '@/features/forecast/constants'
+import { cn } from '@/lib/utils'
 
 const sectionHeaderClass = 'text-lg font-semibold text-spert-blue mb-4'
 const labelClass = 'text-sm font-semibold text-spert-text-secondary dark:text-gray-300'
@@ -33,9 +34,24 @@ export function SettingsTab() {
     setDefaultChartFontSize,
     defaultCustomPercentile,
     setDefaultCustomPercentile,
+    defaultCustomPercentile2,
+    setDefaultCustomPercentile2,
+    defaultResultsPercentiles,
+    setDefaultResultsPercentiles,
   } = useSettingsStore()
 
   const { theme, setTheme } = useTheme()
+
+  const handleToggleResultsPercentile = (p: number) => {
+    const isSelected = defaultResultsPercentiles.includes(p)
+    if (isSelected) {
+      // Don't allow deselecting the last one
+      if (defaultResultsPercentiles.length <= 1) return
+      setDefaultResultsPercentiles(defaultResultsPercentiles.filter((v) => v !== p))
+    } else {
+      setDefaultResultsPercentiles([...defaultResultsPercentiles, p])
+    }
+  }
 
   return (
     <div className="space-y-8 max-w-[800px]">
@@ -123,14 +139,44 @@ export function SettingsTab() {
             </select>
           </div>
 
-          {/* Default custom percentile */}
+          {/* Default results table percentiles */}
+          <div>
+            <span className={labelClass}>
+              Default results table percentiles
+            </span>
+            <p className={descriptionClass}>
+              Which confidence percentiles to show in the Forecast Results table for new sessions.
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {SELECTABLE_PERCENTILES.map((p) => {
+                const isSelected = defaultResultsPercentiles.includes(p)
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handleToggleResultsPercentile(p)}
+                    className={cn(
+                      'px-3 py-1 text-xs font-medium rounded-full border cursor-pointer transition-colors duration-150',
+                      isSelected
+                        ? 'bg-spert-blue text-white border-spert-blue'
+                        : 'bg-transparent text-muted-foreground border-spert-border dark:border-gray-600 hover:border-spert-blue hover:text-spert-blue'
+                    )}
+                  >
+                    P{p}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Default custom percentile 1 */}
           <div className="flex items-start gap-3">
             <div>
               <label htmlFor="defaultPercentile" className={labelClass}>
-                Default custom percentile
+                Default custom percentile 1
               </label>
               <p className={descriptionClass}>
-                Initial percentile for the custom percentile selector ({MIN_PERCENTILE}&ndash;{MAX_PERCENTILE}).
+                Initial percentile for the first custom percentile slider ({MIN_PERCENTILE}&ndash;{MAX_PERCENTILE}).
               </p>
             </div>
             <input
@@ -142,6 +188,30 @@ export function SettingsTab() {
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10)
                 if (!isNaN(val)) setDefaultCustomPercentile(val)
+              }}
+              className={`${inputClass} ml-auto flex-shrink-0`}
+            />
+          </div>
+
+          {/* Default custom percentile 2 */}
+          <div className="flex items-start gap-3">
+            <div>
+              <label htmlFor="defaultPercentile2" className={labelClass}>
+                Default custom percentile 2
+              </label>
+              <p className={descriptionClass}>
+                Initial percentile for the second custom percentile slider ({MIN_PERCENTILE}&ndash;{MAX_PERCENTILE}).
+              </p>
+            </div>
+            <input
+              id="defaultPercentile2"
+              type="number"
+              min={MIN_PERCENTILE}
+              max={MAX_PERCENTILE}
+              value={defaultCustomPercentile2}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10)
+                if (!isNaN(val)) setDefaultCustomPercentile2(val)
               }}
               className={`${inputClass} ml-auto flex-shrink-0`}
             />
