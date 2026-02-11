@@ -153,15 +153,15 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 rounded border-none dark:border dark:border-green-600 bg-[#28a745] dark:bg-green-900/30 px-4 py-2 text-[0.9rem] font-semibold text-white dark:text-green-400 cursor-pointer"
+            className="flex items-center gap-2 rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
           >
-            <span role="img" aria-label="export">📤</span> Export Data
+            <span role="img" aria-label="export">📤</span> Export
           </button>
           <button
             onClick={handleImportClick}
-            className="flex items-center gap-2 rounded border-none dark:border dark:border-blue-600 bg-spert-blue dark:bg-blue-900/30 px-4 py-2 text-[0.9rem] font-semibold text-white dark:text-blue-400 cursor-pointer"
+            className="flex items-center gap-2 rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
           >
-            <span role="img" aria-label="import">📥</span> Import Data
+            <span role="img" aria-label="import">📥</span> Import
           </button>
           <input
             ref={fileInputRef}
