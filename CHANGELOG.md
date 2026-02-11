@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.17.4 - 2026-02-10
+
+### Enhancements
+
+- **Header theme toggle**: sun/moon/monitor icon in the top-right corner cycles through Light, Dark, and System themes without navigating to Settings
+- Icon shows the next theme you'll switch to on click (moon when light, monitor when dark, sun when system)
+
+### Housekeeping
+
+- Removed 7 accidental duplicate files (`* 2.tsx` / `* 2.ts`) from the worktree
+
 ## v0.17.3 - 2026-02-10
 
 ### Enhancements
