@@ -1,7 +1,9 @@
 'use client'
 
+import type { RefObject } from 'react'
 import type { BurnUpConfig, DistributionType, ForecastLineConfig, ChartFontSize } from '../types'
 import { DISTRIBUTION_LABELS, CHART_FONT_SIZE_LABELS } from '../types'
+import { CopyImageButton } from '@/shared/components/CopyImageButton'
 // Slider-specific range: step by 5 from 5–95 for easier thumb control
 const SLIDER_MIN = 5
 const SLIDER_MAX = 95
@@ -15,9 +17,10 @@ interface BurnUpConfigProps {
   onChange: (config: BurnUpConfig) => void
   fontSize?: ChartFontSize
   onFontSizeChange?: (size: ChartFontSize) => void
+  chartRef?: RefObject<HTMLDivElement | null>
 }
 
-export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'small', onFontSizeChange }: BurnUpConfigProps) {
+export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'small', onFontSizeChange, chartRef }: BurnUpConfigProps) {
   const handleDistributionChange = (distribution: DistributionType) => {
     onChange({ ...config, distribution })
   }
@@ -36,7 +39,7 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
   return (
     <div className="mb-4">
       {/* All controls in a single horizontal row */}
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         {/* Distribution selector */}
         <div className="flex items-center gap-2">
           <label
@@ -86,27 +89,34 @@ export function BurnUpConfigUI({ config, hasBootstrap, onChange, fontSize = 'sma
           />
         ))}
 
-        {/* Font size selector */}
-        {onFontSizeChange && (
-          <div className="flex items-center gap-2 ml-auto mr-10">
-            <label
-              htmlFor="burnup-font-size"
-              className="text-[0.8125rem] font-semibold text-spert-text-muted"
-            >
-              Text:
-            </label>
-            <select
-              id="burnup-font-size"
-              value={fontSize}
-              onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
-              className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
-            >
-              {FONT_SIZES.map((size) => (
-                <option key={size} value={size}>
-                  {CHART_FONT_SIZE_LABELS[size]}
-                </option>
-              ))}
-            </select>
+        {/* Font size selector + copy image button */}
+        {(onFontSizeChange || chartRef) && (
+          <div className="copy-image-button flex items-center gap-2 ml-auto">
+            {onFontSizeChange && (
+              <>
+                <label
+                  htmlFor="burnup-font-size"
+                  className="text-[0.8125rem] font-semibold text-spert-text-muted"
+                >
+                  Text:
+                </label>
+                <select
+                  id="burnup-font-size"
+                  value={fontSize}
+                  onChange={(e) => onFontSizeChange(e.target.value as ChartFontSize)}
+                  className="px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {FONT_SIZES.map((size) => (
+                    <option key={size} value={size}>
+                      {CHART_FONT_SIZE_LABELS[size]}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+            {chartRef && (
+              <CopyImageButton targetRef={chartRef} title="Copy chart as image" />
+            )}
           </div>
         )}
       </div>
@@ -139,7 +149,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
         onChange={(e) => onChange({ label: e.target.value })}
         placeholder={`Line ${lineNumber}`}
         maxLength={16}
-        className="w-[105px] px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
+        className="w-[88px] px-1.5 py-1 text-[0.8125rem] border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-100"
         title="Forecast line label"
       />
 

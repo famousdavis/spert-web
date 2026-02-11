@@ -9,7 +9,6 @@ import { CHART_FONT_SIZES } from '../types'
 import { calculateBurnUpData, isBootstrapAvailable } from '../lib/burn-up'
 import { BurnUpConfigUI } from './BurnUpConfig'
 import { BurnUpChartCanvas } from './BurnUpChartCanvas'
-import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface BurnUpChartProps {
   sprints: Sprint[]
@@ -123,13 +122,14 @@ export function BurnUpChart({
       </button>
 
       {isExpanded && (
-        <div id={panelId} role="region" aria-label="Burn-Up Chart" className="px-4 pb-4 relative">
+        <div id={panelId} role="region" aria-label="Burn-Up Chart" className="px-4 pb-4">
           <BurnUpConfigUI
             config={config}
             hasBootstrap={hasBootstrap}
             onChange={onConfigChange}
             fontSize={fontSize}
             onFontSizeChange={onFontSizeChange}
+            chartRef={chartRef}
           />
 
           <div ref={chartRef} className="bg-white dark:bg-gray-800 p-2">
@@ -145,11 +145,6 @@ export function BurnUpChart({
               fontSizes={fontSizes}
             />
           </div>
-          {chartRef && (
-            <div className="absolute top-2 right-2">
-              <CopyImageButton targetRef={chartRef} title="Copy chart as image" />
-            </div>
-          )}
         </div>
       )}
     </div>
