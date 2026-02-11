@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo } from 'react'
 import type { Milestone } from '@/shared/types'
 import { type ChartFontSize, CHART_FONT_SIZE_LABELS } from '../types'
 
@@ -22,7 +23,28 @@ export function ChartToolbar({
   fontSize = 'small',
   onFontSizeChange,
 }: ChartToolbarProps) {
-  const showMilestoneSelector = milestones.length > 0 && onMilestoneIndexChange
+  // Filter to only milestones checked for chart display, preserving original indices
+  const visibleMilestones = useMemo(
+    () => milestones
+      .map((m, idx) => ({ milestone: m, originalIndex: idx }))
+      .filter(({ milestone: m }) => m.showOnChart !== false),
+    [milestones]
+  )
+
+  // Auto-correct selected index when it's not among the visible milestones
+  useEffect(() => {
+    if (visibleMilestones.length === 0 || !onMilestoneIndexChange) return
+    const isValid = visibleMilestones.some((v) => v.originalIndex === selectedMilestoneIndex)
+    if (!isValid) {
+      onMilestoneIndexChange(visibleMilestones[0].originalIndex)
+    }
+  }, [visibleMilestones, selectedMilestoneIndex, onMilestoneIndexChange])
+
+  const lastVisibleIdx = visibleMilestones.length > 0
+    ? visibleMilestones[visibleMilestones.length - 1].originalIndex
+    : -1
+
+  const showMilestoneSelector = visibleMilestones.length > 0 && onMilestoneIndexChange
   const showFontSize = !!onFontSizeChange
 
   if (!showMilestoneSelector && !showFontSize) return null
@@ -43,9 +65,9 @@ export function ChartToolbar({
             onChange={(e) => onMilestoneIndexChange(Number(e.target.value))}
             className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
           >
-            {milestones.map((m, idx) => (
-              <option key={m.id} value={idx}>
-                {m.name}{idx === milestones.length - 1 ? ' (Total)' : ''}
+            {visibleMilestones.map(({ milestone: m, originalIndex }) => (
+              <option key={m.id} value={originalIndex}>
+                {m.name}{originalIndex === lastVisibleIdx && visibleMilestones.length > 1 ? ' (Total)' : ''}
               </option>
             ))}
           </select>
