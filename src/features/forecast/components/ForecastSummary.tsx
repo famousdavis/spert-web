@@ -138,11 +138,18 @@ export function ForecastSummary({
     )
   }, [selectedResult, projectName, remainingBacklog, unitOfMeasure, selectedPercentile, completedSprintCount, selectedDistribution, modelScopeGrowth, scopeGrowthPerSprint, scopeGrowthMode])
 
+  const visibleMilestones = useMemo(
+    () => milestones
+      .map((m, idx) => ({ milestone: m, originalIndex: idx }))
+      .filter(({ milestone: m }) => m.showOnChart !== false),
+    [milestones]
+  )
+
   const milestoneTexts = useMemo(() => {
-    if (!milestoneResultsState || milestones.length === 0) return []
-    return milestones.map((milestone, idx) => {
-      const msResults = milestoneResultsState.milestoneResults[idx]
-      const msSimData = milestoneResultsState.milestoneSimulationData[idx]
+    if (!milestoneResultsState || visibleMilestones.length === 0) return []
+    return visibleMilestones.map(({ milestone, originalIndex }) => {
+      const msResults = milestoneResultsState.milestoneResults[originalIndex]
+      const msSimData = milestoneResultsState.milestoneSimulationData[originalIndex]
       if (!msResults || !msSimData) return null
       const distResults = msResults[selectedDistribution]
       const distSimData = msSimData[selectedDistribution]
@@ -155,7 +162,7 @@ export function ForecastSummary({
         completedSprintCount
       )
     }).filter(Boolean) as string[]
-  }, [milestoneResultsState, milestones, selectedDistribution, selectedPercentile, startDate, sprintCadenceWeeks, completedSprintCount])
+  }, [milestoneResultsState, visibleMilestones, selectedDistribution, selectedPercentile, startDate, sprintCadenceWeeks, completedSprintCount])
 
   const handleCopy = () => {
     let fullText = summaryText
@@ -230,15 +237,15 @@ export function ForecastSummary({
       </p>
       {milestoneTexts.length > 0 && (
         <div className="mt-2 pl-3 border-l-2 border-blue-200 dark:border-blue-700">
-          {milestones.map((milestone, idx) => {
-            if (!milestoneTexts[idx]) return null
+          {visibleMilestones.map(({ milestone }, visIdx) => {
+            if (!milestoneTexts[visIdx]) return null
             return (
               <p key={milestone.id} className="text-xs text-spert-text-muted dark:text-gray-400 leading-relaxed">
                 <span
                   className="inline-block size-2 rounded-full mr-1.5 align-middle"
                   style={{ backgroundColor: milestone.color }}
                 />
-                {milestoneTexts[idx]}
+                {milestoneTexts[visIdx]}
               </p>
             )
           })}

@@ -33,6 +33,7 @@ src/
 │   │   │   ├── SubjectiveInputs.tsx      # CV elicitation for Subjective mode
 │   │   │   ├── VolatilityAdjuster.tsx    # SD multiplier radio panel for History mode
 │   │   │   ├── ScopeGrowthSection.tsx    # Scope growth modeling controls
+│   │   │   ├── ReportButton.tsx          # Report generation button with section selector popover
 │   │   │   └── ...                       # Results, CDF, histogram, milestones, etc.
 │   │   ├── hooks/              # State orchestration
 │   │   │   ├── useForecastState.ts       # Top-level simulation orchestration
@@ -47,6 +48,7 @@ src/
 │   │   │   ├── scope-growth.ts           # Scope growth resolution helper
 │   │   │   ├── burn-up.ts                # Burn-up chart data calculation
 │   │   │   ├── export-csv.ts             # CSV generation & download
+│   │   │   ├── generate-report.ts        # Print-friendly HTML report generation
 │   │   │   ├── productivity.ts           # Productivity adjustment factors
 │   │   │   ├── statistics.ts             # Scope change analysis
 │   │   │   └── cdf.ts                    # CDF calculation utilities

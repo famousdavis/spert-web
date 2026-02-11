@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.18.0 - 2026-02-10
+
+### New Features
+
+- **Shareable Forecast Report**: Generate Report icon (next to CSV export and copy-image) opens a popover to generate a print-friendly HTML report in a new browser tab. Expanded charts (burn-up, CDF, histogram) are included automatically; a checkbox controls whether Forecast Results is included. Collapse any chart to exclude it. Use Cmd+P / Ctrl+P to save as PDF.
+- **Consolidated action icons**: Copy-image, Generate Report, and Export CSV icons now appear together on the Forecast Results heading row
+
+### Bug Fixes
+
+- **Milestone filtering in results**: Forecast Results table and Forecast Summary now only show milestones where "Show on Chart" is checked, matching the existing behavior of the Burn-Up Chart and Custom Percentile selector. Previously, unchecked milestones showed misleading dates when the backlog input didn't account for their scope.
+
+### Test Coverage
+
+- 421 tests passing (was 404): added 17 tests for report HTML generation and XSS escaping
+
 ## v0.17.4 - 2026-02-10
 
 ### Enhancements

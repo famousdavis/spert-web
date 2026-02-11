@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
 import type { PercentileResults, QuadResults, QuadSimulationData } from '../lib/monte-carlo'
 import { calculatePercentileResult } from '../lib/monte-carlo'
@@ -9,6 +9,8 @@ import { formatDate } from '@/shared/lib/dates'
 import type { Milestone, ForecastMode } from '@/shared/types'
 import { getVisibleDistributions, DISTRIBUTION_LABELS, type DistributionType } from '../types'
 import { SELECTABLE_PERCENTILES } from '../constants'
+import { ReportButton } from './ReportButton'
+import { CopyImageButton } from '@/shared/components/CopyImageButton'
 
 interface ForecastResultsProps {
   results: QuadResults
@@ -31,6 +33,13 @@ interface ForecastResultsProps {
   onSelectedPercentilesChange?: (percentiles: number[]) => void
   startDate?: string
   sprintCadenceWeeks?: number
+  // Report generation props
+  forecastResultsRef?: RefObject<HTMLDivElement | null>
+  burnUpChartRef?: RefObject<HTMLDivElement | null>
+  distributionChartRef?: RefObject<HTMLDivElement | null>
+  histogramChartRef?: RefObject<HTMLDivElement | null>
+  projectName?: string
+  summaryText?: string
 }
 
 interface DistColumn {
@@ -254,13 +263,26 @@ export function ForecastResults({
   onSelectedPercentilesChange,
   startDate,
   sprintCadenceWeeks,
+  forecastResultsRef,
+  burnUpChartRef,
+  distributionChartRef,
+  histogramChartRef,
+  projectName,
+  summaryText,
 }: ForecastResultsProps) {
   const [isExpanded, setIsExpanded] = useState(true)
 
   const hasBootstrap = results.bootstrap !== null
   const modeContext = buildModeContext(forecastMode, effectiveMean, effectiveStdDev, velocityMean, velocityStdDev, selectedCV, volatilityMultiplier)
   const columns = getDistributionColumns(forecastMode, hasBootstrap)
-  const hasMilestones = milestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
+  const visibleMilestones = useMemo(
+    () => milestones
+      .map((m, idx) => ({ milestone: m, originalIndex: idx }))
+      .filter(({ milestone: m }) => m.showOnChart !== false),
+    [milestones]
+  )
+
+  const hasMilestones = visibleMilestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0
 
   // Dynamic percentile mode: we have simulation data and user-selectable percentiles
   const useDynamic = !!(simulationData && selectedPercentiles && startDate && sprintCadenceWeeks)
@@ -286,21 +308,67 @@ export function ForecastResults({
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 font-medium dark:text-gray-100 cursor-pointer bg-transparent border-none p-0 text-inherit text-base"
-      >
-        <span
-          className={cn(
-            'inline-block text-xs transition-transform duration-200',
-            isExpanded ? 'rotate-90' : 'rotate-0'
-          )}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 font-medium dark:text-gray-100 cursor-pointer bg-transparent border-none p-0 text-inherit text-base"
         >
-          ▶
-        </span>
-        Forecast Results
-      </button>
+          <span
+            className={cn(
+              'inline-block text-xs transition-transform duration-200',
+              isExpanded ? 'rotate-90' : 'rotate-0'
+            )}
+          >
+            ▶
+          </span>
+          Forecast Results
+        </button>
+        {isExpanded && (
+          <div className="copy-image-button flex items-center gap-1">
+            {forecastResultsRef && projectName && summaryText && (
+              <ReportButton
+                forecastResultsRef={forecastResultsRef}
+                burnUpChartRef={burnUpChartRef}
+                distributionChartRef={distributionChartRef}
+                histogramChartRef={histogramChartRef}
+                projectName={projectName}
+                summaryText={summaryText}
+              />
+            )}
+            {onExport && (
+              <button
+                onClick={onExport}
+                title="Export simulation data to CSV"
+                aria-label="Export simulation data to CSV"
+                className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
+              >
+                <svg
+                  aria-hidden="true"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            )}
+            {forecastResultsRef && (
+              <CopyImageButton
+                targetRef={forecastResultsRef}
+                title="Copy results as image"
+              />
+            )}
+          </div>
+        )}
+      </div>
 
       {isExpanded && (
         <>
@@ -314,13 +382,13 @@ export function ForecastResults({
 
           {hasMilestones ? (
             <div className="space-y-6">
-              {milestones.map((milestone, idx) => {
-                const milestoneResult = milestoneResultsState.milestoneResults[idx]
+              {visibleMilestones.map(({ milestone, originalIndex }, visIdx) => {
+                const milestoneResult = milestoneResultsState.milestoneResults[originalIndex]
                 if (!milestoneResult) return null
 
-                const milestoneSimData = milestoneResultsState.milestoneSimulationData?.[idx] ?? null
-                const isLast = idx === milestones.length - 1
-                const cumulativeBacklog = cumulativeThresholds[idx] ?? 0
+                const milestoneSimData = milestoneResultsState.milestoneSimulationData?.[originalIndex] ?? null
+                const isLast = visIdx === visibleMilestones.length - 1
+                const cumulativeBacklog = cumulativeThresholds[originalIndex] ?? 0
                 const rows = buildRows(milestoneResult as QuadResults, milestoneSimData)
 
                 return (
@@ -364,61 +432,35 @@ export function ForecastResults({
             </div>
           )}
 
-          <div className="flex justify-between items-start">
-            <div className="text-xs text-muted-foreground space-y-1">
-              {modeContext && <p>{modeContext}</p>}
-              <p>
-                P<em>X</em> means there is an <em>X</em>% chance of finishing by that date <em>or sooner</em>. Higher
-                percentiles are more conservative.
-              </p>
-              <p>
-                {forecastMode === 'subjective' ? (
-                  <>
-                    <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
-                    <strong>Lognorm</strong>: right-skewed.{' '}
-                    <strong>Gamma</strong>: flexible shape.{' '}
-                    <strong>Triangular</strong>: peak at estimate.{' '}
-                    <strong>Uniform</strong>: equal probability across range.
-                  </>
-                ) : (
-                  <>
-                    <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
-                    <strong>Lognorm</strong>: right-skewed.{' '}
-                    <strong>Gamma</strong>: flexible shape.{' '}
-                    <strong>Triangular</strong>: peak at mean.
-                    {hasBootstrap && (
-                      <>
-                        {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
-                      </>
-                    )}
-                  </>
-                )}
-              </p>
-            </div>
-            {onExport && (
-              <button
-                onClick={onExport}
-                title="Export simulation data to CSV"
-                aria-label="Export simulation data to CSV"
-                className="bg-transparent border-none cursor-pointer p-1 opacity-50 hover:opacity-100 transition-opacity duration-200 shrink-0"
-              >
-                <svg
-                  aria-hidden="true"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </button>
-            )}
+          <div className="text-xs text-muted-foreground space-y-1">
+            {modeContext && <p>{modeContext}</p>}
+            <p>
+              P<em>X</em> means there is an <em>X</em>% chance of finishing by that date <em>or sooner</em>. Higher
+              percentiles are more conservative.
+            </p>
+            <p>
+              {forecastMode === 'subjective' ? (
+                <>
+                  <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                  <strong>Lognorm</strong>: right-skewed.{' '}
+                  <strong>Gamma</strong>: flexible shape.{' '}
+                  <strong>Triangular</strong>: peak at estimate.{' '}
+                  <strong>Uniform</strong>: equal probability across range.
+                </>
+              ) : (
+                <>
+                  <strong>T-Normal</strong>: symmetric, bounded at zero.{' '}
+                  <strong>Lognorm</strong>: right-skewed.{' '}
+                  <strong>Gamma</strong>: flexible shape.{' '}
+                  <strong>Triangular</strong>: peak at mean.
+                  {hasBootstrap && (
+                    <>
+                      {' '}<strong>Bootstrap</strong>: samples from actual sprint history (#NoEstimates).
+                    </>
+                  )}
+                </>
+              )}
+            </p>
           </div>
         </>
       )}
