@@ -187,7 +187,7 @@ export function ForecastTab() {
                   velocityStdDev={velocityStdDev}
                   volatilityMultiplier={volatilityMultiplier}
                 />
-                <div className="mt-8 relative">
+                <div className="mt-8">
                   <div ref={forecastResultsRef} className="bg-white dark:bg-gray-900">
                     <ForecastResults
                       results={results}
@@ -209,12 +209,12 @@ export function ForecastTab() {
                       onSelectedPercentilesChange={setSelectedResultsPercentiles}
                       startDate={forecastStartDate}
                       sprintCadenceWeeks={selectedProject.sprintCadenceWeeks}
-                    />
-                  </div>
-                  <div className="absolute top-0 right-0">
-                    <CopyImageButton
-                      targetRef={forecastResultsRef}
-                      title="Copy results as image"
+                      forecastResultsRef={forecastResultsRef}
+                      burnUpChartRef={burnUpChartRef}
+                      distributionChartRef={distributionChartRef}
+                      histogramChartRef={histogramChartRef}
+                      projectName={selectedProject.name}
+                      summaryText={`Monte Carlo forecast for ${selectedProject.name}: ${remainingBacklog} ${selectedProject.unitOfMeasure} remaining backlog.`}
                     />
                   </div>
                 </div>
