@@ -58,11 +58,11 @@ src/
 │   ├── settings/               # Global settings (simulation, chart defaults, theme)
 │   └── sprint-history/         # Sprint data entry & velocity stats
 ├── shared/                     # Cross-feature utilities
-│   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions)
+│   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions, MergeImportDialog)
 │   ├── constants.ts            # APP_VERSION, APP_NAME
 │   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient)
 │   ├── lib/                    # Pure utilities: math, dates, copy-image, colors
-│   ├── state/                  # Zustand stores (project-store, settings-store, import-validation, storage)
+│   ├── state/                  # Zustand stores (project-store, settings-store, import-validation, merge-import, storage)
 │   └── types/                  # Shared types (burn-up config, project/sprint)
 ├── shell/                      # App layout & navigation
 │   └── components/             # AppShell, TabNavigation, Footer
@@ -94,7 +94,7 @@ src/
 
 ## Data Flow
 
-1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key)
+1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key). Import detects Story Map exports (`source: "spert-story-map"`) and merges by project name instead of full-replacing
 2. **Global settings** (trial count, auto-recalc, chart defaults, results percentile selection, custom percentile defaults, theme) persisted separately (`spert-settings` key)
 3. **Forecast inputs** (backlog, velocity overrides, forecast mode, CV selection, volatility multiplier) are session-only state per project
 3a. **Results table percentiles** (P10–P90 toggle chips) and **dual custom percentile sliders** are session-only state initialized from settings defaults. Dynamic percentile computation uses `calculatePercentileResult()` on-the-fly from sorted simulation arrays — no pre-computed `PercentileResults` needed

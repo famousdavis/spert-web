@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.19.0 - 2026-02-15
+
+### New Features
+
+- **Import from SPERT Story Map**: Importing a Story Map export (`source: "spert-story-map"`) triggers a merge flow instead of a full replace. Projects are matched by name (case-insensitive); milestones are replaced with the Story Map's release breakdown, new sprints are added without overwriting existing ones, and productivity adjustments are preserved. A confirmation dialog summarizes what will be updated or added before proceeding.
+- **Import confirmation dialog**: Native Forecaster imports now show a "Replace All Data" warning before overwriting localStorage, advising users to export first. Previously, importing replaced all data silently with no confirmation.
+
+### Architecture
+
+- **Merge-import module** (`src/shared/state/merge-import.ts`): Pure functions for Story Map format detection (`isStoryMapExport`), merge plan building (`buildMergePlan`), and plan application (`applyMergePlan`). Fully testable with no store dependencies.
+- **MergeImportDialog** (`src/shared/components/MergeImportDialog.tsx`): Accessible merge confirmation dialog following ConfirmDialog patterns (focus trap, Escape, ARIA, body scroll lock)
+
+### Test Coverage
+
+- 447 tests passing (was 421): added 26 tests for merge-import logic (detection, name matching, sprint overlap counting, milestone replacement, data preservation)
+
 ## v0.18.0 - 2026-02-10
 
 ### New Features
@@ -10,6 +26,8 @@
 ### Bug Fixes
 
 - **Milestone filtering in results**: Forecast Results table and Forecast Summary now only show milestones where "Show on Chart" is checked, matching the existing behavior of the Burn-Up Chart and Custom Percentile selector. Previously, unchecked milestones showed misleading dates when the backlog input didn't account for their scope.
+- **Chart toolbar milestone dropdown** (PR #47): CDF and histogram milestone dropdowns now filter by `showOnChart`, matching burn-up chart behavior. Auto-corrects selected milestone if it becomes hidden.
+- **Burn-up chart toolbar layout** (PR #48): All controls (distribution, Show scope, 3 forecast lines, Text size, copy icon) fit on a single row. Label inputs narrowed to 88px, gap tightened. CopyImageButton moved from absolute overlay into the toolbar row.
 
 ### Test Coverage
 

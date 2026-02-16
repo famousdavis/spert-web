@@ -5,6 +5,9 @@ import { toast } from 'sonner'
 import { useProjectStore, selectActiveProject, type ExportData } from '@/shared/state/project-store'
 import { useIsClient } from '@/shared/hooks'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { MergeImportDialog } from '@/shared/components/MergeImportDialog'
+import { isStoryMapExport, buildMergePlan, applyMergePlan, type StoryMapExportData, type MergePlan } from '@/shared/state/merge-import'
+import { validateImportData } from '@/shared/state/import-validation'
 import { today } from '@/shared/lib/dates'
 import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
@@ -22,12 +25,23 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const updateProject = useProjectStore((state) => state.updateProject)
   const deleteProject = useProjectStore((state) => state.deleteProject)
   const reorderProjects = useProjectStore((state) => state.reorderProjects)
+  const sprints = useProjectStore((state) => state.sprints)
   const exportData = useProjectStore((state) => state.exportData)
   const importData = useProjectStore((state) => state.importData)
+  const mergeImportData = useProjectStore((state) => state.mergeImportData)
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [mergeState, setMergeState] = useState<{
+    isOpen: boolean
+    plan: MergePlan | null
+    data: StoryMapExportData | null
+  }>({ isOpen: false, plan: null, data: null })
+  const [replaceConfirm, setReplaceConfirm] = useState<{
+    isOpen: boolean
+    data: ExportData | null
+  }>({ isOpen: false, data: null })
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; projectId: string | null; projectName: string }>({
     isOpen: false,
     projectId: null,
@@ -105,14 +119,24 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         return
       }
 
-      // Validate and import
+      // Validate structure (shared validation for both formats)
       try {
-        importData(data)
-        toast.success('Project data imported')
+        validateImportData(data)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown validation error'
         setImportError(`Import failed: ${message}`)
+        return
       }
+
+      // Detect Story Map export and use merge flow
+      if (isStoryMapExport(data)) {
+        const plan = buildMergePlan(projects, sprints, data)
+        setMergeState({ isOpen: true, plan, data })
+        return
+      }
+
+      // Native Forecaster export: show confirmation before full replace
+      setReplaceConfirm({ isOpen: true, data })
     }
     reader.onerror = () => {
       setImportError('Import failed: Could not read file')
@@ -140,6 +164,47 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteConfirm({ isOpen: false, projectId: null, projectName: '' })
+  }, [])
+
+  const handleMergeConfirm = useCallback(() => {
+    if (!mergeState.plan || !mergeState.data) return
+    try {
+      const result = applyMergePlan(projects, sprints, mergeState.data, mergeState.plan)
+      mergeImportData(result.projects, result.sprints)
+
+      const parts: string[] = []
+      if (mergeState.plan.totalUpdatedProjects > 0) {
+        parts.push(`${mergeState.plan.totalUpdatedProjects} project${mergeState.plan.totalUpdatedProjects !== 1 ? 's' : ''} updated`)
+      }
+      if (mergeState.plan.totalNewProjects > 0) {
+        parts.push(`${mergeState.plan.totalNewProjects} project${mergeState.plan.totalNewProjects !== 1 ? 's' : ''} added`)
+      }
+      toast.success(`Story Map imported: ${parts.join(', ')}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setImportError(`Merge failed: ${message}`)
+    }
+    setMergeState({ isOpen: false, plan: null, data: null })
+  }, [mergeState, projects, sprints, mergeImportData])
+
+  const handleMergeCancel = useCallback(() => {
+    setMergeState({ isOpen: false, plan: null, data: null })
+  }, [])
+
+  const handleReplaceConfirm = useCallback(() => {
+    if (!replaceConfirm.data) return
+    try {
+      importData(replaceConfirm.data)
+      toast.success('Project data imported')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown validation error'
+      setImportError(`Import failed: ${message}`)
+    }
+    setReplaceConfirm({ isOpen: false, data: null })
+  }, [replaceConfirm.data, importData])
+
+  const handleReplaceCancel = useCallback(() => {
+    setReplaceConfirm({ isOpen: false, data: null })
   }, [])
 
   if (!isClient) {
@@ -211,6 +276,24 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+        variant="danger"
+      />
+
+      <MergeImportDialog
+        isOpen={mergeState.isOpen}
+        plan={mergeState.plan}
+        onConfirm={handleMergeConfirm}
+        onCancel={handleMergeCancel}
+      />
+
+      <ConfirmDialog
+        isOpen={replaceConfirm.isOpen}
+        title="Replace All Data"
+        message="This will replace all existing projects, sprint history, milestones, and productivity adjustments with the contents of this file. This cannot be undone. Export your current data first if you want to keep it."
+        confirmLabel="Replace"
+        cancelLabel="Cancel"
+        onConfirm={handleReplaceConfirm}
+        onCancel={handleReplaceCancel}
         variant="danger"
       />
     </div>
