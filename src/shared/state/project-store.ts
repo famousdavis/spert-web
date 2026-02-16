@@ -66,6 +66,7 @@ interface ProjectState {
   // Import/Export actions
   exportData: () => ExportData
   importData: (data: ExportData) => void
+  mergeImportData: (projects: Project[], sprints: Sprint[]) => void
 
   // Forecast input actions (session only)
   setForecastInput: <K extends keyof ForecastInputs>(projectId: string, field: K, value: ForecastInputs[K]) => void
@@ -311,6 +312,10 @@ export const useProjectStore = create<ProjectState>()(
           projects: data.projects,
           sprints: data.sprints,
         }))
+      },
+
+      mergeImportData: (projects, sprints) => {
+        set(() => ({ projects, sprints }))
       },
 
       setForecastInput: (projectId, field, value) =>

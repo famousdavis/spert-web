@@ -3,6 +3,7 @@ import type { Project, Sprint } from '@/shared/types'
 export interface ExportData {
   version: string
   exportedAt: string
+  source?: string // e.g., 'spert-story-map' for Story Map exports
   projects: Project[]
   sprints: Sprint[]
 }
