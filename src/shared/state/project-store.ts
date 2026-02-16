@@ -311,11 +311,20 @@ export const useProjectStore = create<ProjectState>()(
         set(() => ({
           projects: data.projects,
           sprints: data.sprints,
+          viewingProjectId: null,
+          forecastInputs: {},
+          burnUpConfigs: {},
         }))
       },
 
       mergeImportData: (projects, sprints) => {
-        set(() => ({ projects, sprints }))
+        set(() => ({
+          projects,
+          sprints,
+          viewingProjectId: null,
+          forecastInputs: {},
+          burnUpConfigs: {},
+        }))
       },
 
       setForecastInput: (projectId, field, value) =>

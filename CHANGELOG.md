@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.19.1 - 2026-02-15
+
+### Bug Fixes
+
+- **Import clears session state**: Both full-replace and merge imports now reset `viewingProjectId`, `forecastInputs`, and `burnUpConfigs` to prevent stale UI state referencing deleted projects
+
+### Housekeeping
+
+- Removed dead code: `parseDate()` and `daysBetween()` from `dates.ts` — both were unused and had timezone bugs (missing `T00:00:00` suffix unlike every other date function in the file)
+
+### Test Coverage
+
+- 514 tests passing (was 447): added 72 dedicated edge-case tests for import-validation (milestones, dates, boundaries, sprint fields)
+- Milestone validation: backlogSize boundaries (0, negative, > 999999), missing color, non-boolean showOnChart, > 10 milestones, duplicate IDs
+- Date validation: auto-corrected dates (Feb 30), invalid leap year (2025-02-29), non-YYYY-MM-DD formats
+- Sprint validation: sprintNumber boundaries (0, 10001), fractional sprintNumber, doneValue/backlogAtSprintEnd ranges
+- Top-level structure: null/primitive input, missing arrays, source field
+
 ## v0.19.0 - 2026-02-15
 
 ### New Features

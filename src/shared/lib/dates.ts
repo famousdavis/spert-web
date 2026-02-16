@@ -66,23 +66,6 @@ export function today(): string {
 }
 
 /**
- * Parse an ISO date string and return a Date object
- */
-export function parseDate(dateStr: string): Date {
-  return new Date(dateStr)
-}
-
-/**
- * Calculate the number of days between two dates
- */
-export function daysBetween(startDateStr: string, endDateStr: string): number {
-  const start = new Date(startDateStr)
-  const end = new Date(endDateStr)
-  const diffTime = end.getTime() - start.getTime()
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-}
-
-/**
  * Check if a date is a weekend (Saturday = 6, Sunday = 0)
  */
 export function isWeekend(dateStr: string): boolean {

@@ -9,8 +9,6 @@ import {
   countWorkingDays,
   calculateSprintProductivityFactor,
   isWeekend,
-  parseDate,
-  daysBetween,
   formatDate,
   formatDateLong,
   formatDateRange,
@@ -328,35 +326,6 @@ describe('calculateSprintProductivityFactor', () => {
       { startDate: '2025-12-25', endDate: '2025-12-26', factor: 0.0 },
     ])
     expect(factor).toBeCloseTo(0.75, 5)
-  })
-})
-
-// --- Edge case tests added in v0.10.0 ---
-
-describe('parseDate', () => {
-  it('returns a valid Date for an ISO string', () => {
-    const d = parseDate('2026-01-15')
-    expect(d).toBeInstanceOf(Date)
-    expect(d.getFullYear()).toBe(2026)
-  })
-
-  it('returns Invalid Date for garbage input', () => {
-    const d = parseDate('not-a-date')
-    expect(isNaN(d.getTime())).toBe(true)
-  })
-})
-
-describe('daysBetween', () => {
-  it('returns 0 for same date', () => {
-    expect(daysBetween('2026-01-15', '2026-01-15')).toBe(0)
-  })
-
-  it('returns positive for forward range', () => {
-    expect(daysBetween('2026-01-01', '2026-01-08')).toBe(7)
-  })
-
-  it('returns negative for reversed range', () => {
-    expect(daysBetween('2026-01-08', '2026-01-01')).toBe(-7)
   })
 })
 
