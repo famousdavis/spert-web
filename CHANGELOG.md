@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.20.0 - 2026-02-19
+
+### New Features
+
+- **Export attribution** — New section in Settings for attaching name and identifier to JSON exports for team workflow traceability
+- **Workspace reconciliation tokens** — Exports include `_originRef` and `_storageRef` for cross-session data provenance tracking and localStorage hydration recovery
+- **Export pipeline diagnostics** — Dataset maintains a lightweight `_changeLog` of structural operations for client-side telemetry
+
+### Technical
+
+- New localStorage key `spert-workspace-id` for deterministic workspace binding
+- `_originRef` set on first structural operation, preserved across imports for data lineage
+- `_storageRef` injected at export time from workspace token
+- `appendChangeLogEntry()` utility with 500-entry cap
+- Audit trail logging for structural mutations (add/delete projects, sprints, adjustments, milestones)
+- Import preserves `_originRef` and `_changeLog` from source data for provenance chain continuity
+
+### Test Coverage
+
+- 541 tests passing (was 514): added 7 tests for workspace identity and changelog utilities, 20 tests for fingerprinting in project store (origin ref, changelog, export, import, merge-import)
+
 ## v0.19.1 - 2026-02-15
 
 ### Bug Fixes

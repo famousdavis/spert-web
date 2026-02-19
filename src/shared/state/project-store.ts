@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Project, Sprint, ProductivityAdjustment, Milestone, ForecastMode } from '@/shared/types'
-import { storage, STORAGE_KEY } from './storage'
+import { storage, STORAGE_KEY, getWorkspaceId, appendChangeLogEntry, type ChangeLogEntry } from './storage'
 import { APP_VERSION } from '@/shared/constants'
 import { type BurnUpConfig, DEFAULT_BURN_UP_CONFIG } from '@/shared/types/burn-up'
 import { validateImportData, type ExportData } from './import-validation'
+import { useSettingsStore } from './settings-store'
 export { validateImportData, type ExportData } from './import-validation'
 
 // Session-only forecast inputs (per project, not persisted to localStorage)
@@ -24,6 +25,10 @@ interface ProjectState {
   viewingProjectId: string | null // Shared across Sprint History and Forecast tabs
   forecastInputs: Record<string, ForecastInputs> // projectId -> inputs (session only)
   burnUpConfigs: Record<string, BurnUpConfig> // projectId -> config (session only)
+
+  // Workspace reconciliation tokens (persisted)
+  _originRef: string
+  _changeLog: ChangeLogEntry[]
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -80,6 +85,10 @@ interface ProjectState {
 const generateId = () => crypto.randomUUID()
 const now = () => new Date().toISOString()
 
+// Lazily ensure _originRef is set (first structural mutation or export)
+const ensureOriginRef = (state: { _originRef: string }): string =>
+  state._originRef || getWorkspaceId()
+
 export const useProjectStore = create<ProjectState>()(
   persist(
     (set, get) => ({
@@ -88,19 +97,21 @@ export const useProjectStore = create<ProjectState>()(
       viewingProjectId: null as string | null,
       forecastInputs: {} as Record<string, ForecastInputs>,
       burnUpConfigs: {} as Record<string, BurnUpConfig>,
+      _originRef: '' as string,
+      _changeLog: [] as ChangeLogEntry[],
 
       addProject: (projectData) =>
-        set((state) => ({
-          projects: [
-            ...state.projects,
-            {
-              ...projectData,
-              id: generateId(),
-              createdAt: now(),
-              updatedAt: now(),
-            },
-          ],
-        })),
+        set((state) => {
+          const id = generateId()
+          return {
+            projects: [
+              ...state.projects,
+              { ...projectData, id, createdAt: now(), updatedAt: now() },
+            ],
+            _originRef: ensureOriginRef(state),
+            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'project', id }),
+          }
+        }),
 
       updateProject: (id, updates) =>
         set((state) => ({
@@ -123,6 +134,7 @@ export const useProjectStore = create<ProjectState>()(
               state.viewingProjectId === id
                 ? (remainingProjects[0]?.id ?? null)
                 : state.viewingProjectId,
+            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'project', id }),
           }
         }),
 
@@ -139,17 +151,16 @@ export const useProjectStore = create<ProjectState>()(
       setViewingProjectId: (id) => set({ viewingProjectId: id }),
 
       addSprint: (sprintData) =>
-        set((state) => ({
-          sprints: [
-            ...state.sprints,
-            {
-              ...sprintData,
-              id: generateId(),
-              createdAt: now(),
-              updatedAt: now(),
-            },
-          ],
-        })),
+        set((state) => {
+          const id = generateId()
+          return {
+            sprints: [
+              ...state.sprints,
+              { ...sprintData, id, createdAt: now(), updatedAt: now() },
+            ],
+            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'sprint', id }),
+          }
+        }),
 
       updateSprint: (id, updates) =>
         set((state) => ({
@@ -161,6 +172,7 @@ export const useProjectStore = create<ProjectState>()(
       deleteSprint: (id) =>
         set((state) => ({
           sprints: state.sprints.filter((s) => s.id !== id),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'sprint', id }),
         })),
 
       toggleSprintIncluded: (id) =>
@@ -173,25 +185,24 @@ export const useProjectStore = create<ProjectState>()(
         })),
 
       addProductivityAdjustment: (projectId, adjustmentData) =>
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === projectId
-              ? {
-                  ...p,
-                  productivityAdjustments: [
-                    ...(p.productivityAdjustments || []),
-                    {
-                      ...adjustmentData,
-                      id: generateId(),
-                      createdAt: now(),
-                      updatedAt: now(),
-                    },
-                  ],
-                  updatedAt: now(),
-                }
-              : p
-          ),
-        })),
+        set((state) => {
+          const id = generateId()
+          return {
+            projects: state.projects.map((p) =>
+              p.id === projectId
+                ? {
+                    ...p,
+                    productivityAdjustments: [
+                      ...(p.productivityAdjustments || []),
+                      { ...adjustmentData, id, createdAt: now(), updatedAt: now() },
+                    ],
+                    updatedAt: now(),
+                  }
+                : p
+            ),
+            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'adjustment', id }),
+          }
+        }),
 
       updateProductivityAdjustment: (projectId, adjustmentId, updates) =>
         set((state) => ({
@@ -223,28 +234,28 @@ export const useProjectStore = create<ProjectState>()(
                 }
               : p
           ),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'adjustment', id: adjustmentId }),
         })),
 
       addMilestone: (projectId, milestoneData) =>
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === projectId
-              ? {
-                  ...p,
-                  milestones: [
-                    ...(p.milestones || []),
-                    {
-                      ...milestoneData,
-                      id: generateId(),
-                      createdAt: now(),
-                      updatedAt: now(),
-                    },
-                  ],
-                  updatedAt: now(),
-                }
-              : p
-          ),
-        })),
+        set((state) => {
+          const id = generateId()
+          return {
+            projects: state.projects.map((p) =>
+              p.id === projectId
+                ? {
+                    ...p,
+                    milestones: [
+                      ...(p.milestones || []),
+                      { ...milestoneData, id, createdAt: now(), updatedAt: now() },
+                    ],
+                    updatedAt: now(),
+                  }
+                : p
+            ),
+            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'milestone', id }),
+          }
+        }),
 
       updateMilestone: (projectId, milestoneId, updates) =>
         set((state) => ({
@@ -276,6 +287,7 @@ export const useProjectStore = create<ProjectState>()(
                 }
               : p
           ),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'milestone', id: milestoneId }),
         })),
 
       reorderMilestones: (projectId, milestoneIds) =>
@@ -295,11 +307,17 @@ export const useProjectStore = create<ProjectState>()(
 
       exportData: (): ExportData => {
         const state = get()
+        const settings = useSettingsStore.getState()
         return {
           version: APP_VERSION,
           exportedAt: now(),
           projects: state.projects,
           sprints: state.sprints,
+          _originRef: ensureOriginRef(state),
+          _storageRef: getWorkspaceId(),
+          _changeLog: state._changeLog,
+          ...(settings.exportName ? { _exportedBy: settings.exportName } : {}),
+          ...(settings.exportId ? { _exportedById: settings.exportId } : {}),
         }
       },
 
@@ -308,9 +326,23 @@ export const useProjectStore = create<ProjectState>()(
         if (data.version && data.version !== APP_VERSION) {
           console.info(`Importing data from version ${data.version} (current: ${APP_VERSION})`)
         }
+
+        // Preserve _originRef from imported data; backfill if missing
+        const originRef = data._originRef || getWorkspaceId()
+
+        // Build changelog: preserve imported log, append import event
+        const importedLog = Array.isArray(data._changeLog) ? data._changeLog : []
+        const newLog = appendChangeLogEntry(importedLog, {
+          op: 'import',
+          entity: 'dataset',
+          source: 'file',
+        })
+
         set(() => ({
           projects: data.projects,
           sprints: data.sprints,
+          _originRef: originRef,
+          _changeLog: newLog,
           viewingProjectId: null,
           forecastInputs: {},
           burnUpConfigs: {},
@@ -318,9 +350,15 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       mergeImportData: (projects, sprints) => {
-        set(() => ({
+        set((state) => ({
           projects,
           sprints,
+          _originRef: ensureOriginRef(state),
+          _changeLog: appendChangeLogEntry(state._changeLog, {
+            op: 'merge-import',
+            entity: 'dataset',
+            source: 'spert-story-map',
+          }),
           viewingProjectId: null,
           forecastInputs: {},
           burnUpConfigs: {},
@@ -370,10 +408,12 @@ export const useProjectStore = create<ProjectState>()(
           storage.removeItem(name)
         },
       },
-      // Only persist projects and sprints - viewingProjectId and forecastInputs are session-only
+      // Persist projects, sprints, and workspace reconciliation tokens
       partialize: (state) => ({
         projects: state.projects,
         sprints: state.sprints,
+        _originRef: state._originRef,
+        _changeLog: state._changeLog,
       } as ProjectState),
     }
   )

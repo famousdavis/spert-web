@@ -38,6 +38,10 @@ export function SettingsTab() {
     setDefaultCustomPercentile2,
     defaultResultsPercentiles,
     setDefaultResultsPercentiles,
+    exportName,
+    setExportName,
+    exportId,
+    setExportId,
   } = useSettingsStore()
 
   const { theme, setTheme } = useTheme()
@@ -245,6 +249,42 @@ export function SettingsTab() {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Export Attribution */}
+      <section>
+        <h3 className={sectionHeaderClass}>Export Attribution</h3>
+        <p className={`${descriptionClass} mb-4`}>
+          Identify yourself on exported files. These fields are included in JSON exports for traceability.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="exportName" className={labelClass}>
+              Name
+            </label>
+            <input
+              id="exportName"
+              type="text"
+              value={exportName}
+              onChange={(e) => setExportName(e.target.value)}
+              placeholder="e.g., Jane Smith"
+              className={`${selectClass} w-full mt-1`}
+            />
+          </div>
+          <div>
+            <label htmlFor="exportId" className={labelClass}>
+              Identifier
+            </label>
+            <input
+              id="exportId"
+              type="text"
+              value={exportId}
+              onChange={(e) => setExportId(e.target.value)}
+              placeholder="e.g., student ID, email, or team name"
+              className={`${selectClass} w-full mt-1`}
+            />
           </div>
         </div>
       </section>

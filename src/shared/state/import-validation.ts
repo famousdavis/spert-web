@@ -1,4 +1,5 @@
 import type { Project, Sprint } from '@/shared/types'
+import type { ChangeLogEntry } from './storage'
 
 export interface ExportData {
   version: string
@@ -6,6 +7,12 @@ export interface ExportData {
   source?: string // e.g., 'spert-story-map' for Story Map exports
   projects: Project[]
   sprints: Sprint[]
+  // Workspace reconciliation tokens (optional for backward compatibility)
+  _originRef?: string
+  _storageRef?: string
+  _changeLog?: ChangeLogEntry[]
+  _exportedBy?: string
+  _exportedById?: string
 }
 
 // Validation constants

@@ -1,7 +1,10 @@
 // Global application constants
 
-export const APP_VERSION = '0.19.1'
+export const APP_VERSION = '0.20.0'
 export const APP_NAME = 'SPERT'
 export const APP_NAME_WITH_TM = 'SPERT®'
 export const APP_FULL_NAME = 'Statistical PERT®'
 export const APP_DESCRIPTION = 'Agile Release Forecasting with Monte Carlo Simulation'
+
+// Export pipeline diagnostics
+export const CHANGELOG_MAX_ENTRIES = 500

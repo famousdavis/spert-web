@@ -94,8 +94,9 @@ src/
 
 ## Data Flow
 
-1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key). Import detects Story Map exports (`source: "spert-story-map"`) and merges by project name instead of full-replacing
-2. **Global settings** (trial count, auto-recalc, chart defaults, results percentile selection, custom percentile defaults, theme) persisted separately (`spert-settings` key)
+1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key), along with workspace reconciliation tokens (`_originRef`, `_changeLog`) for data provenance tracking. Import detects Story Map exports (`source: "spert-story-map"`) and merges by project name instead of full-replacing
+1a. **Workspace identity** persisted in separate localStorage key (`spert-workspace-id`). Used for data provenance tokens (`_originRef`, `_storageRef`) in export pipeline. `_originRef` is set on first structural mutation and preserved across imports. `_storageRef` is injected at export time from the current workspace token. `appendChangeLogEntry()` maintains a capped (500-entry) structural operation log for export pipeline diagnostics
+2. **Global settings** (trial count, auto-recalc, chart defaults, results percentile selection, custom percentile defaults, theme, export attribution) persisted separately (`spert-settings` key)
 3. **Forecast inputs** (backlog, velocity overrides, forecast mode, CV selection, volatility multiplier) are session-only state per project
 3a. **Results table percentiles** (P10–P90 toggle chips) and **dual custom percentile sliders** are session-only state initialized from settings defaults. Dynamic percentile computation uses `calculatePercentileResult()` on-the-fly from sorted simulation arrays — no pre-computed `PercentileResults` needed
 4. **Monte Carlo simulation** runs in a Web Worker with configurable trial count (default 10,000) across six distributions (T-Normal, Lognormal, Gamma, Bootstrap, Triangular, Uniform); History mode displays five (T-Normal, Lognormal, Gamma, Triangular, Bootstrap), Subjective mode displays five (T-Normal, Lognormal, Gamma, Triangular, Uniform)
