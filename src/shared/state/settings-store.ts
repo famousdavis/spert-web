@@ -27,6 +27,10 @@ interface SettingsState {
   defaultCustomPercentile2: number // 1-99
   defaultResultsPercentiles: number[] // subset of [10,20,...,90]
 
+  // Export attribution
+  exportName: string
+  exportId: string
+
   // Actions
   setAutoRecalculate: (value: boolean) => void
   setTrialCount: (value: TrialCount) => void
@@ -34,6 +38,8 @@ interface SettingsState {
   setDefaultCustomPercentile: (value: number) => void
   setDefaultCustomPercentile2: (value: number) => void
   setDefaultResultsPercentiles: (value: number[]) => void
+  setExportName: (value: string) => void
+  setExportId: (value: string) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -46,6 +52,10 @@ export const useSettingsStore = create<SettingsState>()(
       defaultCustomPercentile: 85,
       defaultCustomPercentile2: 50,
       defaultResultsPercentiles: [...DEFAULT_SELECTED_PERCENTILES],
+
+      // Export attribution
+      exportName: '',
+      exportId: '',
 
       // Actions
       setAutoRecalculate: (value) => set({ autoRecalculate: value }),
@@ -61,6 +71,8 @@ export const useSettingsStore = create<SettingsState>()(
             .filter((p) => (SELECTABLE_PERCENTILES as readonly number[]).includes(p))
             .sort((a, b) => a - b),
         }),
+      setExportName: (value) => set({ exportName: value }),
+      setExportId: (value) => set({ exportId: value }),
     }),
     {
       name: SETTINGS_STORAGE_KEY,

@@ -19,6 +19,8 @@ function resetStore() {
     viewingProjectId: null,
     forecastInputs: {},
     burnUpConfigs: {},
+    _originRef: '',
+    _changeLog: [],
   })
 }
 
@@ -626,5 +628,294 @@ describe('validateImportData', () => {
         sprints: [],
       })
     ).toThrow('Duplicate project ID "p1" found at index 1')
+  })
+})
+
+// --- Workspace Reconciliation (_originRef) ---
+
+describe('_originRef', () => {
+  it('sets _originRef on first addProject', () => {
+    const { addProject } = useProjectStore.getState()
+    addProject({ name: 'P1', unitOfMeasure: 'SP' })
+    const state = useProjectStore.getState()
+    expect(state._originRef).toBeTruthy()
+    expect(typeof state._originRef).toBe('string')
+  })
+
+  it('does not change _originRef on subsequent addProject', () => {
+    const { addProject } = useProjectStore.getState()
+    addProject({ name: 'P1', unitOfMeasure: 'SP' })
+    const originAfterFirst = useProjectStore.getState()._originRef
+    addProject({ name: 'P2', unitOfMeasure: 'SP' })
+    const originAfterSecond = useProjectStore.getState()._originRef
+    expect(originAfterFirst).toBe(originAfterSecond)
+  })
+})
+
+// --- Change Log ---
+
+describe('_changeLog', () => {
+  it('addProject appends add-project entry', () => {
+    const { addProject } = useProjectStore.getState()
+    addProject({ name: 'P1', unitOfMeasure: 'SP' })
+    const { _changeLog, projects } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('add')
+    expect(_changeLog[0].entity).toBe('project')
+    expect(_changeLog[0].id).toBe(projects[0].id)
+    expect(_changeLog[0].t).toBeGreaterThan(0)
+  })
+
+  it('deleteProject appends delete-project entry', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [] })
+    const { deleteProject } = useProjectStore.getState()
+    deleteProject('proj-1')
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('delete')
+    expect(_changeLog[0].entity).toBe('project')
+    expect(_changeLog[0].id).toBe('proj-1')
+  })
+
+  it('addSprint appends add-sprint entry', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [] })
+    const { addSprint } = useProjectStore.getState()
+    addSprint({
+      projectId: 'proj-1',
+      sprintNumber: 1,
+      sprintStartDate: '2026-01-06',
+      sprintFinishDate: '2026-01-17',
+      doneValue: 10,
+      includedInForecast: true,
+    })
+    const { _changeLog, sprints } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('add')
+    expect(_changeLog[0].entity).toBe('sprint')
+    expect(_changeLog[0].id).toBe(sprints[0].id)
+  })
+
+  it('deleteSprint appends delete-sprint entry', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [makeSprint()] })
+    const { deleteSprint } = useProjectStore.getState()
+    deleteSprint('sprint-1')
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('delete')
+    expect(_changeLog[0].entity).toBe('sprint')
+    expect(_changeLog[0].id).toBe('sprint-1')
+  })
+
+  it('addProductivityAdjustment appends add-adjustment entry', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [] })
+    const { addProductivityAdjustment } = useProjectStore.getState()
+    addProductivityAdjustment('proj-1', {
+      name: 'Holiday',
+      startDate: '2026-12-20',
+      endDate: '2026-12-31',
+      factor: 0.5,
+      enabled: true,
+    })
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('add')
+    expect(_changeLog[0].entity).toBe('adjustment')
+    expect(_changeLog[0].id).toBeTruthy()
+  })
+
+  it('deleteProductivityAdjustment appends delete-adjustment entry', () => {
+    useProjectStore.setState({
+      projects: [makeProject({
+        productivityAdjustments: [{
+          id: 'adj-1', name: 'Holiday', startDate: '2026-12-20', endDate: '2026-12-31',
+          factor: 0.5, enabled: true, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+        }],
+      })],
+      sprints: [],
+    })
+    const { deleteProductivityAdjustment } = useProjectStore.getState()
+    deleteProductivityAdjustment('proj-1', 'adj-1')
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('delete')
+    expect(_changeLog[0].entity).toBe('adjustment')
+    expect(_changeLog[0].id).toBe('adj-1')
+  })
+
+  it('addMilestone appends add-milestone entry', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [] })
+    const { addMilestone } = useProjectStore.getState()
+    addMilestone('proj-1', { name: 'MVP', backlogSize: 100, color: '#ff0000' })
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('add')
+    expect(_changeLog[0].entity).toBe('milestone')
+    expect(_changeLog[0].id).toBeTruthy()
+  })
+
+  it('deleteMilestone appends delete-milestone entry', () => {
+    useProjectStore.setState({
+      projects: [makeProject({
+        milestones: [{
+          id: 'ms-1', name: 'MVP', backlogSize: 100, color: '#ff0000',
+          createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+        }],
+      })],
+      sprints: [],
+    })
+    const { deleteMilestone } = useProjectStore.getState()
+    deleteMilestone('proj-1', 'ms-1')
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('delete')
+    expect(_changeLog[0].entity).toBe('milestone')
+    expect(_changeLog[0].id).toBe('ms-1')
+  })
+
+  it('non-structural mutations do NOT append changelog entries', () => {
+    useProjectStore.setState({ projects: [makeProject()], sprints: [makeSprint()] })
+    const state = useProjectStore.getState()
+
+    // updateProject
+    state.updateProject('proj-1', { name: 'Updated' })
+    expect(useProjectStore.getState()._changeLog).toHaveLength(0)
+
+    // updateSprint
+    state.updateSprint('sprint-1', { doneValue: 20 })
+    expect(useProjectStore.getState()._changeLog).toHaveLength(0)
+
+    // toggleSprintIncluded
+    state.toggleSprintIncluded('sprint-1')
+    expect(useProjectStore.getState()._changeLog).toHaveLength(0)
+
+    // reorderProjects
+    state.reorderProjects(['proj-1'])
+    expect(useProjectStore.getState()._changeLog).toHaveLength(0)
+  })
+})
+
+// --- Export with fingerprinting ---
+
+describe('exportData with fingerprinting', () => {
+  it('includes _originRef and _storageRef and _changeLog', () => {
+    const { addProject } = useProjectStore.getState()
+    addProject({ name: 'P1', unitOfMeasure: 'SP' })
+    const data = useProjectStore.getState().exportData()
+    expect(data._originRef).toBeTruthy()
+    expect(data._storageRef).toBeTruthy()
+    expect(Array.isArray(data._changeLog)).toBe(true)
+    expect(data._changeLog!.length).toBeGreaterThan(0)
+  })
+
+  it('omits _exportedBy and _exportedById when settings are empty', () => {
+    const { addProject } = useProjectStore.getState()
+    addProject({ name: 'P1', unitOfMeasure: 'SP' })
+    const data = useProjectStore.getState().exportData()
+    expect(data._exportedBy).toBeUndefined()
+    expect(data._exportedById).toBeUndefined()
+  })
+})
+
+// --- Import with fingerprinting ---
+
+describe('importData with fingerprinting', () => {
+  it('preserves _originRef from imported data', () => {
+    const { importData } = useProjectStore.getState()
+    importData({
+      version: '0.20.0',
+      exportedAt: '2026-01-01T00:00:00Z',
+      projects: [makeProject()],
+      sprints: [],
+      _originRef: 'original-browser-uuid',
+      _changeLog: [{ t: 1000, op: 'add', entity: 'project' }],
+    })
+    expect(useProjectStore.getState()._originRef).toBe('original-browser-uuid')
+  })
+
+  it('backfills _originRef if missing from imported data', () => {
+    const { importData } = useProjectStore.getState()
+    importData({
+      version: '0.19.1',
+      exportedAt: '2026-01-01T00:00:00Z',
+      projects: [makeProject()],
+      sprints: [],
+    })
+    const state = useProjectStore.getState()
+    expect(state._originRef).toBeTruthy()
+    expect(typeof state._originRef).toBe('string')
+  })
+
+  it('preserves and extends _changeLog with import event', () => {
+    const { importData } = useProjectStore.getState()
+    importData({
+      version: '0.20.0',
+      exportedAt: '2026-01-01T00:00:00Z',
+      projects: [makeProject()],
+      sprints: [],
+      _originRef: 'orig',
+      _changeLog: [{ t: 1000, op: 'add', entity: 'project' }],
+    })
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(2)
+    expect(_changeLog[0].op).toBe('add')
+    expect(_changeLog[1].op).toBe('import')
+    expect(_changeLog[1].entity).toBe('dataset')
+    expect(_changeLog[1].source).toBe('file')
+  })
+
+  it('creates _changeLog with import event if none existed', () => {
+    const { importData } = useProjectStore.getState()
+    importData({
+      version: '0.19.1',
+      exportedAt: '2026-01-01T00:00:00Z',
+      projects: [makeProject()],
+      sprints: [],
+    })
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(1)
+    expect(_changeLog[0].op).toBe('import')
+  })
+
+  it('does not carry _storageRef or attribution into store state', () => {
+    const { importData } = useProjectStore.getState()
+    importData({
+      version: '0.20.0',
+      exportedAt: '2026-01-01T00:00:00Z',
+      projects: [makeProject()],
+      sprints: [],
+      _originRef: 'orig',
+      _storageRef: 'storage-ref',
+      _exportedBy: 'Alice',
+      _exportedById: '12345',
+    })
+    const state = useProjectStore.getState()
+    // These should not exist on the store state
+    expect((state as Record<string, unknown>)._storageRef).toBeUndefined()
+    expect((state as Record<string, unknown>)._exportedBy).toBeUndefined()
+    expect((state as Record<string, unknown>)._exportedById).toBeUndefined()
+  })
+})
+
+// --- Merge import with fingerprinting ---
+
+describe('mergeImportData with fingerprinting', () => {
+  it('preserves existing _originRef', () => {
+    useProjectStore.setState({ _originRef: 'existing-origin' })
+    const { mergeImportData } = useProjectStore.getState()
+    mergeImportData([makeProject()], [makeSprint()])
+    expect(useProjectStore.getState()._originRef).toBe('existing-origin')
+  })
+
+  it('appends merge-import event to _changeLog', () => {
+    useProjectStore.setState({
+      _changeLog: [{ t: 1000, op: 'add', entity: 'project' }],
+    })
+    const { mergeImportData } = useProjectStore.getState()
+    mergeImportData([makeProject()], [makeSprint()])
+    const { _changeLog } = useProjectStore.getState()
+    expect(_changeLog).toHaveLength(2)
+    expect(_changeLog[1].op).toBe('merge-import')
+    expect(_changeLog[1].entity).toBe('dataset')
+    expect(_changeLog[1].source).toBe('spert-story-map')
   })
 })
