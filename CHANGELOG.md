@@ -19,7 +19,7 @@
 
 ### Test Coverage
 
-- 541 tests passing (was 514): added 7 tests for workspace identity and changelog utilities, 20 tests for fingerprinting in project store (origin ref, changelog, export, import, merge-import)
+- 541 tests passing (was 514): added 7 tests for workspace identity and changelog utilities, 20 tests for workspace provenance in project store (origin ref, changelog, export, import, merge-import)
 
 ## v0.19.1 - 2026-02-15
 
