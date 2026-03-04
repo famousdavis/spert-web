@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'SPERT® - Agile Release Forecasting',
+  title: 'SPERT® Release Forecaster - Agile Release Forecasting',
   description: 'Statistical PERT® - Monte Carlo simulation for agile release forecasting',
 }
 

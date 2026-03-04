@@ -1,6 +1,6 @@
 'use client'
 
-import { APP_VERSION, APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
+import { APP_VERSION, APP_DESCRIPTION } from '@/shared/constants'
 
 // Helper component for trademark formatting (® never bold)
 function TrademarkedName({ name, bold = false }: { name: string; bold?: boolean }) {
@@ -15,13 +15,13 @@ export function AboutTab() {
   return (
     <div className="max-w-[800px]">
       <h2 className="text-2xl mb-2 text-spert-text">
-        About <TrademarkedName name={APP_NAME} />
+        About <TrademarkedName name="SPERT" /> Release Forecaster
       </h2>
       <p className="text-spert-text-muted italic mb-8">{APP_DESCRIPTION}</p>
 
       <section className="mb-8">
         <h3 className="text-xl mb-3 text-spert-blue">
-          What is <TrademarkedName name={APP_NAME} />?
+          What is <TrademarkedName name="SPERT" /> Release Forecaster?
         </h3>
         <p className="leading-relaxed text-spert-text-secondary">
           <TrademarkedName name="Statistical PERT" bold /> (<TrademarkedName name="SPERT" />) makes
