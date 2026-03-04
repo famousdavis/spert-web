@@ -16,7 +16,7 @@ export default function ChangelogPage() {
             href="/"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            &larr; Back to SPERT
+            &larr; Back to SPERT Release Forecaster
           </Link>
         </div>
       </header>

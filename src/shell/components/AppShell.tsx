@@ -8,7 +8,7 @@ import { SprintHistoryTab } from '@/features/sprint-history'
 import { ForecastTab } from '@/features/forecast'
 import { AboutTab } from '@/features/about'
 import { SettingsTab } from '@/features/settings'
-import { APP_NAME, APP_DESCRIPTION } from '@/shared/constants'
+import { APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { HeaderThemeToggle } from '@/shared/components/ThemeToggle'
@@ -72,9 +72,10 @@ export function AppShell() {
               <span
                 className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
               >
-                {APP_NAME}
-              </span>
-              <span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
+                SPERT</span><span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
+              <span
+                className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
+              > Release Forecaster</span>
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">{APP_DESCRIPTION}</p>
           </div>
