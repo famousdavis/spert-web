@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useAuth } from '@/shared/providers/AuthProvider'
 import { useStorageMode } from '@/shared/hooks/useStorageMode'
 import { migrateLocalToCloud, type MigrationResult } from '@/shared/firebase/firestore-migration'
@@ -29,9 +30,11 @@ export function StorageModeSection() {
         return
       }
       setMode('cloud')
+      toast.success('Cloud storage activated')
     } else {
       setMode('local')
       setMigrationResult(null)
+      toast.success('Switched to local storage')
     }
   }
 
@@ -47,6 +50,7 @@ export function StorageModeSection() {
       })
       setMigrationResult(result)
       setMode('cloud')
+      toast.success(`Cloud storage activated — ${result.projectsUploaded} project${result.projectsUploaded !== 1 ? 's' : ''} uploaded`)
     } catch (err) {
       setMigrationResult({
         projectsUploaded: 0,
@@ -54,6 +58,7 @@ export function StorageModeSection() {
         settingsUploaded: false,
         errors: [`Migration failed: ${err}`],
       })
+      toast.error('Migration to cloud failed')
     } finally {
       setIsMigrating(false)
       setShowMigrationPrompt(false)
@@ -63,6 +68,7 @@ export function StorageModeSection() {
   const handleSkipMigration = () => {
     setShowMigrationPrompt(false)
     setMode('cloud')
+    toast.success('Cloud storage activated')
   }
 
   return (
