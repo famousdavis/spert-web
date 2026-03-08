@@ -9,6 +9,7 @@ SPERT® (Statistical PERT®) — Agile Release Forecasting with Monte Carlo Simu
 - **UI**: React 19.2.4, Tailwind CSS 4.x, shadcn/ui
 - **Charts**: Recharts 3.x
 - **State**: Zustand 5.x with localStorage persistence
+- **Cloud**: Firebase 11.x (optional — Firestore, Auth, Google/Microsoft OAuth)
 - **Testing**: Vitest 4.x, Testing Library, jsdom
 - **Linting**: ESLint 9.x (flat config) with eslint-config-next
 - **Deployment**: Vercel (auto-deploy from main)
@@ -54,14 +55,17 @@ src/
 │   │   │   └── cdf.ts                    # CDF calculation utilities
 │   │   ├── constants.ts        # DEFAULT_TRIAL_COUNT, percentile bounds
 │   │   └── types.ts            # Forecast-specific types
+│   ├── auth/                   # Firebase auth UI (SignInButtons, UserMenu, StorageModeSection, SharingSection)
 │   ├── projects/               # Project CRUD & reordering
 │   ├── settings/               # Global settings (simulation, chart defaults, theme)
 │   └── sprint-history/         # Sprint data entry & velocity stats
 ├── shared/                     # Cross-feature utilities
 │   ├── components/             # UI primitives (CopyImageButton, CollapsibleCrudPanel, ListRowActions, MergeImportDialog)
 │   ├── constants.ts            # APP_VERSION, APP_NAME
-│   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient)
+│   ├── firebase/               # Firebase infrastructure (config, auth, driver, converters, sync-bus, sharing, migration)
+│   ├── hooks/                  # Infrastructure hooks (useDebounce, useIsClient, useStorageMode, useCloudSync)
 │   ├── lib/                    # Pure utilities: math, dates, copy-image, colors
+│   ├── providers/              # React context providers (AuthProvider, StorageProvider)
 │   ├── state/                  # Zustand stores (project-store, settings-store, import-validation, merge-import, storage)
 │   └── types/                  # Shared types (burn-up config, project/sprint)
 ├── shell/                      # App layout & navigation
@@ -92,10 +96,13 @@ src/
 
 **Date handling**: UTC for arithmetic (avoids DST drift), local timezone for user-facing display. Sprint finish dates always land on business days.
 
+**Optional cloud persistence**: Firebase Firestore sync is available when `NEXT_PUBLIC_FIREBASE_*` environment variables are configured. The sync bus pattern decouples Zustand mutations from async Firestore writes. `AuthProvider` → `StorageProvider` → `AppShell` provider hierarchy resolves auth state before activating cloud sync. Zustand `persist` middleware continues writing to localStorage even in cloud mode for fast hydration — the cloud sync hook overwrites with fresh Firestore data once the snapshot arrives.
+
 ## Data Flow
 
 1. **Projects & Sprints** are persisted in localStorage via Zustand middleware (`spert-data` key), along with workspace reconciliation tokens (`_originRef`, `_changeLog`) for data provenance tracking. Import detects Story Map exports (`source: "spert-story-map"`) and merges by project name instead of full-replacing
 1a. **Workspace identity** persisted in separate localStorage key (`spert-workspace-id`). Used for data provenance tokens (`_originRef`, `_storageRef`) in export pipeline. `_originRef` is set on first structural mutation and preserved across imports. `_storageRef` is injected at export time from the current workspace token. `appendChangeLogEntry()` maintains a capped (500-entry) structural operation log for export pipeline diagnostics
+1b. **Cloud sync** (optional): When storage mode is "cloud", the sync bus emits events on every store mutation. `useCloudSync` subscribes to these events and writes debounced updates to Firestore. Incoming `onSnapshot` updates are pushed to Zustand via `replaceProjectsFromCloud`/`replaceSettingsFromCloud` with echo prevention (`hasPendingWrites` + `_isCloudUpdate` flag). Each project is a monolithic Firestore document with denormalized sprints. Sharing uses owner/members model with editor/viewer roles.
 2. **Global settings** (trial count, auto-recalc, chart defaults, results percentile selection, custom percentile defaults, theme, export attribution) persisted separately (`spert-settings` key)
 3. **Forecast inputs** (backlog, velocity overrides, forecast mode, CV selection, volatility multiplier) are session-only state per project
 3a. **Results table percentiles** (P10–P90 toggle chips) and **dual custom percentile sliders** are session-only state initialized from settings defaults. Dynamic percentile computation uses `calculatePercentileResult()` on-the-fly from sorted simulation arrays — no pre-computed `PercentileResults` needed

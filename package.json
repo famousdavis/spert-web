@@ -1,6 +1,6 @@
 {
   "name": "spert",
-  "version": "0.20.2",
+  "version": "0.21.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,6 +13,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.10.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
