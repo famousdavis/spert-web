@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.21.0 - 2026-03-08
+
+### New Features
+
+- **Firebase cloud persistence**: Optional cloud sync via Firebase Firestore — app continues to work in local-only mode (localStorage) when Firebase environment variables are not configured
+- **Google & Microsoft sign-in**: OAuth popup authentication via Firebase Auth with sign-in buttons in the header
+- **User menu**: Header dropdown showing avatar, display name, email, current storage mode, and sign-out button
+- **Storage mode switching**: Local/Cloud toggle in Settings with one-way migration that uploads local projects to Firestore with collision detection
+- **Project sharing**: Share individual projects with other users by email with owner/editor/viewer roles (cloud mode only)
+
+### Architecture
+
+- **Sync bus pattern** (`src/shared/firebase/sync-bus.ts`): Typed event emitter decoupling Zustand store mutations from async Firestore writes — no-op when no listeners (local mode)
+- **Monolithic Firestore documents**: Each project is a single document with denormalized sprints (converter layer translates between flat Zustand array and per-project embedded sprints)
+- **Conditional Firebase initialization** (`src/shared/firebase/config.ts`): `isFirebaseAvailable` feature flag gates all cloud code — zero Firebase execution without env vars
+- **Echo prevention**: `hasPendingWrites` check on `onSnapshot` to skip local echoes; `_isCloudUpdate` transient flag prevents sync bus re-emission during cloud updates
+- **Provider hierarchy**: `AuthProvider` → `StorageProvider` → `AppShell` — auth resolves first, then cloud sync activates based on storage mode
+- **500ms debounced Firestore saves** with `beforeunload` flush for pending writes
+- **Firestore security rules** (`firestore.rules`): Owner/editor/viewer access control with `diff()`-based ownership protection on updates
+
+### Collections
+
+- `spertforecaster_projects` — Project documents with embedded sprints, owner field, members map
+- `spertforecaster_settings` — Per-user settings (keyed by Firebase UID)
+- `spertforecaster_profiles` — User profiles (display name, email) readable by all authenticated users
+
+### Data Provenance (Cloud Mode)
+
+- `_originRef` and `_changeLog` become per-project (copied during local-to-cloud migration)
+- `_storageRef` uses Firebase UID in cloud mode (workspace ID in local mode)
+- Export attribution preserved: exported files include correct provenance regardless of storage mode
+
+### Test Coverage
+
+- 561 tests passing (was 541): added 20 tests for Firestore sanitizers, sync bus, and converter round-trips
+
 ## v0.20.2 - 2026-03-07
 
 ### Changes

@@ -12,6 +12,8 @@ interface ProjectListProps {
   onDelete: (id: string) => void
   onReorder: (projectIds: string[]) => void
   onViewHistory: (projectId: string) => void
+  onShare?: (project: Project) => void
+  isCloudMode?: boolean
 }
 
 export function ProjectList({
@@ -21,6 +23,8 @@ export function ProjectList({
   onDelete,
   onReorder,
   onViewHistory,
+  onShare,
+  isCloudMode,
 }: ProjectListProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -138,6 +142,14 @@ export function ProjectList({
               >
                 View History
               </button>
+              {isCloudMode && onShare && (
+                <button
+                  onClick={() => onShare(project)}
+                  className="px-4 py-2 bg-[#f0f0ff] dark:bg-purple-900/30 border border-[#7c3aed] dark:border-purple-500 rounded cursor-pointer text-[0.9rem] text-[#7c3aed] dark:text-purple-300"
+                >
+                  Share
+                </button>
+              )}
               <button
                 onClick={() => onEdit(project)}
                 className="px-4 py-2 bg-spert-bg-warning-light dark:bg-yellow-900/40 border border-spert-warning dark:border-yellow-600 rounded cursor-pointer text-[0.9rem] dark:text-yellow-200"

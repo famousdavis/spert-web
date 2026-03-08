@@ -58,4 +58,11 @@ export function appendChangeLogEntry(
     : updated
 }
 
+export const STORAGE_MODE_KEY = 'spert-storage-mode'
+
+export function getStorageMode(): 'local' | 'cloud' {
+  if (typeof window === 'undefined') return 'local'
+  return (localStorage.getItem(STORAGE_MODE_KEY) as 'local' | 'cloud') || 'local'
+}
+
 export { STORAGE_KEY }

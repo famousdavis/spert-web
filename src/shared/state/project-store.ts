@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Project, Sprint, ProductivityAdjustment, Milestone, ForecastMode } from '@/shared/types'
-import { storage, STORAGE_KEY, getWorkspaceId, appendChangeLogEntry, type ChangeLogEntry } from './storage'
+import { storage, STORAGE_KEY, getWorkspaceId, getStorageMode, appendChangeLogEntry, type ChangeLogEntry } from './storage'
+import { auth } from '@/shared/firebase/config'
 import { APP_VERSION } from '@/shared/constants'
 import { type BurnUpConfig, DEFAULT_BURN_UP_CONFIG } from '@/shared/types/burn-up'
 import { validateImportData, type ExportData } from './import-validation'
 import { useSettingsStore } from './settings-store'
+import { syncBus } from '@/shared/firebase/sync-bus'
 export { validateImportData, type ExportData } from './import-validation'
 
 // Session-only forecast inputs (per project, not persisted to localStorage)
@@ -29,6 +31,9 @@ interface ProjectState {
   // Workspace reconciliation tokens (persisted)
   _originRef: string
   _changeLog: ChangeLogEntry[]
+
+  // Cloud sync flag (transient, not persisted)
+  _isCloudUpdate: boolean
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -73,6 +78,9 @@ interface ProjectState {
   importData: (data: ExportData) => void
   mergeImportData: (projects: Project[], sprints: Sprint[]) => void
 
+  // Cloud sync actions
+  replaceProjectsFromCloud: (projects: Project[], sprints: Sprint[]) => void
+
   // Forecast input actions (session only)
   setForecastInput: <K extends keyof ForecastInputs>(projectId: string, field: K, value: ForecastInputs[K]) => void
   getForecastInputs: (projectId: string) => ForecastInputs
@@ -89,6 +97,13 @@ const now = () => new Date().toISOString()
 const ensureOriginRef = (state: { _originRef: string }): string =>
   state._originRef || getWorkspaceId()
 
+// Emit sync bus event for a project change (skipped during cloud updates)
+function emitProjectSave(projectId: string, isCloudUpdate: boolean): void {
+  if (!isCloudUpdate) {
+    syncBus.emit({ type: 'project:save', projectId })
+  }
+}
+
 export const useProjectStore = create<ProjectState>()(
   persist(
     (set, get) => ({
@@ -99,28 +114,31 @@ export const useProjectStore = create<ProjectState>()(
       burnUpConfigs: {} as Record<string, BurnUpConfig>,
       _originRef: '' as string,
       _changeLog: [] as ChangeLogEntry[],
+      _isCloudUpdate: false,
 
-      addProject: (projectData) =>
-        set((state) => {
-          const id = generateId()
-          return {
-            projects: [
-              ...state.projects,
-              { ...projectData, id, createdAt: now(), updatedAt: now() },
-            ],
-            _originRef: ensureOriginRef(state),
-            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'project', id }),
-          }
-        }),
+      addProject: (projectData) => {
+        const id = generateId()
+        set((state) => ({
+          projects: [
+            ...state.projects,
+            { ...projectData, id, createdAt: now(), updatedAt: now() },
+          ],
+          _originRef: ensureOriginRef(state),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'project', id }),
+        }))
+        emitProjectSave(id, get()._isCloudUpdate)
+      },
 
-      updateProject: (id, updates) =>
+      updateProject: (id, updates) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: now() } : p
           ),
-        })),
+        }))
+        emitProjectSave(id, get()._isCloudUpdate)
+      },
 
-      deleteProject: (id) =>
+      deleteProject: (id) => {
         set((state) => {
           const { [id]: _forecastInputs, ...remainingForecastInputs } = state.forecastInputs
           const { [id]: _burnUpConfig, ...remainingBurnUpConfigs } = state.burnUpConfigs
@@ -136,7 +154,11 @@ export const useProjectStore = create<ProjectState>()(
                 : state.viewingProjectId,
             _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'project', id }),
           }
-        }),
+        })
+        if (!get()._isCloudUpdate) {
+          syncBus.emit({ type: 'project:delete', projectId: id })
+        }
+      },
 
       reorderProjects: (projectIds) =>
         set((state) => {
@@ -150,61 +172,70 @@ export const useProjectStore = create<ProjectState>()(
 
       setViewingProjectId: (id) => set({ viewingProjectId: id }),
 
-      addSprint: (sprintData) =>
-        set((state) => {
-          const id = generateId()
-          return {
-            sprints: [
-              ...state.sprints,
-              { ...sprintData, id, createdAt: now(), updatedAt: now() },
-            ],
-            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'sprint', id }),
-          }
-        }),
+      addSprint: (sprintData) => {
+        const id = generateId()
+        set((state) => ({
+          sprints: [
+            ...state.sprints,
+            { ...sprintData, id, createdAt: now(), updatedAt: now() },
+          ],
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'sprint', id }),
+        }))
+        emitProjectSave(sprintData.projectId, get()._isCloudUpdate)
+      },
 
-      updateSprint: (id, updates) =>
+      updateSprint: (id, updates) => {
+        const sprint = get().sprints.find((s) => s.id === id)
         set((state) => ({
           sprints: state.sprints.map((s) =>
             s.id === id ? { ...s, ...updates, updatedAt: now() } : s
           ),
-        })),
+        }))
+        if (sprint) emitProjectSave(sprint.projectId, get()._isCloudUpdate)
+      },
 
-      deleteSprint: (id) =>
+      deleteSprint: (id) => {
+        const sprint = get().sprints.find((s) => s.id === id)
         set((state) => ({
           sprints: state.sprints.filter((s) => s.id !== id),
           _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'sprint', id }),
-        })),
+        }))
+        if (sprint) emitProjectSave(sprint.projectId, get()._isCloudUpdate)
+      },
 
-      toggleSprintIncluded: (id) =>
+      toggleSprintIncluded: (id) => {
+        const sprint = get().sprints.find((s) => s.id === id)
         set((state) => ({
           sprints: state.sprints.map((s) =>
             s.id === id
               ? { ...s, includedInForecast: !s.includedInForecast, updatedAt: now() }
               : s
           ),
-        })),
+        }))
+        if (sprint) emitProjectSave(sprint.projectId, get()._isCloudUpdate)
+      },
 
-      addProductivityAdjustment: (projectId, adjustmentData) =>
-        set((state) => {
-          const id = generateId()
-          return {
-            projects: state.projects.map((p) =>
-              p.id === projectId
-                ? {
-                    ...p,
-                    productivityAdjustments: [
-                      ...(p.productivityAdjustments || []),
-                      { ...adjustmentData, id, createdAt: now(), updatedAt: now() },
-                    ],
-                    updatedAt: now(),
-                  }
-                : p
-            ),
-            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'adjustment', id }),
-          }
-        }),
+      addProductivityAdjustment: (projectId, adjustmentData) => {
+        const id = generateId()
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  productivityAdjustments: [
+                    ...(p.productivityAdjustments || []),
+                    { ...adjustmentData, id, createdAt: now(), updatedAt: now() },
+                  ],
+                  updatedAt: now(),
+                }
+              : p
+          ),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'adjustment', id }),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      updateProductivityAdjustment: (projectId, adjustmentId, updates) =>
+      updateProductivityAdjustment: (projectId, adjustmentId, updates) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === projectId
@@ -219,9 +250,11 @@ export const useProjectStore = create<ProjectState>()(
                 }
               : p
           ),
-        })),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      deleteProductivityAdjustment: (projectId, adjustmentId) =>
+      deleteProductivityAdjustment: (projectId, adjustmentId) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === projectId
@@ -235,29 +268,31 @@ export const useProjectStore = create<ProjectState>()(
               : p
           ),
           _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'adjustment', id: adjustmentId }),
-        })),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      addMilestone: (projectId, milestoneData) =>
-        set((state) => {
-          const id = generateId()
-          return {
-            projects: state.projects.map((p) =>
-              p.id === projectId
-                ? {
-                    ...p,
-                    milestones: [
-                      ...(p.milestones || []),
-                      { ...milestoneData, id, createdAt: now(), updatedAt: now() },
-                    ],
-                    updatedAt: now(),
-                  }
-                : p
-            ),
-            _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'milestone', id }),
-          }
-        }),
+      addMilestone: (projectId, milestoneData) => {
+        const id = generateId()
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  milestones: [
+                    ...(p.milestones || []),
+                    { ...milestoneData, id, createdAt: now(), updatedAt: now() },
+                  ],
+                  updatedAt: now(),
+                }
+              : p
+          ),
+          _changeLog: appendChangeLogEntry(state._changeLog, { op: 'add', entity: 'milestone', id }),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      updateMilestone: (projectId, milestoneId, updates) =>
+      updateMilestone: (projectId, milestoneId, updates) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === projectId
@@ -272,9 +307,11 @@ export const useProjectStore = create<ProjectState>()(
                 }
               : p
           ),
-        })),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      deleteMilestone: (projectId, milestoneId) =>
+      deleteMilestone: (projectId, milestoneId) => {
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === projectId
@@ -288,9 +325,11 @@ export const useProjectStore = create<ProjectState>()(
               : p
           ),
           _changeLog: appendChangeLogEntry(state._changeLog, { op: 'delete', entity: 'milestone', id: milestoneId }),
-        })),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
-      reorderMilestones: (projectId, milestoneIds) =>
+      reorderMilestones: (projectId, milestoneIds) => {
         set((state) => ({
           projects: state.projects.map((p) => {
             if (p.id !== projectId) return p
@@ -303,7 +342,9 @@ export const useProjectStore = create<ProjectState>()(
               updatedAt: now(),
             }
           }),
-        })),
+        }))
+        emitProjectSave(projectId, get()._isCloudUpdate)
+      },
 
       exportData: (): ExportData => {
         const state = get()
@@ -314,7 +355,7 @@ export const useProjectStore = create<ProjectState>()(
           projects: state.projects,
           sprints: state.sprints,
           _originRef: ensureOriginRef(state),
-          _storageRef: getWorkspaceId(),
+          _storageRef: (getStorageMode() === 'cloud' && auth?.currentUser?.uid) || getWorkspaceId(),
           _changeLog: state._changeLog,
           ...(settings.exportName ? { _exportedBy: settings.exportName } : {}),
           ...(settings.exportId ? { _exportedById: settings.exportId } : {}),
@@ -363,6 +404,16 @@ export const useProjectStore = create<ProjectState>()(
           forecastInputs: {},
           burnUpConfigs: {},
         }))
+      },
+
+      replaceProjectsFromCloud: (projects, sprints) => {
+        set({
+          projects,
+          sprints,
+          _isCloudUpdate: true,
+        })
+        // Reset the flag after the update
+        set({ _isCloudUpdate: false })
       },
 
       setForecastInput: (projectId, field, value) =>

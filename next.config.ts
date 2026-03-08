@@ -24,9 +24,12 @@ if (!isDev) {
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
       // html-to-image fetches Google Fonts to embed in canvas for copy-as-image
-      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
+      // Firebase Auth + Firestore + Google Fonts (for html-to-image)
+      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com",
       // Web Workers are loaded as blob URLs
       "worker-src 'self' blob:",
+      // Firebase Auth popup
+      "frame-src 'self' https://*.firebaseapp.com https://*.google.com",
       "frame-ancestors 'none'",
     ].join('; '),
   })

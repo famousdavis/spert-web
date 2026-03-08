@@ -9,6 +9,8 @@ import { MergeImportDialog } from '@/shared/components/MergeImportDialog'
 import { isStoryMapExport, buildMergePlan, applyMergePlan, type StoryMapExportData, type MergePlan } from '@/shared/state/merge-import'
 import { validateImportData } from '@/shared/state/import-validation'
 import { today } from '@/shared/lib/dates'
+import { useStorageMode } from '@/shared/hooks/useStorageMode'
+import { SharingSection } from '@/features/auth/components/SharingSection'
 import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
 import type { Project } from '@/shared/types'
@@ -42,6 +44,8 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     isOpen: boolean
     data: ExportData | null
   }>({ isOpen: false, data: null })
+  const { mode } = useStorageMode()
+  const [sharingProject, setSharingProject] = useState<Project | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; projectId: string | null; projectName: string }>({
     isOpen: false,
     projectId: null,
@@ -266,7 +270,25 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         onDelete={handleDeleteRequest}
         onReorder={reorderProjects}
         onViewHistory={onViewHistory ?? (() => {})}
+        onShare={setSharingProject}
+        isCloudMode={mode === 'cloud'}
       />
+
+      {/* Sharing panel */}
+      {sharingProject && mode === 'cloud' && (
+        <div className="rounded-lg border border-spert-border dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <div className="flex items-start justify-between">
+            <SharingSection projectId={sharingProject.id} projectName={sharingProject.name} />
+            <button
+              onClick={() => setSharingProject(null)}
+              className="text-spert-text-muted hover:text-spert-text dark:hover:text-gray-200 cursor-pointer text-lg px-2 flex-shrink-0"
+              aria-label="Close sharing"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={deleteConfirm.isOpen}

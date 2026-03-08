@@ -5,6 +5,7 @@ import { CHART_FONT_SIZE_LABELS, type ChartFontSize } from '@/shared/types/burn-
 import { useTheme, type Theme } from '@/shared/hooks/useTheme'
 import { MIN_PERCENTILE, MAX_PERCENTILE, SELECTABLE_PERCENTILES } from '@/features/forecast/constants'
 import { cn } from '@/lib/utils'
+import { StorageModeSection } from '@/features/auth/components/StorageModeSection'
 
 const sectionHeaderClass = 'text-lg font-semibold text-spert-blue mb-4'
 const labelClass = 'text-sm font-semibold text-spert-text-secondary dark:text-gray-300'
@@ -65,6 +66,9 @@ export function SettingsTab() {
           Global preferences for simulation and display
         </p>
       </div>
+
+      {/* Storage */}
+      <StorageModeSection />
 
       {/* Simulation Settings */}
       <section>

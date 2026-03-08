@@ -12,6 +12,7 @@ import { APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { HeaderThemeToggle } from '@/shared/components/ThemeToggle'
+import { SignInButtons, UserMenu } from '@/features/auth'
 
 import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp'
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
@@ -79,7 +80,11 @@ export function AppShell() {
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">{APP_DESCRIPTION}</p>
           </div>
-          <HeaderThemeToggle />
+          <div className="flex items-center gap-2">
+            <HeaderThemeToggle />
+            <SignInButtons />
+            <UserMenu />
+          </div>
         </header>
 
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
