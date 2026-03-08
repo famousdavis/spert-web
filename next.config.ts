@@ -19,18 +19,23 @@ if (!isDev) {
       "default-src 'self'",
       // 'unsafe-inline' needed for theme script in layout.tsx to prevent flash
       // 'blob:' needed for Web Workers (Monte Carlo simulation)
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:",
+      // Firebase Auth loads scripts from apis.google.com + accounts.google.com
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://apis.google.com https://accounts.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob:",
+      // Google user avatars served from *.googleusercontent.com
+      "img-src 'self' data: blob: https://*.googleusercontent.com",
       // html-to-image fetches Google Fonts to embed in canvas for copy-as-image
-      // Firebase Auth + Firestore + Google Fonts (for html-to-image)
-      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com",
+      // Firebase Auth + Firestore + Google Fonts + OAuth endpoints
+      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com https://login.microsoftonline.com",
       // Web Workers are loaded as blob URLs
       "worker-src 'self' blob:",
-      // Firebase Auth popup
-      "frame-src 'self' https://*.firebaseapp.com https://*.google.com",
+      // Firebase Auth popup/redirect + OAuth provider pages
+      "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://login.microsoftonline.com",
       "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
     ].join('; '),
   })
 }

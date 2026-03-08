@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, isFirebaseAvailable } from '@/shared/firebase/config'
-import { signInWithGoogle, signInWithMicrosoft, signOut } from '@/shared/firebase/auth'
+import { signInWithGoogle, signInWithMicrosoft, signOut, checkRedirectResult } from '@/shared/firebase/auth'
 
 interface AuthContextValue {
   user: User | null
@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return
     }
+    // Check for pending redirect result (from signInWithRedirect fallback)
+    checkRedirectResult().catch(() => {})
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser)
       setIsLoading(false)

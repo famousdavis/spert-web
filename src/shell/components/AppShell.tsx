@@ -12,7 +12,7 @@ import { APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { HeaderThemeToggle } from '@/shared/components/ThemeToggle'
-import { SignInButtons, UserMenu } from '@/features/auth'
+import { UserMenu } from '@/features/auth'
 
 import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp'
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
@@ -82,7 +82,6 @@ export function AppShell() {
           </div>
           <div className="flex items-center gap-2">
             <HeaderThemeToggle />
-            <SignInButtons />
             <UserMenu />
           </div>
         </header>

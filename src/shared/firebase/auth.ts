@@ -1,29 +1,57 @@
-// Firebase Authentication helpers — Google and Microsoft OAuth via popup.
+// Firebase Authentication helpers — Google and Microsoft OAuth.
+// Uses signInWithPopup as primary, with signInWithRedirect fallback
+// when popup is blocked (e.g., by CSP or browser settings).
 
 import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth'
 import { auth } from './config'
 
-export async function signInWithGoogle(): Promise<User> {
+export async function signInWithGoogle(): Promise<User | null> {
   if (!auth) throw new Error('Firebase not available')
   const provider = new GoogleAuthProvider()
   provider.addScope('openid')
   provider.addScope('profile')
   provider.addScope('email')
-  const result = await signInWithPopup(auth, provider)
-  return result.user
+  try {
+    const result = await signInWithPopup(auth, provider)
+    return result.user
+  } catch {
+    // Popup blocked or failed — fall back to redirect
+    await signInWithRedirect(auth, provider)
+    return null
+  }
 }
 
-export async function signInWithMicrosoft(): Promise<User> {
+export async function signInWithMicrosoft(): Promise<User | null> {
   if (!auth) throw new Error('Firebase not available')
   const provider = new OAuthProvider('microsoft.com')
-  const result = await signInWithPopup(auth, provider)
-  return result.user
+  provider.setCustomParameters({ prompt: 'select_account' })
+  try {
+    const result = await signInWithPopup(auth, provider)
+    return result.user
+  } catch {
+    // Popup blocked or failed — fall back to redirect
+    await signInWithRedirect(auth, provider)
+    return null
+  }
+}
+
+/** Check for pending redirect result on page load */
+export async function checkRedirectResult(): Promise<User | null> {
+  if (!auth) return null
+  try {
+    const result = await getRedirectResult(auth)
+    return result?.user ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function signOut(): Promise<void> {
