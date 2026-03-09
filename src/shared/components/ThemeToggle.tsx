@@ -49,13 +49,13 @@ function MonitorIcon() {
   )
 }
 
-const NEXT_THEME_ICON: Record<Theme, () => React.JSX.Element> = {
-  light: MoonIcon,
-  dark: MonitorIcon,
-  system: SunIcon,
+const CURRENT_THEME_ICON: Record<Theme, () => React.JSX.Element> = {
+  light: SunIcon,
+  dark: MoonIcon,
+  system: MonitorIcon,
 }
 
-/** Compact icon button for the app header. Shows the next theme's icon. */
+/** Compact icon button for the app header. Shows the current theme's icon. */
 export function HeaderThemeToggle() {
   const { theme, setTheme, isInitialized } = useTheme()
 
@@ -64,7 +64,7 @@ export function HeaderThemeToggle() {
   }
 
   const nextTheme = NEXT_THEME[theme]
-  const Icon = NEXT_THEME_ICON[theme]
+  const Icon = CURRENT_THEME_ICON[theme]
 
   return (
     <button

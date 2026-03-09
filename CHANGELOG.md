@@ -5,6 +5,7 @@
 ### Features
 
 - **Quick Reference Guide**: Added downloadable PDF quick reference guide to the About tab — a 3-page printable overview of all features, workflow steps, forecast inputs, results, milestones, productivity adjustments, sprint history, and data/settings. PDF hosted on GitHub main branch.
+- **Theme toggle icon**: Icon now shows the current theme (sun = light, moon = dark, monitor = system) instead of the next theme in the cycle
 
 ## v0.21.2 - 2026-03-08
 
