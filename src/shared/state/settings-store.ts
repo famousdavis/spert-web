@@ -117,7 +117,8 @@ export const useSettingsStore = create<SettingsState>()(
           ...settings,
           _isCloudUpdate: true,
         })
-        set({ _isCloudUpdate: false })
+        // Defer reset so all synchronous Zustand subscribers see the flag
+        queueMicrotask(() => set({ _isCloudUpdate: false }))
       },
     }),
     {

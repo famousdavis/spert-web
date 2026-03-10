@@ -5,6 +5,7 @@ import { useAuth } from '@/shared/providers/AuthProvider'
 import { useStorageMode } from '@/shared/hooks/useStorageMode'
 import { migrateLocalToCloud, type MigrationResult } from '@/shared/firebase/firestore-migration'
 import { useProjectStore } from '@/shared/state/project-store'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { SignInButtons } from './SignInButtons'
 
 const sectionHeaderClass = 'text-lg font-semibold text-spert-blue mb-4'
@@ -27,6 +28,7 @@ export function StorageModeSection() {
   const [isMigrating, setIsMigrating] = useState(false)
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null)
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false)
+  const [showLocalConfirm, setShowLocalConfirm] = useState(false)
 
   if (!isFirebaseAvailable) return null
 
@@ -39,9 +41,14 @@ export function StorageModeSection() {
       }
       setMode('cloud')
     } else {
-      setMode('local')
-      setMigrationResult(null)
+      setShowLocalConfirm(true)
     }
+  }
+
+  const handleConfirmLocal = () => {
+    setMode('local')
+    setMigrationResult(null)
+    setShowLocalConfirm(false)
   }
 
   const handleMigrate = async () => {
@@ -249,6 +256,17 @@ export function StorageModeSection() {
           )}
         </div>
       </section>
+
+      <ConfirmDialog
+        isOpen={showLocalConfirm}
+        title="Switch to local storage?"
+        message="Any projects created only in cloud mode won't be accessible in local storage. Your cloud data will remain in Firebase but won't sync until you switch back."
+        confirmLabel="Switch to Local"
+        cancelLabel="Stay in Cloud"
+        onConfirm={handleConfirmLocal}
+        onCancel={() => setShowLocalConfirm(false)}
+        variant="default"
+      />
     </>
   )
 }

@@ -3,8 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { isFirebaseAvailable } from '@/shared/firebase/config'
 import type { StorageMode } from '@/shared/firebase/types'
-
-const STORAGE_MODE_KEY = 'spert-storage-mode'
+import { STORAGE_MODE_KEY } from '@/shared/state/storage'
 
 function getPersistedMode(): StorageMode {
   if (typeof window === 'undefined') return 'local'

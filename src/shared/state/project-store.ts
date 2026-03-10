@@ -429,8 +429,8 @@ export const useProjectStore = create<ProjectState>()(
           sprints,
           _isCloudUpdate: true,
         })
-        // Reset the flag after the update
-        set({ _isCloudUpdate: false })
+        // Defer reset so all synchronous Zustand subscribers see the flag
+        queueMicrotask(() => set({ _isCloudUpdate: false }))
       },
 
       setForecastInput: (projectId, field, value) =>
