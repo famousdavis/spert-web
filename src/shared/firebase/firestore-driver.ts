@@ -42,6 +42,15 @@ function debouncedSave(key: string, saveFn: () => Promise<void>, delayMs = 500):
   )
 }
 
+/** Cancel all pending debounced writes without executing them. */
+export function cancelPendingSaves(): void {
+  for (const [key, timer] of pendingSaveTimers) {
+    clearTimeout(timer)
+    pendingSaveTimers.delete(key)
+  }
+  pendingSaveFns.clear()
+}
+
 /** Flush all pending debounced writes immediately (call on beforeunload). */
 export function flushPendingSaves(): void {
   for (const [key, timer] of pendingSaveTimers) {

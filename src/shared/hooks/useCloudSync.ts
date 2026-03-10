@@ -10,6 +10,7 @@ import {
   saveProject,
   saveProjectImmediate,
   deleteProject,
+  cancelPendingSaves,
   subscribeToUserProjects,
   loadSettings,
   saveSettings,
@@ -158,6 +159,9 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
           break
         }
         case 'project:import': {
+          // Cancel stale debounced saves so they don't overwrite imported data
+          cancelPendingSaves()
+
           const state = useProjectStore.getState()
           const importedIds = new Set(state.projects.map((p) => p.id))
 

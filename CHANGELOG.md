@@ -8,6 +8,7 @@
 - **Cloud → local switch has no safeguard**: Switching from cloud to local mode immediately called `setMode('local')` with no confirmation, orphaning any cloud-only projects. Added a confirmation dialog warning that cloud-only data won't be accessible in local mode
 - **Echo-prevention race condition**: `replaceProjectsFromCloud` and `replaceSettingsFromCloud` set `_isCloudUpdate: true` then reset it in a separate `set()` call — Zustand subscribers firing between the two calls could read the stale flag and skip sync bus emissions. Deferred the reset via `queueMicrotask` so all synchronous subscribers see the correct flag value
 - **`STORAGE_MODE_KEY` defined in two places**: `useStorageMode.ts` defined its own copy instead of importing from `storage.ts` — consolidated to single source of truth
+- **Stale debounced saves can overwrite import**: Pending debounced `saveProject` calls (with old data and `merge: true`) could fire after `saveProjectImmediate` during import, partially reverting imported data. Import handler now cancels all pending debounced saves before writing
 
 ## v0.21.3 - 2026-03-09
 
