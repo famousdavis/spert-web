@@ -5,8 +5,12 @@
 ### Copyright Attribution
 
 - **Copyright headers**: Added copyright and license headers to all 144 human-authored source files (`.ts`, `.tsx`, `.css`, `.mjs`, `.rules`)
-- **LICENSE file**: Updated with full author attribution, trademark notice, and Section 7 additional terms (attribution retention, trademark protection)
+- **LICENSE file**: Updated with full author attribution, trademark notice, and Section 7(b) non-permissive additional restrictions (attribution retention, trademark protection)
 - **Standing instructions**: Added copyright section to CLAUDE.md requiring headers on all new source files
+
+### Improvements
+
+- **About tab**: Updated "Your Data & Privacy" section to "Your Data & Storage" — now documents both Local Storage (default) and Cloud Storage (optional) modes, including sign-in providers, encryption details, project sharing roles, and export/import guidance
 
 ## v0.21.4 - 2026-03-09
 

@@ -77,13 +77,26 @@ export function AboutTab() {
       </section>
 
       <section className="mb-8">
-        <h3 className="text-xl mb-3 text-spert-blue">Your Data &amp; Privacy</h3>
-        <ul className="pl-8 leading-loose text-spert-text-secondary list-disc">
-          <li>Stored locally in your <strong>browser</strong> (not in any cloud database)</li>
-          <li><strong>Your data never leaves your device</strong></li>
+        <h3 className="text-xl mb-3 text-spert-blue">Your Data &amp; Storage</h3>
+        <p className="leading-relaxed text-spert-text-secondary mb-4">
+          SPERT Forecaster offers two storage modes, configurable in <strong>Settings</strong>.
+        </p>
+
+        <h4 className="text-lg mb-2 text-spert-text font-semibold">Local Storage (Default)</h4>
+        <ul className="pl-8 leading-loose text-spert-text-secondary list-disc mb-4">
+          <li>Data is stored in your browser&apos;s localStorage and <strong>never leaves your device</strong></li>
           <li>No external database servers, no third-party access, no data governance concerns</li>
-          <li>Safe for corporate/organizational data - all data stays within your network</li>
-          <li><strong>Note:</strong> If you clear your browser cache/data, you will lose all stored projects and sprints unless you&apos;ve exported a backup</li>
+          <li>Ideal for corporate/organizational environments where data must stay within your network</li>
+          <li>Use <strong>Export</strong> to back up your data as a JSON file; use <strong>Import</strong> to restore or transfer between browsers</li>
+          <li><strong>Note:</strong> Clearing your browser cache/data will delete all stored projects and sprints unless you&apos;ve exported a backup</li>
+        </ul>
+
+        <h4 className="text-lg mb-2 text-spert-text font-semibold">Cloud Storage (Optional)</h4>
+        <ul className="pl-8 leading-loose text-spert-text-secondary list-disc">
+          <li>Sign in with <strong>Google</strong> or <strong>Microsoft</strong> to sync your data across devices</li>
+          <li>Data is stored in Google Firebase/Firestore, encrypted in transit (TLS) and at rest</li>
+          <li>Share projects with team members as <strong>editors</strong> or <strong>viewers</strong></li>
+          <li>Switching to cloud mode will prompt you to upload your existing local data</li>
         </ul>
       </section>
 
