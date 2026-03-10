@@ -24,11 +24,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-ADDITIONAL TERMS UNDER SECTION 7 OF THE GNU GPL v3
-====================================================
+ADDITIONAL TERMS (per GNU GPL v3, Section 7(b) — Non-Permissive Additional Terms)
+-----------------------------------------------------------------------------------
 
-In accordance with Section 7 of the GNU General Public License v3.0,
-the following additional terms apply to this software:
+As permitted under Section 7(b) of the GNU General Public License v3.0,
+the following terms are NON-PERMISSIVE ADDITIONAL RESTRICTIONS and may
+NOT be removed by downstream recipients when conveying this software or
+modified versions thereof:
 
 1. Attribution Requirement: You must retain all copyright notices,
    including the per-file copyright headers, in all copies or
