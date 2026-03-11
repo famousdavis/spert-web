@@ -17,8 +17,7 @@ export function Footer() {
         Version {APP_VERSION}
       </Link>
       {' '}| Licensed under GNU GPL v3
-      <br className="sm:hidden" />
-      <span className="hidden sm:inline"> | </span>
+      <br />
       <a
         href={TOS_URL}
         target="_blank"
