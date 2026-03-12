@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.22.3 - 2026-03-11
+
+### Infrastructure
+
+- **Node.js version pinning**: Added `engines` field (`>=22`) to `package.json` and `.nvmrc` for Node 22 LTS — ensures Vercel deploys on Node 22 before Node 20 EOL (April 30, 2026)
+- **`@types/node` alignment**: Corrected from `^24` to `^22` to match the target deployment runtime
+
 ## v0.22.2 - 2026-03-11
 
 ### Security Hardening
