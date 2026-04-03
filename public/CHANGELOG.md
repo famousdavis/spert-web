@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.23.2 - 2026-04-02
+
+### Features
+
+- **localStorage warning banner**: An amber caution banner now appears on every app load when the user is in local storage mode, reminding them to export at the end of each session. The banner dismisses for the session with an × button. A new **Notifications** section in Settings ("Warn me on startup when using local storage") permanently suppresses it. The setting is local-only and does not sync to cloud
+
 ## v0.23.1 - 2026-03-31
 
 ### Maintenance

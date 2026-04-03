@@ -47,6 +47,8 @@ export function SettingsTab() {
     setExportName,
     exportId,
     setExportId,
+    suppressLocalStorageWarning,
+    setSuppressLocalStorageWarning,
   } = useSettingsStore()
 
   const { theme, setTheme } = useTheme()
@@ -119,6 +121,30 @@ export function SettingsTab() {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+      </section>
+
+      {/* Notifications */}
+      <section>
+        <h3 className={sectionHeaderClass}>Notifications</h3>
+        <div className="space-y-5">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="warnLocalStorage"
+              checked={!suppressLocalStorageWarning}
+              onChange={(e) => setSuppressLocalStorageWarning(!e.target.checked)}
+              className="mt-1 rounded border-gray-300 dark:border-gray-500 cursor-pointer"
+            />
+            <div>
+              <label htmlFor="warnLocalStorage" className={`${labelClass} cursor-pointer`}>
+                Warn me on startup when using local storage
+              </label>
+              <p className={descriptionClass}>
+                Shows a caution banner each time the app opens while your data is stored locally in this browser.
+              </p>
+            </div>
           </div>
         </div>
       </section>

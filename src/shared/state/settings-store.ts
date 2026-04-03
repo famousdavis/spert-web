@@ -36,6 +36,9 @@ interface SettingsState {
   exportName: string
   exportId: string
 
+  // Notifications (local-only)
+  suppressLocalStorageWarning: boolean
+
   // Cloud sync flag (transient)
   _isCloudUpdate: boolean
 
@@ -48,6 +51,7 @@ interface SettingsState {
   setDefaultResultsPercentiles: (value: number[]) => void
   setExportName: (value: string) => void
   setExportId: (value: string) => void
+  setSuppressLocalStorageWarning: (value: boolean) => void
 
   // Cloud sync actions
   replaceSettingsFromCloud: (settings: {
@@ -81,6 +85,9 @@ export const useSettingsStore = create<SettingsState>()(
       exportName: '',
       exportId: '',
 
+      // Notifications (local-only)
+      suppressLocalStorageWarning: false,
+
       _isCloudUpdate: false,
 
       // Actions — each emits to sync bus for cloud persistence
@@ -112,9 +119,10 @@ export const useSettingsStore = create<SettingsState>()(
         })
         emitSettingsSave(get()._isCloudUpdate)
       },
-      // Export attribution is local-only — no sync bus emission
+      // Export attribution and notifications are local-only — no sync bus emission
       setExportName: (value) => set({ exportName: value }),
       setExportId: (value) => set({ exportId: value }),
+      setSuppressLocalStorageWarning: (value) => set({ suppressLocalStorageWarning: value }),
 
       replaceSettingsFromCloud: (settings) => {
         set({
