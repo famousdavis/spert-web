@@ -22,6 +22,7 @@ import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
 import { Toaster } from 'sonner'
 import { FirstRunBanner } from './FirstRunBanner'
+import { LocalStorageWarningBanner } from './LocalStorageWarningBanner'
 
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('projects')
@@ -92,6 +93,7 @@ export function AppShell() {
         </header>
 
         <FirstRunBanner />
+        <LocalStorageWarningBanner />
 
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
