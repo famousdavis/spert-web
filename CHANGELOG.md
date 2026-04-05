@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.23.3 - 2026-04-05
+
+### Changed
+
+- **Standardized auth chip**: Replaced header UserMenu dropdown with Option C split pill — consistent across all SPERT® Suite apps. Signed-in cloud mode shows avatar circle (first initial, `#0070f3`) + first name + cloud icon linking to Settings. Local/signed-out mode shows lock icon + "Local only" + "Sign in" link to Settings
+
 ## v0.23.2 - 2026-04-02
 
 ### Features

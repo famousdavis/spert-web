@@ -4,82 +4,99 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/shared/providers/AuthProvider'
 import { useStorageMode } from '@/shared/hooks/useStorageMode'
 
-function UserAvatar({ displayName, photoURL }: { displayName: string | null; photoURL: string | null }) {
-  if (photoURL) {
-    return (
-      <img
-        src={photoURL}
-        alt={displayName || 'User'}
-        className="w-7 h-7 rounded-full"
-        referrerPolicy="no-referrer"
-      />
-    )
-  }
-  const initial = (displayName || '?')[0].toUpperCase()
+interface AuthChipProps {
+  onNavigateToSettings: () => void
+}
+
+function CloudIcon() {
   return (
-    <div className="w-7 h-7 rounded-full bg-spert-blue text-white flex items-center justify-center text-xs font-semibold">
-      {initial}
-    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+        fill="#0070f3"
+      />
+    </svg>
   )
 }
 
-export function UserMenu() {
-  const { user, signOut } = useAuth()
+function LockIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="11" width="18" height="11" rx="2" stroke="#9CA3AF" strokeWidth="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function UserMenu({ onNavigateToSettings }: AuthChipProps) {
+  const { user } = useAuth()
   const { mode } = useStorageMode()
-  const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
-  useEffect(() => {
-    if (!isOpen) return
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [isOpen])
-
-  if (!user) return null
+  const isCloudSignedIn = mode === 'cloud' && !!user
+  const firstName = user?.displayName?.split(' ')[0] ?? user?.email ?? ''
+  const initial = firstName.charAt(0).toUpperCase()
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 p-1 rounded transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
-        title={user.displayName || user.email || 'User menu'}
-      >
-        <UserAvatar displayName={user.displayName} photoURL={user.photoURL} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-spert-border dark:border-gray-600 py-1 z-50">
-          <div className="px-3 py-2 border-b border-spert-border dark:border-gray-600">
-            <p className="text-sm font-medium text-spert-text dark:text-gray-100 truncate">
-              {user.displayName || 'User'}
-            </p>
-            <p className="text-xs text-spert-text-muted dark:text-gray-400 truncate">
-              {user.email}
-            </p>
-            <p className="text-xs text-spert-text-muted dark:text-gray-400 mt-0.5">
-              Storage: <span className="font-medium">{mode === 'cloud' ? 'Cloud' : 'Local'}</span>
-            </p>
+    <div
+      className="flex items-center rounded-full"
+      style={{ border: '0.5px solid #D1D5DB' }}
+    >
+      {isCloudSignedIn ? (
+        <>
+          {/* Left segment: avatar + first name */}
+          <div className="flex items-center gap-1.5 py-1 pl-1 pr-2.5">
+            <div
+              className="flex items-center justify-center rounded-full text-white shrink-0"
+              style={{
+                width: 26,
+                height: 26,
+                backgroundColor: '#0070f3',
+                fontSize: 11,
+                fontWeight: 500,
+              }}
+            >
+              {initial}
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 500 }} className="text-gray-900 dark:text-gray-100">
+              {firstName}
+            </span>
           </div>
+          {/* Vertical divider */}
+          <div className="self-stretch" style={{ width: '0.5px', backgroundColor: '#D1D5DB' }} />
+          {/* Right segment: cloud icon → Settings */}
           <button
-            onClick={() => {
-              setIsOpen(false)
-              signOut()
-            }}
-            className="w-full text-left px-3 py-2 text-sm text-spert-text dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+            onClick={onNavigateToSettings}
+            className="flex items-center justify-center px-2.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-r-full cursor-pointer"
+            aria-label="Open settings"
           >
-            Sign out
+            <CloudIcon />
           </button>
-        </div>
+        </>
+      ) : (
+        <>
+          {/* Left segment: lock icon + "Local only" */}
+          <div className="flex items-center gap-1.5 py-1 pl-2.5 pr-2.5">
+            <LockIcon />
+            <span style={{ fontSize: 13 }} className="text-gray-400">
+              Local only
+            </span>
+          </div>
+          {/* Vertical divider */}
+          <div className="self-stretch" style={{ width: '0.5px', backgroundColor: '#D1D5DB' }} />
+          {/* Right segment: "Sign in" → Settings */}
+          <button
+            onClick={onNavigateToSettings}
+            className="flex items-center justify-center px-2.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-r-full cursor-pointer"
+            aria-label="Sign in"
+          >
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#0070f3' }}>
+              Sign in
+            </span>
+          </button>
+        </>
       )}
     </div>
   )
