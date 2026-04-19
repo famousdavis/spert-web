@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.24.4 - 2026-04-19
+
+### Fixed
+
+- **Post-signin "Upload & Switch to Cloud Storage" CTA disappeared before the user could see it (regression introduced in v0.24.3)**: v0.24.3 added a third render branch to `UserMenu` for the signed-in + local-mode chip. Because `StorageLoginModal` was only rendered inside the signed-out branch's return, completing a sign-in flipped the user from the signed-out branch to the `isSignedInLocal` branch — unmounting the modal before it could re-render into its post-signin state. The user ended up on the Projects tab with a signed-in chip and no one-click path to enable cloud storage (the v0.24.1 flow required the modal to stay open across the auth state change). Restructured `UserMenu` to render all three chip branches as a ternary inside a single Fragment, with `StorageLoginModal` as a sibling of the ternary — so the modal stays mounted across auth state transitions and correctly re-renders into its post-signin "Upload & Switch to Cloud Storage" CTA.
+
 ## v0.24.3 - 2026-04-19
 
 ### Fixed

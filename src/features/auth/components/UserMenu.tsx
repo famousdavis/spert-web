@@ -51,145 +51,146 @@ export function UserMenu({ onSwitchToSettings }: UserMenuProps = {}) {
     : rawName.split(' ')[0] || user?.email || ''
   const initial = firstName.charAt(0).toUpperCase()
 
-  if (isCloudSignedIn && user) {
-    return (
-      <div ref={wrapperRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setPopoverOpen((v) => !v)}
-          aria-haspopup="dialog"
-          aria-expanded={popoverOpen}
-          aria-label="Account menu"
-          className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-          style={{ border: '0.5px solid #D1D5DB' }}
-        >
-          {/* Left segment: avatar + first name */}
-          <div className="flex items-center gap-1.5 py-1 pl-1 pr-2.5">
-            <div
-              className="flex items-center justify-center rounded-full text-white shrink-0"
-              style={{
-                width: 26,
-                height: 26,
-                backgroundColor: '#0070f3',
-                fontSize: 11,
-                fontWeight: 500,
-              }}
-            >
-              {initial}
-            </div>
-            <span
-              style={{ fontSize: 13, fontWeight: 500 }}
-              className="text-gray-900 dark:text-gray-100"
-            >
-              {firstName}
-            </span>
-          </div>
-          {/* Vertical divider */}
-          <div
-            className="self-stretch"
-            style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
-          />
-          {/* Right segment: cloud icon */}
-          <span className="flex items-center justify-center px-2.5 py-1">
-            <CloudIcon />
-          </span>
-        </button>
-        {popoverOpen && (
-          <AccountPopover
-            user={user}
-            onSignOut={signOut}
-            onClose={() => setPopoverOpen(false)}
-            anchorRef={wrapperRef}
-          />
-        )}
-      </div>
-    )
-  }
-
-  if (isSignedInLocal && user) {
-    return (
-      <div ref={wrapperRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setLocalPopoverOpen((v) => !v)}
-          aria-haspopup="dialog"
-          aria-expanded={localPopoverOpen}
-          aria-label="Account menu"
-          className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-          style={{ border: '0.5px solid #D1D5DB' }}
-        >
-          {/* Left segment: avatar + first name */}
-          <div className="flex items-center gap-1.5 py-1 pl-1 pr-2.5">
-            <div
-              className="flex items-center justify-center rounded-full text-white shrink-0"
-              style={{
-                width: 26,
-                height: 26,
-                backgroundColor: '#0070f3',
-                fontSize: 11,
-                fontWeight: 500,
-              }}
-            >
-              {initial}
-            </div>
-            <span
-              style={{ fontSize: 13, fontWeight: 500 }}
-              className="text-gray-900 dark:text-gray-100"
-            >
-              {firstName}
-            </span>
-          </div>
-          {/* Vertical divider */}
-          <div
-            className="self-stretch"
-            style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
-          />
-          {/* Right segment: lock icon */}
-          <span className="flex items-center justify-center px-2.5 py-1">
-            <LockIcon />
-          </span>
-        </button>
-        {localPopoverOpen && (
-          <AccountPopoverLocal
-            user={user}
-            onSignOut={signOut}
-            onSwitchToCloud={() => onSwitchToSettings?.()}
-            onClose={() => setLocalPopoverOpen(false)}
-            anchorRef={wrapperRef}
-          />
-        )}
-      </div>
-    )
-  }
-
+  // Render into one tree so StorageLoginModal stays mounted across auth
+  // state transitions. Without this, signing in from the signed-out chip
+  // unmounts the modal (branch switches to isSignedInLocal) before the
+  // user can see the "Upload & Switch to Cloud Storage" CTA.
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setModalOpen(true)}
-        aria-label="Sign in"
-        className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-        style={{ border: '0.5px solid #D1D5DB' }}
-      >
-        {/* Left segment: lock icon + "Local only" */}
-        <div className="flex items-center gap-1.5 py-1 pl-2.5 pr-2.5">
-          <LockIcon />
-          <span style={{ fontSize: 13 }} className="text-gray-400">
-            Local only
-          </span>
+      {isCloudSignedIn && user ? (
+        <div ref={wrapperRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setPopoverOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={popoverOpen}
+            aria-label="Account menu"
+            className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+            style={{ border: '0.5px solid #D1D5DB' }}
+          >
+            {/* Left segment: avatar + first name */}
+            <div className="flex items-center gap-1.5 py-1 pl-1 pr-2.5">
+              <div
+                className="flex items-center justify-center rounded-full text-white shrink-0"
+                style={{
+                  width: 26,
+                  height: 26,
+                  backgroundColor: '#0070f3',
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              >
+                {initial}
+              </div>
+              <span
+                style={{ fontSize: 13, fontWeight: 500 }}
+                className="text-gray-900 dark:text-gray-100"
+              >
+                {firstName}
+              </span>
+            </div>
+            {/* Vertical divider */}
+            <div
+              className="self-stretch"
+              style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
+            />
+            {/* Right segment: cloud icon */}
+            <span className="flex items-center justify-center px-2.5 py-1">
+              <CloudIcon />
+            </span>
+          </button>
+          {popoverOpen && (
+            <AccountPopover
+              user={user}
+              onSignOut={signOut}
+              onClose={() => setPopoverOpen(false)}
+              anchorRef={wrapperRef}
+            />
+          )}
         </div>
-        {/* Vertical divider */}
-        <div
-          className="self-stretch"
-          style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
-        />
-        {/* Right segment: "Sign in" */}
-        <span className="flex items-center justify-center px-2.5 py-1">
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#0070f3' }}>
-            Sign in
+      ) : isSignedInLocal && user ? (
+        <div ref={wrapperRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setLocalPopoverOpen((v) => !v)}
+            aria-haspopup="dialog"
+            aria-expanded={localPopoverOpen}
+            aria-label="Account menu"
+            className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+            style={{ border: '0.5px solid #D1D5DB' }}
+          >
+            {/* Left segment: avatar + first name */}
+            <div className="flex items-center gap-1.5 py-1 pl-1 pr-2.5">
+              <div
+                className="flex items-center justify-center rounded-full text-white shrink-0"
+                style={{
+                  width: 26,
+                  height: 26,
+                  backgroundColor: '#0070f3',
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              >
+                {initial}
+              </div>
+              <span
+                style={{ fontSize: 13, fontWeight: 500 }}
+                className="text-gray-900 dark:text-gray-100"
+              >
+                {firstName}
+              </span>
+            </div>
+            {/* Vertical divider */}
+            <div
+              className="self-stretch"
+              style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
+            />
+            {/* Right segment: lock icon */}
+            <span className="flex items-center justify-center px-2.5 py-1">
+              <LockIcon />
+            </span>
+          </button>
+          {localPopoverOpen && (
+            <AccountPopoverLocal
+              user={user}
+              onSignOut={signOut}
+              onSwitchToCloud={() => onSwitchToSettings?.()}
+              onClose={() => setLocalPopoverOpen(false)}
+              anchorRef={wrapperRef}
+            />
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          aria-label="Sign in"
+          className="flex items-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+          style={{ border: '0.5px solid #D1D5DB' }}
+        >
+          {/* Left segment: lock icon + "Local only" */}
+          <div className="flex items-center gap-1.5 py-1 pl-2.5 pr-2.5">
+            <LockIcon />
+            <span style={{ fontSize: 13 }} className="text-gray-400">
+              Local only
+            </span>
+          </div>
+          {/* Vertical divider */}
+          <div
+            className="self-stretch"
+            style={{ width: '0.5px', backgroundColor: '#D1D5DB' }}
+          />
+          {/* Right segment: "Sign in" */}
+          <span className="flex items-center justify-center px-2.5 py-1">
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#0070f3' }}>
+              Sign in
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+      )}
+      {/* Modal lives outside the chip-branch ternary so it survives the
+          user -> isSignedInLocal transition and shows the post-signin
+          "Upload & Switch to Cloud Storage" CTA. */}
       <StorageLoginModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   )
