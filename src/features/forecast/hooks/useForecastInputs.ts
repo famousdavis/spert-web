@@ -48,13 +48,15 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
 
   const hasMilestones = milestones.length > 0
 
-  const cumulativeThresholds = useMemo(() => {
-    let cumulative = 0
-    return milestones.map((m) => {
-      cumulative += m.backlogSize
-      return cumulative
-    })
-  }, [milestones])
+  const cumulativeThresholds = useMemo(
+    () =>
+      milestones.reduce<number[]>((acc, m) => {
+        const prev = acc[acc.length - 1] ?? 0
+        acc.push(prev + m.backlogSize)
+        return acc
+      }, []),
+    [milestones]
+  )
 
   // Form values — derive backlog from the most recent *included* sprint that has a value recorded.
   // `derivedBacklogFromIncluded` powers both the pre-fill and the "Reset to N" drift action.

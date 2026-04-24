@@ -36,9 +36,11 @@ export function useTheme() {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     const initialTheme: Theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+    /* eslint-disable react-hooks/set-state-in-effect -- intentional post-hydration read of persisted theme; full useSyncExternalStore migration deferred (requires coordinated changes to isInitialized consumers in ThemeToggle) */
     setThemeState(initialTheme)
     applyTheme(initialTheme)
     setIsInitialized(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
   // Listen for system theme changes when using 'system' mode

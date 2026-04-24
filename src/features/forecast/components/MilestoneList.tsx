@@ -76,13 +76,14 @@ export function MilestoneList({
   }
 
   // Compute cumulative backlog for display
-  let cumulative = 0
-  const rows = milestones.map((m, idx) => {
-    cumulative += m.backlogSize
-    return { milestone: m, index: idx + 1, cumulative }
-  })
+  type Row = { milestone: Milestone; index: number; cumulative: number }
+  const rows = milestones.reduce<Row[]>((acc, m, idx) => {
+    const prev = acc[acc.length - 1]?.cumulative ?? 0
+    acc.push({ milestone: m, index: idx + 1, cumulative: prev + m.backlogSize })
+    return acc
+  }, [])
 
-  const total = cumulative
+  const total = rows[rows.length - 1]?.cumulative ?? 0
 
   return (
     <div className="overflow-x-auto">

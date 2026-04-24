@@ -4,23 +4,32 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { FIRST_RUN_SEEN_KEY, TOS_URL, PRIVACY_URL } from '@/features/auth/lib/tos'
 
+function subscribeStorage(cb: () => void) {
+  window.addEventListener('storage', cb)
+  return () => window.removeEventListener('storage', cb)
+}
+
+function getFirstRunActive() {
+  return localStorage.getItem(FIRST_RUN_SEEN_KEY) !== 'true'
+}
+
 export function FirstRunBanner() {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (localStorage.getItem(FIRST_RUN_SEEN_KEY) !== 'true') {
-      setVisible(true)
-    }
-  }, [])
-
-  if (!visible) return null
+  // `storage` events fire cross-tab only. Same-tab dismissal uses `dismissed`
+  // below (plus a localStorage write that persists + broadcasts to other tabs).
+  const firstRunActive = useSyncExternalStore(
+    subscribeStorage,
+    getFirstRunActive,
+    () => false
+  )
+  const [dismissed, setDismissed] = useState(false)
+  if (!firstRunActive || dismissed) return null
 
   const handleDismiss = () => {
     localStorage.setItem(FIRST_RUN_SEEN_KEY, 'true')
-    setVisible(false)
+    setDismissed(true)
   }
 
   return (

@@ -58,6 +58,7 @@ function processProjectDocs(
 export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
   const isActive = mode === 'cloud' && !!user
   const userRef = useRef(user)
+  // eslint-disable-next-line react-hooks/refs -- intentional latest-value ref write during render; userRef is only consumed inside sync bus effect callbacks, never during render itself. Moving to useEffect would introduce a stale-ref window between render commit and effect run.
   userRef.current = user
 
   // Track Firestore doc metadata for proper saves (owner/members)

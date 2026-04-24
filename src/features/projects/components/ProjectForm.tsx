@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { Project } from '@/shared/types'
 import { DEFAULT_UNIT_OF_MEASURE } from '../constants'
@@ -29,24 +29,9 @@ export function ProjectForm({ project, onSubmit, onCancel }: ProjectFormProps) {
   const [finishDateError, setFinishDateError] = useState('')
   const [submitError, setSubmitError] = useState('')
 
-  // Update form when editing project changes
-  useEffect(() => {
-    if (project) {
-      setName(project.name)
-      setProjectStartDate(project.projectStartDate ?? '')
-      setProjectFinishDate(project.projectFinishDate ?? '')
-      setUnitOfMeasure(project.unitOfMeasure)
-    } else {
-      setName('')
-      setProjectStartDate('')
-      setProjectFinishDate('')
-      setUnitOfMeasure(DEFAULT_UNIT_OF_MEASURE)
-    }
-    // Clear errors when switching projects
-    setStartDateError('')
-    setFinishDateError('')
-    setSubmitError('')
-  }, [project])
+  // Form state is initialized from `project` via useState initializers above.
+  // Parents must pass `key={project?.id ?? 'new'}` so switching to a different
+  // project remounts the form (resetting all state to the new project's values).
 
   const validateProjectStartDate = (date: string) => {
     if (date === '') {
