@@ -43,6 +43,7 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
   }, [projectId, mode])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadMembers is an external-system sync (Firestore fetch); the setState call inside is the subscription-callback pattern the rule documents as a valid exception
     loadMembers()
   }, [loadMembers])
 

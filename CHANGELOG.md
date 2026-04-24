@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.25.1 - 2026-04-24
+
+### Internal
+
+- **Lint debt paydown**: Cleared all 17 eslint errors on `main` (baseline was 32 problems / 17 errors / 15 warnings; now 15 problems / 0 errors / 15 warnings). No user-facing behavior change. Warnings are a separate paydown pass.
+  - `burn-up.test.ts` (×6): replaced `any` tuple types with `BurnUpConfig['lines']`.
+  - `MilestoneList.tsx` + `useForecastInputs.ts`: refactored `let`-reassigning accumulators to `Array.reduce` (`react-hooks/immutability`).
+  - `AuthProvider.tsx`: reordered `handleAuthenticatedUser` above its `useEffect` consumer (TDZ); migrated `firebaseReady` to `useSyncExternalStore` (hydration-safe snapshot of module-level `isFirebaseAvailable`); boot-path `setIsLoading(false)` retains a targeted disable with justification.
+  - `ConsentModal.tsx`: switched to unmount-on-close lifecycle (parent in `SignInButtons.tsx` uses `{show && <ConsentModal />}`); all three internal effects updated, `isOpen` prop removed.
+  - `ProjectForm.tsx` + `ProjectsTab.tsx`: replaced form-init `useEffect` with `useState` initializers + a `key={project?.id ?? 'new'}` remount at the single call site.
+  - `LocalStorageWarningBanner.tsx`: split into derivation shell + inner `DismissibleBanner` with remount-key for ephemeral dismissal reset (no state-in-effect).
+  - `useIsClient.ts`: migrated to `useSyncExternalStore`. All three consumers (`ProjectsTab`, `SprintHistoryTab`, `ForecastTab` via `useForecastState`) use the safe steady-state `if (!isClient) return <Loading />` pattern — confirmed unaffected by the post-hydration single-render diff.
+  - `FirstRunBanner.tsx`: migrated to `useSyncExternalStore` over the `storage` event + ephemeral `dismissed` state.
+  - **Targeted `eslint-disable`** (three sites, each with inline justification):
+    - `useTheme.ts`: full `useSyncExternalStore` migration deferred — requires coordinated changes to `isInitialized` consumers in `ThemeToggle`. Tracked for a dedicated refactor.
+    - `SharingSection.tsx`: Firestore fetch on mount is the rule's documented exception for external-system sync.
+    - `useCloudSync.ts`: intentional latest-value ref write during render — moving to `useEffect` would introduce a stale-ref window inside sync-bus callbacks.
+
 ## v0.25.0 - 2026-04-24
 
 ### Changed

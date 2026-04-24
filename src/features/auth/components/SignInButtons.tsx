@@ -149,11 +149,12 @@ export function SignInButtons({ fullLabel = false }: SignInButtonsProps = {}) {
           {error}
         </p>
       )}
-      <ConsentModal
-        isOpen={showConsent}
-        onAccept={handleConsentAccept}
-        onCancel={handleConsentCancel}
-      />
+      {showConsent && (
+        <ConsentModal
+          onAccept={handleConsentAccept}
+          onCancel={handleConsentCancel}
+        />
+      )}
     </>
   )
 }

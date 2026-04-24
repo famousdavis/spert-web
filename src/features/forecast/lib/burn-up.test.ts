@@ -87,7 +87,7 @@ describe('calculateBurnUpData', () => {
     // When config has empty lines, no forecast points are generated
     const emptyLinesConfig = {
       distribution: 'truncatedNormal' as const,
-      lines: [] as unknown as [any, any, any],
+      lines: [] as unknown as BurnUpConfig['lines'],
     }
     const result = calculateBurnUpData({
       sprints: [],
@@ -179,7 +179,7 @@ describe('calculateBurnUpData', () => {
   it('handles empty config.lines gracefully (BUG-2 regression)', () => {
     const emptyLinesConfig = {
       distribution: 'truncatedNormal' as const,
-      lines: [] as unknown as [any, any, any],
+      lines: [] as unknown as BurnUpConfig['lines'],
     }
     const sprints = [makeSprint(1, 20)]
 

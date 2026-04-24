@@ -4,7 +4,15 @@
 
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
 import { auth, isFirebaseAvailable } from '@/shared/firebase/config'
 import { signInWithGoogle, signInWithMicrosoft, signOut, checkRedirectResult } from '@/shared/firebase/auth'
@@ -39,40 +47,19 @@ const AuthContext = createContext<AuthContextValue>({
   signOut: async () => {},
 })
 
+const noopSubscribe = () => () => {}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  // Start false to match SSR, then update after hydration to avoid mismatch
-  const [firebaseReady, setFirebaseReady] = useState(false)
-
-  useEffect(() => {
-    setFirebaseReady(isFirebaseAvailable)
-    if (!auth) {
-      setIsLoading(false)
-      return
-    }
-    // Check for pending redirect result (from signInWithRedirect fallback)
-    checkRedirectResult().catch(() => {})
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        handleAuthenticatedUser(firebaseUser)
-      } else {
-        // Sign-out sequence — order matters:
-        //   (a) cancel queued Firestore writes BEFORE credentials are gone
-        //   (b) clear store + persisted localStorage snapshot (privacy)
-        //   (c) reset storage mode to 'local' so next boot does not enter cloud
-        //       mode before auth resolves; broadcasts to all useStorageMode
-        //       consumers via Zustand subscriptions
-        //   (d) flip React auth state, which triggers useCloudSync teardown
-        cancelPendingSaves()
-        useProjectStore.getState().clearProjectsOnSignOut()
-        useStorageModeStore.getState().setMode('local')
-        setUser(null)
-        setIsLoading(false)
-      }
-    })
-    return unsubscribe
-  }, [])
+  // `isFirebaseAvailable` is a module-level constant gated on `typeof window`,
+  // so SSR reads false and CSR reads the real value. useSyncExternalStore
+  // provides a hydration-safe snapshot without a setState-in-effect bridge.
+  const firebaseReady = useSyncExternalStore(
+    noopSubscribe,
+    () => isFirebaseAvailable,
+    () => false
+  )
 
   /**
    * Handles an authenticated Firebase user:
@@ -125,6 +112,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!auth) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- no-Firebase boot path: finalize the initial "loading=true" state when auth is unavailable, so dependent UI can render local-mode immediately
+      setIsLoading(false)
+      return
+    }
+    // Check for pending redirect result (from signInWithRedirect fallback)
+    checkRedirectResult().catch(() => {})
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        handleAuthenticatedUser(firebaseUser)
+      } else {
+        // Sign-out sequence — order matters:
+        //   (a) cancel queued Firestore writes BEFORE credentials are gone
+        //   (b) clear store + persisted localStorage snapshot (privacy)
+        //   (c) reset storage mode to 'local' so next boot does not enter cloud
+        //       mode before auth resolves; broadcasts to all useStorageMode
+        //       consumers via Zustand subscriptions
+        //   (d) flip React auth state, which triggers useCloudSync teardown
+        cancelPendingSaves()
+        useProjectStore.getState().clearProjectsOnSignOut()
+        useStorageModeStore.getState().setMode('local')
+        setUser(null)
+        setIsLoading(false)
+      }
+    })
+    return unsubscribe
+  }, [])
 
   const handleSignInGoogle = useCallback(async () => {
     try {

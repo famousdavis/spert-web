@@ -8,7 +8,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { TOS_URL, PRIVACY_URL } from '@/features/auth/lib/tos'
 
 interface ConsentModalProps {
-  isOpen: boolean
   onAccept: () => void
   onCancel: () => void
 }
@@ -17,26 +16,25 @@ interface ConsentModalProps {
  * Clickwrap consent modal for Cloud Storage activation.
  * Requires the user to check a checkbox agreeing to ToS/Privacy Policy
  * before the "Enable Cloud Storage" button becomes active.
+ *
+ * Uses the unmount-on-close pattern — parents should conditionally render
+ * `{show && <ConsentModal ... />}` so each appearance is a fresh mount
+ * (checkbox resets to unchecked automatically).
  */
-export function ConsentModal({ isOpen, onAccept, onCancel }: ConsentModalProps) {
+export function ConsentModal({ onAccept, onCancel }: ConsentModalProps) {
   const [agreed, setAgreed] = useState(false)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
   const acceptButtonRef = useRef<HTMLButtonElement>(null)
   const checkboxRef = useRef<HTMLInputElement>(null)
 
-  // Reset checkbox to unchecked each time the modal opens
+  // Focus cancel on mount — keyboard dismiss is the safer default.
   useEffect(() => {
-    if (isOpen) {
-      setAgreed(false)
-      cancelButtonRef.current?.focus()
-    }
-  }, [isOpen])
+    cancelButtonRef.current?.focus()
+  }, [])
 
   // Keyboard handling: Escape to cancel, Tab to trap focus
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isOpen) return
-
       if (e.key === 'Escape') {
         e.preventDefault()
         onCancel()
@@ -60,7 +58,7 @@ export function ConsentModal({ isOpen, onAccept, onCancel }: ConsentModalProps) 
         }
       }
     },
-    [isOpen, onCancel]
+    [onCancel]
   )
 
   useEffect(() => {
@@ -68,19 +66,13 @@ export function ConsentModal({ isOpen, onAccept, onCancel }: ConsentModalProps) 
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  // Prevent body scroll when dialog is open
+  // Lock body scroll for the lifetime of this modal's mount.
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = ''
     }
-  }, [isOpen])
-
-  if (!isOpen) return null
+  }, [])
 
   return (
     <div

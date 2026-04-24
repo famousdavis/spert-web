@@ -262,6 +262,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
       )}
 
       <ProjectForm
+        key={editingProject?.id ?? 'new'}
         project={editingProject}
         onSubmit={handleFormSubmit}
         onCancel={handleFormCancel}
