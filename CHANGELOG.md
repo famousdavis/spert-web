@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.25.0 - 2026-04-24
+
+### Changed
+
+- **Unified Cloud Storage modal (replaces "Storage & Sign In")**: The header auth chip now opens a single standardized modal that handles all three auth × storage states — signed-out, signed-in + local, and signed-in + cloud — in one place, consistent with the rest of the SPERT® Suite. Modal title is "Cloud Storage". Radio labels are "Local (browser only)" and "Cloud (sync across devices)". Sign-in buttons show full-width "Sign in with Google" / "Sign in with Microsoft" labels with native full-color logos in a side-by-side equal-width layout. Signed-in states show an identity card with the normalized display name, email, and a red "Sign out" link. The Settings Storage section is retained as a secondary access path.
+- **Auth chip click collapsed into a single handler**: The signed-in-local popover ("Switch to Cloud Storage" / "Sign Out") and the signed-in-cloud popover ("Sign Out") have been removed. In all three states, clicking the chip opens the Cloud Storage modal. The chip's three visual variants are unchanged.
+- **Modal open state hoisted from `UserMenu` to `AppShell`**: `UserMenu` now accepts `onRequestOpen` and is presentation-only; the modal is rendered as a sibling of the header so it survives auth state transitions without prop drilling.
+- **`SignInButtons` gains a `fullLabel` prop**: Existing call sites (Settings Account) continue to render the compact two-chip layout with responsive label hiding. The new Cloud Storage modal passes `fullLabel` for the full-label primary-blue treatment.
+
+### Added
+
+- **Export Attribution section inside the Cloud Storage modal**: Exposes `Name` and `Identifier` fields wired to the existing `setExportName` / `setExportId` setters in `settings-store.ts`. These fields are deliberately local-only (architectural decision confirmed in `types.ts`). The Settings Export Attribution section remains a valid second entry point — both surfaces read and write the same Zustand state.
+- **Notifications section inside the Cloud Storage modal**: Adds a second entry point for the existing "Warn me on startup when using local storage" toggle, bound to `suppressLocalStorageWarning`. The Settings Notifications toggle is retained — the two entry points stay in sync via shared Zustand state.
+- **`normalizeDisplayName()` utility** (`src/features/auth/lib/display-name.ts`): Normalizes Azure AD / Entra ID "Last, First MI" display names into natural "First MI Last" reading order for both the identity card and the chip's first-name segment. Includes `firstNameFromDisplayName()` for the chip.
+- **`sanitizeFirebaseError()` + `normalizeSignInError()` utility** (`src/features/auth/lib/sign-in-errors.ts`): New error-code normalization for sign-in. Silent return for `popup-closed-by-user` and `cancelled-popup-request`; "Allow pop-ups in your browser to sign in." for `popup-blocked`; sanitized fallback for all others. Error text renders below the sign-in button row in the new modal.
+- **Shared `UploadConfirmPanel`** (`src/features/auth/components/UploadConfirmPanel.tsx`): Extracted the local-to-cloud upload confirm UI from `StorageModeSection` into a reusable component. Both the Settings Storage section and the new Cloud Storage modal now consume the same confirm flow, so migration logic is defined once.
+
+### Removed
+
+- `StorageLoginModal` (superseded by `CloudStorageModal`).
+- `AccountPopover` and `AccountPopoverLocal` (superseded by the unified modal's identity card).
+
 ## v0.24.4 - 2026-04-19
 
 ### Fixed
