@@ -16,7 +16,7 @@ import { APP_DESCRIPTION } from '@/shared/constants'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { HeaderThemeToggle } from '@/shared/components/ThemeToggle'
-import { UserMenu } from '@/features/auth'
+import { UserMenu, CloudStorageModal } from '@/features/auth'
 
 import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp'
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
@@ -27,6 +27,7 @@ import { LocalStorageWarningBanner } from './LocalStorageWarningBanner'
 export function AppShell() {
   const [activeTab, setActiveTab] = useState<TabId>('projects')
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false)
+  const [cloudModalOpen, setCloudModalOpen] = useState(false)
   const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
 
   const handleViewHistory = useCallback((projectId: string) => {
@@ -88,7 +89,7 @@ export function AppShell() {
           </div>
           <div className="flex items-center gap-2">
             <HeaderThemeToggle />
-            <UserMenu onSwitchToSettings={() => setActiveTab('settings')} />
+            <UserMenu onRequestOpen={() => setCloudModalOpen(true)} />
           </div>
         </header>
 
@@ -112,6 +113,10 @@ export function AppShell() {
         isOpen={isShortcutsHelpOpen}
         onClose={() => setIsShortcutsHelpOpen(false)}
         shortcuts={shortcuts}
+      />
+      <CloudStorageModal
+        isOpen={cloudModalOpen}
+        onClose={() => setCloudModalOpen(false)}
       />
     </div>
   )

@@ -10,7 +10,9 @@ import { useStorageMode } from '@/shared/hooks/useStorageMode'
 import { migrateLocalToCloud, type MigrationResult } from '@/shared/firebase/firestore-migration'
 import { useProjectStore } from '@/shared/state/project-store'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { normalizeDisplayName } from '@/features/auth/lib/display-name'
 import { SignInButtons } from './SignInButtons'
+import { UploadConfirmPanel } from './UploadConfirmPanel'
 
 const sectionHeaderClass = 'text-lg font-semibold text-spert-blue mb-4'
 const labelClass = 'text-sm font-semibold text-spert-text-secondary dark:text-gray-300'
@@ -29,7 +31,7 @@ export function StorageModeSection() {
   const { user, isFirebaseAvailable, signOut } = useAuth()
   const { mode, setMode } = useStorageMode()
   const projects = useProjectStore((s) => s.projects)
-  const [isMigrating, setIsMigrating] = useState(false)
+  const [isReUploading, setIsReUploading] = useState(false)
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null)
   const [showMigrationPrompt, setShowMigrationPrompt] = useState(false)
   const [showLocalConfirm, setShowLocalConfirm] = useState(false)
@@ -59,9 +61,20 @@ export function StorageModeSection() {
     setShowLocalConfirm(false)
   }
 
-  const handleMigrate = async () => {
+  const handleMigrationSuccess = (result: MigrationResult) => {
+    setMigrationResult(result)
+    setShowMigrationPrompt(false)
+    setMode('cloud')
+  }
+
+  const handleCancelMigration = () => {
+    setShowMigrationPrompt(false)
+    // Stay in local mode — do NOT switch to cloud without uploading
+  }
+
+  const handleReUpload = async () => {
     if (!user) return
-    setIsMigrating(true)
+    setIsReUploading(true)
     setMigrationResult(null)
     try {
       const result = await migrateLocalToCloud(user.uid, {
@@ -70,10 +83,6 @@ export function StorageModeSection() {
         lastSignIn: new Date().toISOString(),
       })
       setMigrationResult(result)
-      // Only switch to cloud if migration had no errors
-      if (result.errors.length === 0) {
-        setMode('cloud')
-      }
     } catch (err) {
       setMigrationResult({
         projectsUploaded: 0,
@@ -82,19 +91,8 @@ export function StorageModeSection() {
         errors: [`Migration failed: ${err}`],
       })
     } finally {
-      setIsMigrating(false)
-      setShowMigrationPrompt(false)
+      setIsReUploading(false)
     }
-  }
-
-  const handleCancelMigration = () => {
-    setShowMigrationPrompt(false)
-    // Stay in local mode — do NOT switch to cloud without uploading
-  }
-
-  const handleReUpload = () => {
-    setMigrationResult(null)
-    handleMigrate()
   }
 
   return (
@@ -114,7 +112,7 @@ export function StorageModeSection() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-spert-text dark:text-gray-100">
-                  {user.displayName || 'User'}
+                  {normalizeDisplayName(user.displayName) || 'User'}
                 </p>
                 <p className="text-xs text-spert-text-muted dark:text-gray-400">
                   {user.email}
@@ -149,61 +147,49 @@ export function StorageModeSection() {
           )}
 
           <div className="flex gap-4">
-            <label className={`flex items-center gap-2 ${isMigrating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+            <label className={`flex items-center gap-2 ${showMigrationPrompt ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="radio"
                 name="storageMode"
                 value="local"
                 checked={mode === 'local'}
                 onChange={() => handleModeChange('local')}
-                disabled={isMigrating}
-                className={isMigrating ? 'cursor-not-allowed' : 'cursor-pointer'}
+                disabled={showMigrationPrompt}
+                className={showMigrationPrompt ? 'cursor-not-allowed' : 'cursor-pointer'}
               />
               <span className="text-sm text-spert-text dark:text-gray-200">Local</span>
             </label>
-            <label className={`flex items-center gap-2 ${!user || isMigrating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+            <label className={`flex items-center gap-2 ${!user || showMigrationPrompt ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
               <input
                 type="radio"
                 name="storageMode"
                 value="cloud"
                 checked={mode === 'cloud'}
                 onChange={() => handleModeChange('cloud')}
-                disabled={!user || isMigrating}
-                className={!user || isMigrating ? 'cursor-not-allowed' : 'cursor-pointer'}
+                disabled={!user || showMigrationPrompt}
+                className={!user || showMigrationPrompt ? 'cursor-not-allowed' : 'cursor-pointer'}
               />
               <span className="text-sm text-spert-text dark:text-gray-200">Cloud</span>
             </label>
           </div>
 
-          {/* Inline spinner during migration */}
-          {isMigrating && (
+          {/* Migration prompt — shared UploadConfirmPanel */}
+          {showMigrationPrompt && user && (
+            <UploadConfirmPanel
+              uid={user.uid}
+              displayName={user.displayName ?? ''}
+              email={user.email ?? ''}
+              projectCount={projects.length}
+              onSuccess={handleMigrationSuccess}
+              onCancel={handleCancelMigration}
+            />
+          )}
+
+          {/* Re-upload spinner */}
+          {isReUploading && (
             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
               <Spinner />
               <span className="text-sm">Uploading data to cloud...</span>
-            </div>
-          )}
-
-          {/* Migration prompt */}
-          {showMigrationPrompt && !isMigrating && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg space-y-2">
-              <p className="text-sm text-spert-text dark:text-gray-200">
-                You have {projects.length} project{projects.length !== 1 ? 's' : ''} stored locally.
-                Upload them to the cloud to continue in cloud mode.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleMigrate}
-                  className="px-3 py-1.5 text-sm font-medium rounded bg-spert-blue text-white hover:bg-blue-600 cursor-pointer"
-                >
-                  Upload to Cloud
-                </button>
-                <button
-                  onClick={handleCancelMigration}
-                  className="px-3 py-1.5 text-sm font-medium rounded border border-spert-border dark:border-gray-600 text-spert-text dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
             </div>
           )}
 
@@ -243,8 +229,8 @@ export function StorageModeSection() {
             </div>
           )}
 
-          {/* Re-upload button (when in cloud mode, not migrating, no pending result) */}
-          {mode === 'cloud' && !isMigrating && !migrationResult && !showMigrationPrompt && user && (
+          {/* Re-upload button (when in cloud mode, not re-uploading, no pending result) */}
+          {mode === 'cloud' && !isReUploading && !migrationResult && !showMigrationPrompt && user && (
             <button
               onClick={handleReUpload}
               className="text-sm text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"

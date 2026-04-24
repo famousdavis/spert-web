@@ -6,8 +6,20 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/shared/providers/AuthProvider'
+import { signInWithGoogle as firebaseSignInWithGoogle, signInWithMicrosoft as firebaseSignInWithMicrosoft } from '@/shared/firebase/auth'
 import { isTosCached, cacheTos, setPendingWrite } from '@/features/auth/lib/tos'
+import { normalizeSignInError } from '@/features/auth/lib/sign-in-errors'
 import { ConsentModal } from './ConsentModal'
+
+interface SignInButtonsProps {
+  /**
+   * When true, buttons show full "Sign in with Google" / "Sign in with Microsoft"
+   * labels in a side-by-side equal-width layout with primary-blue styling.
+   * When false (default), the compact chip layout used by the Settings section
+   * is preserved.
+   */
+  fullLabel?: boolean
+}
 
 function GoogleIcon() {
   return (
@@ -31,43 +43,46 @@ function MicrosoftIcon() {
   )
 }
 
-export function SignInButtons() {
-  const { user, isFirebaseAvailable, signInWithGoogle, signInWithMicrosoft } = useAuth()
+export function SignInButtons({ fullLabel = false }: SignInButtonsProps = {}) {
+  const { user, isFirebaseAvailable } = useAuth()
   const [pendingProvider, setPendingProvider] = useState<'google' | 'microsoft' | null>(null)
   const [showConsent, setShowConsent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!isFirebaseAvailable || user) return null
 
+  // Call firebase auth directly so we can observe errors for normalization.
+  // AuthProvider's wrappers swallow errors via console.error.
+  const invokeProvider = async (provider: 'google' | 'microsoft') => {
+    setError(null)
+    try {
+      if (provider === 'google') {
+        await firebaseSignInWithGoogle()
+      } else {
+        await firebaseSignInWithMicrosoft()
+      }
+    } catch (err) {
+      const msg = normalizeSignInError(err)
+      if (msg !== null) setError(msg)
+    }
+  }
+
   const handleClick = (provider: 'google' | 'microsoft') => {
     if (isTosCached()) {
-      // ToS already accepted — proceed directly to Firebase Auth
-      if (provider === 'google') {
-        signInWithGoogle()
-      } else {
-        signInWithMicrosoft()
-      }
+      void invokeProvider(provider)
     } else {
-      // Show consent modal before Firebase Auth
       setPendingProvider(provider)
       setShowConsent(true)
     }
   }
 
   const handleConsentAccept = () => {
-    // Cache ToS acceptance in localStorage BEFORE Firebase Auth fires
     cacheTos()
-    // Flag for post-auth Firestore write
     setPendingWrite()
-    // Close modal
     setShowConsent(false)
-
-    // Initiate Firebase Auth with the originally selected provider
-    if (pendingProvider === 'google') {
-      signInWithGoogle()
-    } else if (pendingProvider === 'microsoft') {
-      signInWithMicrosoft()
+    if (pendingProvider) {
+      void invokeProvider(pendingProvider)
     }
-    // If user cancels the Firebase Auth popup, localStorage cache persists (per spec)
   }
 
   const handleConsentCancel = () => {
@@ -75,21 +90,65 @@ export function SignInButtons() {
     setPendingProvider(null)
   }
 
-  const btnClass =
+  const compactBtnClass =
     'flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-spert-border dark:border-gray-600 bg-white dark:bg-gray-700 text-spert-text dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer'
+
+  const fullBtnClass =
+    'flex-1 min-w-0 flex items-center justify-start gap-2 px-3 py-2 text-sm font-medium rounded bg-spert-blue text-white hover:bg-spert-blue-dark transition-colors cursor-pointer'
 
   return (
     <>
-      <div className="flex items-center gap-1.5">
-        <button onClick={() => handleClick('google')} className={btnClass} title="Sign in with Google">
-          <GoogleIcon />
-          <span className="hidden sm:inline">Google</span>
-        </button>
-        <button onClick={() => handleClick('microsoft')} className={btnClass} title="Sign in with Microsoft">
-          <MicrosoftIcon />
-          <span className="hidden sm:inline">Microsoft</span>
-        </button>
-      </div>
+      {fullLabel ? (
+        <div className="flex flex-wrap items-stretch gap-2">
+          <button
+            onClick={() => handleClick('google')}
+            className={fullBtnClass}
+            title="Sign in with Google"
+          >
+            <span className="inline-flex items-center justify-center rounded bg-white p-0.5">
+              <GoogleIcon />
+            </span>
+            <span>Sign in with Google</span>
+          </button>
+          <button
+            onClick={() => handleClick('microsoft')}
+            className={fullBtnClass}
+            title="Sign in with Microsoft"
+          >
+            <span className="inline-flex items-center justify-center">
+              <MicrosoftIcon />
+            </span>
+            <span>Sign in with Microsoft</span>
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleClick('google')}
+            className={compactBtnClass}
+            title="Sign in with Google"
+          >
+            <GoogleIcon />
+            <span className="hidden sm:inline">Google</span>
+          </button>
+          <button
+            onClick={() => handleClick('microsoft')}
+            className={compactBtnClass}
+            title="Sign in with Microsoft"
+          >
+            <MicrosoftIcon />
+            <span className="hidden sm:inline">Microsoft</span>
+          </button>
+        </div>
+      )}
+      {error && (
+        <p
+          className="mt-3 text-xs text-red-600 dark:text-red-400"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
       <ConsentModal
         isOpen={showConsent}
         onAccept={handleConsentAccept}
