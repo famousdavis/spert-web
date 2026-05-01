@@ -17,6 +17,7 @@ import { useProjectStore } from '@/shared/state/project-store'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import { HeaderThemeToggle } from '@/shared/components/ThemeToggle'
 import { UserMenu, CloudStorageModal } from '@/features/auth'
+import { useTheme } from '@/shared/hooks/useTheme'
 
 import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp'
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
@@ -29,6 +30,10 @@ export function AppShell() {
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false)
   const [cloudModalOpen, setCloudModalOpen] = useState(false)
   const setViewingProjectId = useProjectStore((state) => state.setViewingProjectId)
+  const { effectiveTheme } = useTheme()
+  const faviconSrc = effectiveTheme === 'dark'
+    ? '/spert-favicon-forecaster-dark.png'
+    : '/spert-favicon-forecaster.png'
 
   const handleViewHistory = useCallback((projectId: string) => {
     setViewingProjectId(projectId)
@@ -76,15 +81,25 @@ export function AppShell() {
       <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
         <header className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem] mb-1">
-              <span
-                className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
-              >
-                SPERT</span><span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
-              <span
-                className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
-              > Forecaster</span>
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={faviconSrc}
+                alt="SPERT Forecaster icon"
+                width={32}
+                height={32}
+                className="rounded-[11%] shrink-0 h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8"
+              />
+              <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem]">
+                <span
+                  className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
+                >
+                  SPERT</span><span className="text-gray-400 dark:text-gray-500 font-normal text-base sm:text-lg align-top">®</span>
+                <span
+                  className="font-bold bg-gradient-to-r from-spert-blue-light to-spert-blue-dark bg-clip-text text-transparent"
+                > Forecaster</span>
+              </h1>
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">{APP_DESCRIPTION}</p>
           </div>
           <div className="flex items-center gap-2">

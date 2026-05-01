@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.25.2 - 2026-04-30
+
+### Added
+
+- **Branded favicon and header icon**: New `spert-favicon-forecaster.png` (192×192 PNG, blue `#0070f3` panels with rounded corners) now appears as the browser tab icon and immediately to the left of the "SPERT® Forecaster" title in the app header. A charcoal-on-black dark-mode variant (`spert-favicon-forecaster-dark.png`) auto-swaps when the active theme is dark, using the existing `useTheme` hook so it tracks the user's chosen theme (not just OS `prefers-color-scheme`).
+
 ## v0.25.1 - 2026-04-24
 
 ### Internal
