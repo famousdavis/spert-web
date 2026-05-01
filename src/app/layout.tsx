@@ -21,6 +21,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'SPERT® Forecaster - Agile Release Forecasting',
   description: 'SPERT® Forecaster - Monte Carlo simulation for agile release forecasting',
+  icons: {
+    icon: '/spert-favicon-forecaster.png',
+    apple: '/spert-favicon-forecaster.png',
+  },
 }
 
 export const viewport: Viewport = {
