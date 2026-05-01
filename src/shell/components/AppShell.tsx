@@ -86,9 +86,7 @@ export function AppShell() {
               <img
                 src={faviconSrc}
                 alt="SPERT Forecaster icon"
-                width={32}
-                height={32}
-                className="rounded-[11%] shrink-0 h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8"
+                className="mr-2 h-7 w-7 rounded-lg ring-1 ring-white/20"
               />
               <h1 className="text-2xl sm:text-[1.75rem] md:text-[2.1rem]">
                 <span
