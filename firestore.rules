@@ -1,11 +1,21 @@
+// ⚠️ REFERENCE-ONLY / HISTORICAL — DO NOT DEPLOY FROM THIS FILE
+//
+// The canonical SPERT-suite-wide Firestore rules live in the Landing
+// Page repo (/Users/william/Documents/spert-landing-page/firestore.rules)
+// since May 2026. This file remains for historical reference and may
+// be deleted in a future cleanup pass. Do not edit and deploy from
+// here — changes will not propagate to production.
+//
+// Deploy workflow: paste-replace into the Firebase Console (canonical),
+// or `firebase deploy --only firestore:rules --project spert-suite`
+// from the Landing Page repo (fallback). See the canonical guide at
+// /Users/william/Documents/SPERT Documentation/cloud-storage-guide/ARCHITECTURE.md
+// §21.11.
+
 // Copyright (C) 2026 William W. Davis, MSPM, PMP. All rights reserved.
 // Licensed under the GNU General Public License v3.0.
 // See LICENSE file in the project root for full license text.
 
-// Firestore Security Rules for SPERT Forecaster
-// Note: The canonical rules file for the full SPERT Suite is in the Firebase Console.
-// This file contains only the Forecaster-specific rules for local reference.
-// Deploy via Firebase CLI: npx firebase deploy --only firestore:rules --project spert-suite
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
