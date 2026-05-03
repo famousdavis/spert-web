@@ -117,6 +117,7 @@ export function ReportButton({
           <label className="flex items-center gap-2 text-sm text-spert-text dark:text-gray-300 cursor-pointer mb-2">
             <input
               type="checkbox"
+              name="includeForecastResults"
               checked={includeResults}
               onChange={() => setIncludeResults((v) => !v)}
               className="cursor-pointer accent-blue-600"

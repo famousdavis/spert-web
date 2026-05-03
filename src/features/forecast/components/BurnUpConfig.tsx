@@ -140,6 +140,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
       {/* Color picker */}
       <input
         type="color"
+        name={`burnup-line-${lineNumber}-color`}
         value={line.color}
         onChange={(e) => onChange({ color: e.target.value })}
         className="w-6 h-6 p-0 border border-spert-border dark:border-gray-600 rounded cursor-pointer"
@@ -149,6 +150,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
       {/* Label input */}
       <input
         type="text"
+        name={`burnup-line-${lineNumber}-label`}
         value={line.label}
         onChange={(e) => onChange({ label: e.target.value })}
         placeholder={`Line ${lineNumber}`}
@@ -160,6 +162,7 @@ function ForecastLineRow({ line, lineNumber, onChange }: ForecastLineRowProps) {
       {/* Percentile slider */}
       <input
         type="range"
+        name={`burnup-line-${lineNumber}-percentile`}
         min={SLIDER_MIN}
         max={SLIDER_MAX}
         step={SLIDER_STEP}

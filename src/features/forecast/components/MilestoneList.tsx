@@ -171,6 +171,7 @@ export function MilestoneList({
               <td className="p-2 text-center">
                 <input
                   type="checkbox"
+                  name="showMilestoneOnChart"
                   checked={m.showOnChart !== false}
                   onChange={(e) => onToggleChart?.(m.id, e.target.checked)}
                   className="cursor-pointer accent-blue-600"

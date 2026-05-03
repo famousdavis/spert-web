@@ -141,6 +141,7 @@ export function MilestoneForm({
             >
               <input
                 type="color"
+                name="milestoneCustomColor"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="absolute inset-0 opacity-0 cursor-pointer"

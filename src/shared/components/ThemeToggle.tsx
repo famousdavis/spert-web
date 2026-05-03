@@ -94,6 +94,7 @@ export function ThemeToggle() {
 
   return (
     <select
+      name="theme"
       value={theme}
       onChange={(e) => setTheme(e.target.value as Theme)}
       className="px-2 py-1 text-xs border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-spert-text dark:text-gray-200 cursor-pointer"
