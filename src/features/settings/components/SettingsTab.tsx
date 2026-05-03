@@ -304,6 +304,7 @@ export function SettingsTab() {
               value={exportName}
               onChange={(e) => setExportName(e.target.value)}
               placeholder="e.g., Jane Smith"
+              autoComplete="name"
               className={`${selectClass} w-full mt-1`}
             />
           </div>

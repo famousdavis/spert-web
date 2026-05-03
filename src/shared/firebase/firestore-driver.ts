@@ -18,6 +18,7 @@ import {
   where,
   type Unsubscribe,
 } from 'firebase/firestore'
+import { toast } from 'sonner'
 import { db } from './config'
 import { COLLECTIONS, type FirestoreProjectDoc, type FirestoreSettingsDoc, type FirestoreProfileDoc } from './types'
 import { sanitizeForFirestore, stripFirestoreFields } from './firestore-sanitize'
@@ -41,6 +42,7 @@ function debouncedSave(key: string, saveFn: () => Promise<void>, delayMs = 500):
         await saveFn()
       } catch (err) {
         console.error(`Firestore save failed for ${key}:`, err)
+        toast.error('Failed to save changes to the cloud. Please check your connection.')
       }
     }, delayMs)
   )
@@ -171,14 +173,21 @@ export function subscribeToUserProjects(
     }
   }
 
+  function handleListenerError(scope: 'owned' | 'editor' | 'viewer') {
+    return (error: Error) => {
+      console.error(`Firestore listener error (${scope}):`, error)
+      toast.error('Lost real-time connection to the cloud. Refresh to reconnect.')
+    }
+  }
+
   const ownedQ = query(collection(db, COLLECTIONS.projects), where('owner', '==', uid))
-  const unsubOwned = onSnapshot(ownedQ, handleSnapshot(ownedProjects, () => { ownedReady = true }))
+  const unsubOwned = onSnapshot(ownedQ, handleSnapshot(ownedProjects, () => { ownedReady = true }), handleListenerError('owned'))
 
   const editorQ = query(collection(db, COLLECTIONS.projects), where(`members.${uid}`, '==', 'editor'))
-  const unsubEditor = onSnapshot(editorQ, handleSnapshot(editorProjects, () => { editorReady = true }))
+  const unsubEditor = onSnapshot(editorQ, handleSnapshot(editorProjects, () => { editorReady = true }), handleListenerError('editor'))
 
   const viewerQ = query(collection(db, COLLECTIONS.projects), where(`members.${uid}`, '==', 'viewer'))
-  const unsubViewer = onSnapshot(viewerQ, handleSnapshot(viewerProjects, () => { viewerReady = true }))
+  const unsubViewer = onSnapshot(viewerQ, handleSnapshot(viewerProjects, () => { viewerReady = true }), handleListenerError('viewer'))
 
   return () => {
     unsubOwned()
