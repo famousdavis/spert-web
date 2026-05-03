@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { User } from 'firebase/auth'
+import { toast } from 'sonner'
 import { useProjectStore } from '@/shared/state/project-store'
 import { useSettingsStore } from '@/shared/state/settings-store'
 import { syncBus } from '@/shared/firebase/sync-bus'
@@ -77,7 +78,10 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
       displayName: user.displayName || '',
       email: user.email || '',
       lastSignIn: new Date().toISOString(),
-    }).catch((err) => console.error('Profile upsert failed:', err))
+    }).catch((err) => {
+      console.error('Profile upsert failed:', err)
+      toast.error('Failed to update your profile in the cloud.')
+    })
 
     // --- Async setup: load first, then attach listeners ---
     async function setup() {
@@ -109,6 +113,7 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
         }
       } catch (err) {
         console.error('Initial cloud load failed:', err)
+        toast.error('Failed to load your projects from the cloud.')
       }
 
       if (cancelled) return
@@ -158,9 +163,10 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
         }
         case 'project:delete': {
           docMetaRef.current.delete(event.projectId)
-          deleteProject(event.projectId).catch((err) =>
+          deleteProject(event.projectId).catch((err) => {
             console.error('Cloud delete failed:', err)
-          )
+            toast.error('Failed to delete project from the cloud.')
+          })
           break
         }
         case 'project:import': {
@@ -174,9 +180,10 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
           for (const oldId of docMetaRef.current.keys()) {
             if (!importedIds.has(oldId)) {
               docMetaRef.current.delete(oldId)
-              deleteProject(oldId).catch((err) =>
+              deleteProject(oldId).catch((err) => {
                 console.error('Cloud delete failed:', err)
-              )
+                toast.error('Failed to clean up cloud data during import.')
+              })
             }
           }
 
@@ -191,9 +198,10 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
               state._changeLog
             )
             docMetaRef.current.set(project.id, doc)
-            saveProjectImmediate(project.id, doc).catch((err) =>
+            saveProjectImmediate(project.id, doc).catch((err) => {
               console.error(`Cloud import save failed for ${project.id}:`, err)
-            )
+              toast.error(`Failed to save imported project "${project.name}" to the cloud.`)
+            })
           }
           break
         }

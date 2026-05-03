@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.25.4 - 2026-05-03
+
+### Fixed
+
+- **Surfaced Firestore write failures to the user via toast notifications**: Errors from debounced project saves, settings saves, profile upserts, project deletes, import-time saves, and Terms-of-Service acceptance writes were previously logged to the console only and never reached the user. Each swallowed-error site now fires a `toast.error(...)` alongside the existing `console.error`, using the already-installed Sonner toast renderer in `AppShell`. The `flushPendingSaves` path on `beforeunload` intentionally still log-only (the page is unmounting and a toast cannot render).
+- **Added error callbacks to all `onSnapshot` listeners**: The three real-time subscriptions in `subscribeToUserProjects()` (owned, editor-member, viewer-member) used the two-argument form, leaving transport and permission errors unhandled by the app. They now use the three-argument form with a per-scope error handler that logs and emits a single `toast.error` ("Lost real-time connection to the cloud. Refresh to reconnect."). A full reconnect mechanism remains a deferred follow-up.
+- **Added `autoComplete` attributes to three form inputs**: `SharingSection.tsx` email input (`autoComplete="off"` — invitation field for *another* person, not the user's own email), and the "Name" input on both `SettingsTab.tsx` (Export Attribution) and `CloudStorageModal.tsx` (`autoComplete="name"` — collects the user's own name). The `Identifier` field is intentionally left without `autoComplete` because its placeholder ("e.g., student ID, email, or team name") describes a multi-purpose value and does not map to a single browser autofill category.
+
 ## v0.25.2 - 2026-04-30
 
 ### Added

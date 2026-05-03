@@ -277,6 +277,7 @@ export function CloudStorageModal({ isOpen, onClose }: CloudStorageModalProps) {
                       value={exportName}
                       onChange={(e) => setExportName(e.target.value)}
                       placeholder="e.g., Jane Smith"
+                      autoComplete="name"
                       className={inputClass}
                     />
                   </div>

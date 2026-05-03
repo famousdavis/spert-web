@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from 'react'
 import { onAuthStateChanged, type User } from 'firebase/auth'
+import { toast } from 'sonner'
 import { auth, isFirebaseAvailable } from '@/shared/firebase/config'
 import { signInWithGoogle, signInWithMicrosoft, signOut, checkRedirectResult } from '@/shared/firebase/auth'
 import { cancelPendingSaves } from '@/shared/firebase/firestore-driver'
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await writeToSAcceptance(uid, authProvider)
       } catch (err) {
         console.error('Failed to write ToS acceptance:', err)
+        toast.error('Failed to record your terms acceptance. You can continue using the app, but you may be asked again on your next sign-in.')
       }
       clearPendingWrite()
       setUser(firebaseUser)
