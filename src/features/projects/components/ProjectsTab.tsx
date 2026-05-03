@@ -239,6 +239,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
           <input
             ref={fileInputRef}
             type="file"
+            name="projectImportFile"
             accept=".json"
             onChange={handleFileChange}
             className="hidden"

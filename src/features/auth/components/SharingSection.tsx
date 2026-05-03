@@ -103,6 +103,8 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
               ) : isOwner ? (
                 <>
                   <select
+                    name="memberRole"
+                    aria-label={`Role for ${member.displayName || member.email}`}
                     value={member.role}
                     onChange={(e) => handleRoleChange(member.uid, e.target.value as ProjectRole)}
                     className="text-xs border border-spert-border dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-700 text-spert-text dark:text-gray-200 cursor-pointer"
@@ -131,6 +133,8 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
         <div className="flex gap-2 items-end">
           <input
             type="email"
+            name="shareInviteEmail"
+            aria-label="Invitee email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email address"
@@ -139,6 +143,8 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
             onKeyDown={(e) => e.key === 'Enter' && handleShare()}
           />
           <select
+            name="shareInviteRole"
+            aria-label="Invitee role"
             value={role}
             onChange={(e) => setRole(e.target.value as ProjectRole)}
             className="p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100 cursor-pointer"

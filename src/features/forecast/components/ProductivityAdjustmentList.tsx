@@ -74,10 +74,12 @@ export function ProductivityAdjustmentList({
                 <td className="p-2 text-center">
                   <input
                     type="checkbox"
+                    name="adjustmentEnabled"
                     checked={isEnabled}
                     onChange={() => onToggleEnabled(adj.id)}
                     className="size-4 cursor-pointer"
                     title={isEnabled ? 'Click to disable' : 'Click to enable'}
+                    aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${adj.name}`}
                   />
                 </td>
                 <td className="p-2 font-medium">{adj.name}</td>

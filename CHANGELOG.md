@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.25.5 - 2026-05-03
+
+### Fixed
+
+- **Form-field hygiene residual sweep**: Added `name` attributes to 20 form controls across 14 files that previously carried neither `id` nor `name`, eliminating the corresponding Chrome DevTools "Form field element should have an id or name attribute" issues. Touched: BurnUpConfig forecast-line color/label/percentile inputs (3 inputs × 3 lines, parameterized name per line); MilestoneForm hidden color picker; checkbox in MilestoneList, ProductivityAdjustmentList, SprintList row loops; ReportButton "Include Forecast Results" checkbox; ConsentModal ToS-agree checkbox; CloudStorageModal "warn on local storage" checkbox; ForecastTab and SprintHistoryTab project selectors; ForecastSummary distribution + percentile selects; PercentileSelector milestone select; SharingSection email/role/member-role selects; ProjectsTab hidden file input; ThemeToggle settings-page select. No behavior changes; no `autoComplete` additions (prior pass covered them); no Rule 3/4/5 violations remained. Two bonus `aria-label` additions (ForecastTab and SprintHistoryTab project selectors) were applied in passing since those elements were already being modified.
+
 ## v0.25.4 - 2026-05-03
 
 ### Fixed

@@ -186,6 +186,7 @@ export function ForecastSummary({
     <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-spert-blue rounded-r-lg p-4">
       <div className="flex items-center gap-3 mb-3">
         <select
+          name="summaryDistribution"
           value={selectedDistribution}
           onChange={(e) => setSelectedDistribution(e.target.value as DistributionType)}
           className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
@@ -196,6 +197,7 @@ export function ForecastSummary({
           ))}
         </select>
         <select
+          name="summaryPercentile"
           value={selectedPercentile}
           onChange={(e) => setSelectedPercentile(Number(e.target.value))}
           className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"

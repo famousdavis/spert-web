@@ -203,6 +203,7 @@ export function PercentileSelector(props: PercentileSelectorProps) {
           </h3>
           {visibleMilestones.length > 0 && onMilestoneIndexChange && (
             <select
+              name="customPercentileMilestone"
               value={selectedMilestoneIndex}
               onChange={(e) => onMilestoneIndexChange(Number(e.target.value))}
               className="text-sm border border-spert-border dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"

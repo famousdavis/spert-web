@@ -141,6 +141,8 @@ export function SprintHistoryTab() {
         <h2 className="text-xl text-spert-text flex items-baseline">
           <span className="font-semibold">Sprint History for </span>
           <select
+            name="sprintHistoryProject"
+            aria-label="Project"
             value={selectedProject?.id || ''}
             onChange={handleProjectChange}
             className="text-xl text-spert-text border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"

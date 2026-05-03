@@ -113,6 +113,8 @@ export function ForecastTab() {
       <h2 className="text-xl text-spert-text-muted flex items-baseline">
         <span>Monte Carlo simulation for: </span>
         <select
+          name="forecastProject"
+          aria-label="Project"
           value={selectedProject?.id || ''}
           onChange={handleProjectChange}
           className="text-xl text-spert-text dark:text-gray-100 border-none bg-transparent cursor-pointer font-inherit font-semibold p-0 outline-none ml-0"

@@ -133,6 +133,7 @@ export function ConsentModal({ onAccept, onCancel }: ConsentModalProps) {
           <input
             ref={checkboxRef}
             type="checkbox"
+            name="tosAgree"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
             className="mt-0.5 cursor-pointer"

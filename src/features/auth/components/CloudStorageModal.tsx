@@ -306,6 +306,7 @@ export function CloudStorageModal({ isOpen, onClose }: CloudStorageModalProps) {
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
+                    name="warnLocalStorageStartup"
                     checked={!suppressLocalStorageWarning}
                     onChange={(e) => setSuppressLocalStorageWarning(!e.target.checked)}
                     className="mt-0.5 rounded border-gray-300 dark:border-gray-500 cursor-pointer"

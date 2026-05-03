@@ -119,6 +119,7 @@ export function SprintList({
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
+                    name="sprintIncludedInForecast"
                     checked={sprint.includedInForecast}
                     onChange={() => onToggleIncluded(sprint.id)}
                     className="h-4 w-4 rounded border-input"
