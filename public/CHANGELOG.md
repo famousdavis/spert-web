@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.26.1 - 2026-05-05
+
+### Fixed
+
+- **InvitationBanner sign-in buttons no longer stretch across the full banner width.** The pre_auth state of `<InvitationBanner />` rendered `<SignInButtons fullLabel />` directly inside a 1200px-max-width banner, causing each button to grow to ~600px on wide viewports — visually unbalanced and disconnected from the surrounding text. The buttons are now wrapped in a `max-w-md` (448px) container, matching the proven proportions used in `CloudStorageModal`. Buttons remain side-by-side, left-aligned with the banner copy, and stack via `flex-wrap` on narrow viewports as before. Pure presentation change; no behavior, no schema, no flag, no test changes.
+
 ## v0.26.0 - 2026-05-05
 
 ### Added
