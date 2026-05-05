@@ -23,6 +23,7 @@ import { KeyboardShortcutsHelp } from '@/shared/components/KeyboardShortcutsHelp
 import { useKeyboardShortcuts, type KeyboardShortcut } from '@/shared/hooks'
 import { Toaster } from 'sonner'
 import { FirstRunBanner } from './FirstRunBanner'
+import { InvitationBanner } from './InvitationBanner'
 import { LocalStorageWarningBanner } from './LocalStorageWarningBanner'
 
 export function AppShell() {
@@ -106,6 +107,7 @@ export function AppShell() {
           </div>
         </header>
 
+        <InvitationBanner />
         <FirstRunBanner />
         <LocalStorageWarningBanner />
 

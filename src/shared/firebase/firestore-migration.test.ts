@@ -91,6 +91,7 @@ import { migrateLocalToCloud } from './firestore-migration'
 const testProfile: FirestoreProfileDoc = {
   displayName: 'Test User',
   email: 'test@example.com',
+  photoURL: null,
   lastSignIn: '2024-06-01T00:00:00Z',
 }
 

@@ -20,7 +20,6 @@ import {
   loadSettings,
   saveSettings,
   flushPendingSaves,
-  upsertProfile,
 } from '@/shared/firebase/firestore-driver'
 import {
   projectToFirestoreDoc,
@@ -73,15 +72,10 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
     let unsubscribeSnapshot: (() => void) | null = null
     let unsubscribeSyncBus: (() => void) | null = null
 
-    // Upsert user profile on connect
-    upsertProfile(uid, {
-      displayName: user.displayName || '',
-      email: user.email || '',
-      lastSignIn: new Date().toISOString(),
-    }).catch((err) => {
-      console.error('Profile upsert failed:', err)
-      toast.error('Failed to update your profile in the cloud.')
-    })
+    // Profile writes are owned by AuthProvider (single source of truth, fires
+    // on every auth resolution regardless of storage mode). Removed from this
+    // hook in v0.26.0 to support cross-app email→uid resolution for the
+    // bulk-invitation system.
 
     // --- Async setup: load first, then attach listeners ---
     async function setup() {

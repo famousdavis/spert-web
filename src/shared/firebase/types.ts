@@ -53,7 +53,88 @@ export interface FirestoreSettingsDoc {
 export interface FirestoreProfileDoc {
   displayName: string
   email: string
+  // Suite-wide schema field; null when the OAuth provider returns no avatar.
+  // Use `?? null` at all call sites — never undefined.
+  photoURL: string | null
   lastSignIn: string
+}
+
+// --- Suite-wide custom event payload ---
+
+/**
+ * Payload for the `spert:models-changed` CustomEvent dispatched by AuthProvider
+ * after a successful claimPendingInvitations callable. Consumed by
+ * useInvitationLanding to flip the InvitationBanner to its `claimed` state.
+ *
+ * The event name `spert:models-changed` is a suite-wide contract — do not
+ * rename in any SPERT app.
+ */
+export interface SpertModelsChangedDetail {
+  claimed: { appId: string; modelId: string; modelName: string }[]
+}
+
+// --- Bulk invitation types ---
+
+export type InvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
+
+/**
+ * One row of `spertsuite_invitations`. Schema is shared across SPERT apps,
+ * so fields like `isVoting` (AHP-only) appear here for parity even though
+ * Forecaster never sets them to anything other than `false`.
+ *
+ * `*At` fields are stored in Firestore as Timestamps and coerced to millis
+ * by the listPendingInvites loader.
+ */
+export interface PendingInvite {
+  tokenId: string
+  modelId: string
+  modelName: string
+  inviteeEmail: string
+  role: 'editor' | 'viewer'
+  isVoting: boolean
+  inviterUid: string
+  inviterName: string
+  inviterEmail: string
+  status: InvitationStatus
+  createdAt: number
+  expiresAt: number
+  acceptedAt?: number
+  lastEmailSentAt: number
+  emailSendCount: number
+  updatedAt: number
+}
+
+// --- Cloud Function callable I/O ---
+
+export interface SendInvitationEmailInput {
+  // Hardcoded literal — NOT TOS_APP_ID. The two app-id strings differ
+  // ('spertforecaster' vs 'spert-forecaster') and registering the wrong one
+  // with the callable will fail the appId allowlist check.
+  appId: 'spertforecaster'
+  modelId: string
+  emails: string[]
+  role: 'editor' | 'viewer'
+  // Forecaster has no voting model — always false.
+  isVoting: false
+}
+
+export interface SendInvitationEmailResult {
+  added: string[]
+  invited: string[]
+  failed: { email: string; reason: string }[]
+}
+
+export interface ClaimPendingInvitationsResult {
+  claimed: { appId: string; modelId: string; modelName: string }[]
+}
+
+export interface RevokeInviteResult {
+  revoked: true
+}
+
+export interface ResendInviteResult {
+  resent: true
+  emailSendCount: number
 }
 
 // --- Sync Bus Event Types ---

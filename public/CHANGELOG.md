@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.26.0 - 2026-05-05
+
+### Added
+
+- **Bulk email invitations** *(feature flag `INVITATIONS_ENABLED = false` in this release — ship-gate PR will follow once the Cloud Functions deploy on the SPERT Suite Landing Page)*: project owners will be able to invite multiple collaborators by email in a single batch. Existing-user invites auto-add immediately; new-user emails receive an invitation link they claim by signing in with the matching address. New: `useInvitationLanding` hook and `InvitationBanner` shell component (state machine: `idle` → `pre_auth` → `claimed`); `firestore-invitations.ts` (Firestore queries, callable wrappers, bulk-email parsing, error mapping with send/resend/revoke discriminator); four new typed callable factories on `firebase/config.ts` (`getSendInvitationEmail`, `getClaimPendingInvitations`, `getRevokeInvite`, `getResendInvite`); flag-branched `SharingSection` with bulk textarea, pending-invitations list, Resend (with `n/5` cap counter), and Revoke (gated by `ConfirmDialog`).
+
+### Changed
+
+- **User profile now dual-writes to `spertforecaster_profiles/{uid}` and `spertsuite_profiles/{uid}` on every auth resolution.** Previously the per-app collection was written only on cloud-mode activation. The new suite-wide collection enables cross-app email→uid resolution required by `sendInvitationEmail`. Both writes use `merge:true` and are idempotent. Pre-populates the suite-wide collection ahead of the v0.26.0 ship-gate flip — write fires regardless of `INVITATIONS_ENABLED`.
+- **Display-name normalization is now sourced from `src/lib/auth-name.ts`.** `normalizeDisplayName` delegates to a canonical `denormalizeLastFirst` helper that mirrors the server-side implementation in `spert-landing-page/functions/src/mailHeaders.ts`, so display names rendered in the UI match the From-line the invitation mailer writes. Behavior unchanged for all existing single-comma inputs (verified by full pass of the existing display-name test suite).
+- **`FirestoreProfileDoc` now requires `photoURL: string | null`.** Added to the schema for cross-app avatar consistency. Three migration call sites (`StorageModeSection`, `UploadConfirmPanel`, `CloudStorageModal`) now plumb `user.photoURL ?? null` end-to-end.
+
+### Internal
+
+- CSP `connect-src` extended to allow `https://*.cloudfunctions.net` and `https://*.run.app` for Firebase v2 callable endpoints (production-only; verify on Vercel preview before flipping the ship-gate flag).
+- Removed redundant `upsertProfile` call from `useCloudSync.ts`. Profile writes now sourced exclusively from `AuthProvider` (single source of truth, fires on every auth resolution).
+- Added `serverTimestamp` import to `firestore-driver.ts` and a new `upsertSuiteProfile` writer that stamps `updatedAt` server-side on the suite-wide collection.
+- Added 52 new tests across three test files: `auth-name.test.ts` (9), `firestore-invitations.test.ts` (27, covering `parseBulkEmails` and full `mapInvitationError` × send/resend/revoke matrix), `useInvitationLanding.test.tsx` (16, covering URL capture, sessionStorage restore, C1 storage-mode gate, 10s grace timer happy/timeout paths, H2 sign-out behavior, dispatch-from-any-state). Total test count: 615 → 667.
+
 ## v0.25.5 - 2026-05-03
 
 ### Fixed
