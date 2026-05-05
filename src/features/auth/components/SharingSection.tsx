@@ -13,7 +13,22 @@ import {
   removeProjectMember,
   updateMemberRole,
 } from '@/shared/firebase/firestore-sharing'
-import type { ProjectMember, ProjectRole } from '@/shared/firebase/types'
+import {
+  listPendingInvites,
+  revokeInviteToken,
+  resendInviteToken,
+  parseBulkEmails,
+  mapInvitationError,
+} from '@/shared/firebase/firestore-invitations'
+import { getSendInvitationEmail } from '@/shared/firebase/config'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { INVITATIONS_ENABLED } from '@/lib/feature-flags'
+import type {
+  ProjectMember,
+  ProjectRole,
+  PendingInvite,
+  SendInvitationEmailResult,
+} from '@/shared/firebase/types'
 
 interface SharingSectionProps {
   projectId: string
@@ -30,6 +45,14 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  // Bulk-invite state (flag-on path)
+  const [bulkEmails, setBulkEmails] = useState('')
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
+  const [inviteResult, setInviteResult] = useState<SendInvitationEmailResult | null>(null)
+  const [sendError, setSendError] = useState('')
+  const [actionBusy, setActionBusy] = useState<string | null>(null)
+  const [revokeConfirmTokenId, setRevokeConfirmTokenId] = useState<string | null>(null)
+
   const isOwner = members.some((m) => m.uid === user?.uid && m.role === 'owner')
 
   const loadMembers = useCallback(async () => {
@@ -40,14 +63,23 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
     } catch {
       // silently fail — user may not have access
     }
-  }, [projectId, mode])
+    if (INVITATIONS_ENABLED && user) {
+      try {
+        const pending = await listPendingInvites(user.uid, projectId)
+        setPendingInvites(pending)
+      } catch {
+        // silently fail — Firestore rules may deny for non-owners
+      }
+    }
+  }, [projectId, mode, user])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadMembers is an external-system sync (Firestore fetch); the setState call inside is the subscription-callback pattern the rule documents as a valid exception
     loadMembers()
   }, [loadMembers])
 
   if (mode !== 'cloud' || !user) return null
+
+  // --- Flag-OFF (legacy single-email) handlers ---
 
   const handleShare = async () => {
     if (!email.trim()) return
@@ -81,6 +113,58 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
     } else {
       setError(result.error || 'Failed to update role')
     }
+  }
+
+  // --- Flag-ON (bulk-invite) handlers ---
+
+  const handleBulkInvite = async () => {
+    const emails = parseBulkEmails(bulkEmails)
+    if (emails.length === 0) return
+    setIsLoading(true)
+    setSendError('')
+    setInviteResult(null)
+    try {
+      const callable = getSendInvitationEmail()
+      if (!callable) throw new Error('Cloud invitations not configured.')
+      const res = await callable({
+        appId: 'spertforecaster',
+        modelId: projectId,
+        emails,
+        role,
+        isVoting: false,
+      })
+      setInviteResult(res.data)
+      setBulkEmails('')
+      await loadMembers()
+    } catch (err) {
+      setSendError(mapInvitationError(err, 'send'))
+    }
+    setIsLoading(false)
+  }
+
+  const handleResend = async (tokenId: string) => {
+    setActionBusy(tokenId)
+    setSendError('')
+    try {
+      await resendInviteToken(tokenId)
+      await loadMembers()
+    } catch (err) {
+      setSendError(mapInvitationError(err, 'resend'))
+    }
+    setActionBusy(null)
+  }
+
+  const handleRevoke = async (tokenId: string) => {
+    setActionBusy(tokenId)
+    setSendError('')
+    try {
+      await revokeInviteToken(tokenId)
+      await loadMembers()
+    } catch (err) {
+      setSendError(mapInvitationError(err, 'revoke'))
+    }
+    setActionBusy(null)
+    setRevokeConfirmTokenId(null)
   }
 
   return (
@@ -130,40 +214,148 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
 
       {/* Add member form (owner only) */}
       {isOwner && (
-        <div className="flex gap-2 items-end">
-          <input
-            type="email"
-            name="shareInviteEmail"
-            aria-label="Invitee email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email address"
-            autoComplete="off"
-            className="flex-1 p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
-            onKeyDown={(e) => e.key === 'Enter' && handleShare()}
-          />
-          <select
-            name="shareInviteRole"
-            aria-label="Invitee role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as ProjectRole)}
-            className="p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100 cursor-pointer"
-          >
-            <option value="editor">Editor</option>
-            <option value="viewer">Viewer</option>
-          </select>
-          <button
-            onClick={handleShare}
-            disabled={isLoading || !email.trim()}
-            className="px-3 py-1.5 text-sm font-medium rounded bg-spert-blue text-white hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
-          >
-            {isLoading ? '...' : 'Share'}
-          </button>
-        </div>
+        <>
+          {INVITATIONS_ENABLED ? (
+            <>
+              <div className="space-y-2">
+                <textarea
+                  name="bulkInviteEmails"
+                  aria-label="Invite email addresses"
+                  value={bulkEmails}
+                  onChange={(e) => {
+                    setBulkEmails(e.target.value)
+                    if (inviteResult) setInviteResult(null)
+                  }}
+                  placeholder="Enter email addresses separated by commas, semicolons, or newlines"
+                  rows={3}
+                  className="w-full p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
+                />
+                <div className="flex gap-2 items-center">
+                  <select
+                    name="bulkInviteRole"
+                    aria-label="Invitee role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as ProjectRole)}
+                    className="p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100 cursor-pointer"
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <button
+                    onClick={handleBulkInvite}
+                    disabled={isLoading || !bulkEmails.trim()}
+                    className="px-3 py-1.5 text-sm font-medium rounded bg-spert-blue text-white hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoading ? '...' : 'Invite'}
+                  </button>
+                </div>
+              </div>
+
+              {inviteResult && (
+                <div className="text-xs space-y-0.5">
+                  {inviteResult.added.length > 0 && (
+                    <p className="text-green-600 dark:text-green-400">
+                      Added {inviteResult.added.length}: {inviteResult.added.join(', ')}
+                    </p>
+                  )}
+                  {inviteResult.invited.length > 0 && (
+                    <p className="text-spert-blue dark:text-blue-300">
+                      Invited {inviteResult.invited.length}: {inviteResult.invited.join(', ')}
+                    </p>
+                  )}
+                  {inviteResult.failed.map((f) => (
+                    <p key={f.email} className="text-red-600 dark:text-red-400">
+                      Skipped {f.email} ({f.reason})
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {pendingInvites.length > 0 && (
+                <div className="space-y-1">
+                  <h5 className="text-xs font-semibold text-spert-text-secondary dark:text-gray-400">
+                    Pending Invitations
+                  </h5>
+                  {pendingInvites.map((inv) => (
+                    <div key={inv.tokenId} className="flex items-center gap-2 text-xs py-1">
+                      <span className="flex-1 truncate text-spert-text dark:text-gray-200">
+                        {inv.inviteeEmail}
+                      </span>
+                      <span className="text-spert-text-muted dark:text-gray-400 capitalize">
+                        {inv.role}
+                      </span>
+                      <button
+                        onClick={() => handleResend(inv.tokenId)}
+                        disabled={actionBusy !== null || inv.emailSendCount >= 5}
+                        title={`Resend (${inv.emailSendCount}/5)`}
+                        className="text-spert-blue dark:text-blue-300 hover:underline disabled:opacity-50 cursor-pointer"
+                      >
+                        Resend ({inv.emailSendCount}/5)
+                      </button>
+                      <button
+                        onClick={() => setRevokeConfirmTokenId(inv.tokenId)}
+                        disabled={actionBusy !== null}
+                        className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-50 cursor-pointer"
+                      >
+                        Revoke
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {sendError && <p className="text-xs text-red-600 dark:text-red-400">{sendError}</p>}
+
+              <ConfirmDialog
+                isOpen={revokeConfirmTokenId !== null}
+                title="Revoke invitation?"
+                message="The recipient will no longer be able to use this invitation link. You can re-invite them afterward."
+                confirmLabel="Revoke"
+                cancelLabel="Cancel"
+                variant="danger"
+                onConfirm={() => revokeConfirmTokenId && handleRevoke(revokeConfirmTokenId)}
+                onCancel={() => setRevokeConfirmTokenId(null)}
+              />
+            </>
+          ) : (
+            <div className="flex gap-2 items-end">
+              <input
+                type="email"
+                name="shareInviteEmail"
+                aria-label="Invitee email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                autoComplete="off"
+                className="flex-1 p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100"
+                onKeyDown={(e) => e.key === 'Enter' && handleShare()}
+              />
+              <select
+                name="shareInviteRole"
+                aria-label="Invitee role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as ProjectRole)}
+                className="p-1.5 text-sm border border-spert-border dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-spert-text dark:text-gray-100 cursor-pointer"
+              >
+                <option value="editor">Editor</option>
+                <option value="viewer">Viewer</option>
+              </select>
+              <button
+                onClick={handleShare}
+                disabled={isLoading || !email.trim()}
+                className="px-3 py-1.5 text-sm font-medium rounded bg-spert-blue text-white hover:bg-blue-600 disabled:opacity-50 cursor-pointer"
+              >
+                {isLoading ? '...' : 'Share'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      {success && <p className="text-xs text-green-600 dark:text-green-400">{success}</p>}
+      {!INVITATIONS_ENABLED && error && <p className="text-xs text-red-500">{error}</p>}
+      {!INVITATIONS_ENABLED && success && (
+        <p className="text-xs text-green-600 dark:text-green-400">{success}</p>
+      )}
     </div>
   )
 }

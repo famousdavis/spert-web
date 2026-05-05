@@ -8,6 +8,14 @@
 import { type FirebaseApp, getApps, initializeApp } from 'firebase/app'
 import { type Auth, getAuth } from 'firebase/auth'
 import { type Firestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore'
+import { type Functions, getFunctions, httpsCallable } from 'firebase/functions'
+import type {
+  SendInvitationEmailInput,
+  SendInvitationEmailResult,
+  ClaimPendingInvitationsResult,
+  RevokeInviteResult,
+  ResendInviteResult,
+} from './types'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -24,12 +32,55 @@ export const isFirebaseAvailable =
 let app: FirebaseApp | null = null
 let db: Firestore | null = null
 let auth: Auth | null = null
+let functionsInstance: Functions | null = null
 
 if (isFirebaseAvailable) {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]!
   // memoryLocalCache avoids stale IndexedDB cache across security rule deployments
   db = initializeFirestore(app, { localCache: memoryLocalCache() })
   auth = getAuth(app)
+  // Region must match the deployed Cloud Function region (us-central1 — see
+  // spert-landing-page/functions/src/invitationMailer.tsx).
+  functionsInstance = getFunctions(app, 'us-central1')
 }
 
 export { app, db, auth }
+
+// --- Bulk-invitation callable factories ---
+//
+// Each factory returns null when Firebase is not configured (local-only mode)
+// so callers can branch on availability without throwing during SSR.
+// Concrete callable types ride the type imports above so consumers get full
+// input/output type-checking at the call site.
+
+export function getSendInvitationEmail() {
+  if (!functionsInstance) return null
+  return httpsCallable<SendInvitationEmailInput, SendInvitationEmailResult>(
+    functionsInstance,
+    'sendInvitationEmail'
+  )
+}
+
+export function getClaimPendingInvitations() {
+  if (!functionsInstance) return null
+  return httpsCallable<Record<string, never>, ClaimPendingInvitationsResult>(
+    functionsInstance,
+    'claimPendingInvitations'
+  )
+}
+
+export function getRevokeInvite() {
+  if (!functionsInstance) return null
+  return httpsCallable<{ tokenId: string }, RevokeInviteResult>(
+    functionsInstance,
+    'revokeInvite'
+  )
+}
+
+export function getResendInvite() {
+  if (!functionsInstance) return null
+  return httpsCallable<{ tokenId: string }, ResendInviteResult>(
+    functionsInstance,
+    'resendInvite'
+  )
+}

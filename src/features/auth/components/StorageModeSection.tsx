@@ -80,6 +80,7 @@ export function StorageModeSection() {
       const result = await migrateLocalToCloud(user.uid, {
         displayName: user.displayName || '',
         email: user.email || '',
+        photoURL: user.photoURL ?? null,
         lastSignIn: new Date().toISOString(),
       })
       setMigrationResult(result)
@@ -179,6 +180,7 @@ export function StorageModeSection() {
               uid={user.uid}
               displayName={user.displayName ?? ''}
               email={user.email ?? ''}
+              photoURL={user.photoURL ?? null}
               projectCount={projects.length}
               onSuccess={handleMigrationSuccess}
               onCancel={handleCancelMigration}

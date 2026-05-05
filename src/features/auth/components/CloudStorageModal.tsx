@@ -230,6 +230,7 @@ export function CloudStorageModal({ isOpen, onClose }: CloudStorageModalProps) {
                         uid={user.uid}
                         displayName={user.displayName ?? ''}
                         email={user.email ?? ''}
+                        photoURL={user.photoURL ?? null}
                         projectCount={projects.length}
                         onSuccess={handleUploadSuccess}
                         onCancel={() => setShowUploadConfirm(false)}

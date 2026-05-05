@@ -32,7 +32,10 @@ if (!isDev) {
       "img-src 'self' data: blob: https://*.googleusercontent.com",
       // html-to-image fetches Google Fonts to embed in canvas for copy-as-image
       // Firebase Auth + Firestore + Google Fonts + OAuth endpoints
-      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com https://login.microsoftonline.com",
+      // Cloud Functions v2 callables (sendInvitationEmail / claimPendingInvitations /
+      //   revokeInvite / resendInvite) route through *.cloudfunctions.net AND *.run.app
+      //   depending on Firebase SDK version — both wildcards required.
+      "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://accounts.google.com https://login.microsoftonline.com https://*.cloudfunctions.net https://*.run.app",
       // Web Workers are loaded as blob URLs
       "worker-src 'self' blob:",
       // Firebase Auth popup/redirect + OAuth provider pages

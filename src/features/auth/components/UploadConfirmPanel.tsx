@@ -14,6 +14,8 @@ interface UploadConfirmPanelProps {
   displayName: string
   /** Authenticated user's email */
   email: string
+  /** Authenticated user's profile photo URL (null when the OAuth provider returns no avatar) */
+  photoURL: string | null
   /** Number of local projects to upload */
   projectCount: number
   /** Fires after a successful migration (0 errors). Caller is responsible for flipping storage mode. */
@@ -48,6 +50,7 @@ export function UploadConfirmPanel({
   uid,
   displayName,
   email,
+  photoURL,
   projectCount,
   onSuccess,
   onCancel,
@@ -63,6 +66,7 @@ export function UploadConfirmPanel({
       const result = await migrateLocalToCloud(uid, {
         displayName,
         email,
+        photoURL,
         lastSignIn: new Date().toISOString(),
       })
       if (result.errors.length === 0) {
@@ -75,7 +79,7 @@ export function UploadConfirmPanel({
     } finally {
       setIsMigrating(false)
     }
-  }, [uid, displayName, email, onSuccess])
+  }, [uid, displayName, email, photoURL, onSuccess])
 
   return (
     <div className="p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg space-y-2">
