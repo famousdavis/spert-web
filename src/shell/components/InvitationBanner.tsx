@@ -50,7 +50,9 @@ function InvitationBannerInner() {
           </button>
         </div>
         {isFirebaseAvailable ? (
-          <SignInButtons fullLabel />
+          <div className="max-w-md">
+            <SignInButtons fullLabel />
+          </div>
         ) : (
           <p className="text-sm text-spert-text-muted dark:text-gray-400">
             Cloud sign-in is unavailable in this build.
