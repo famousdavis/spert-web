@@ -27,4 +27,4 @@
  *     spertsuite_notification_throttle Firestore rules deployed in spert-suite
  *     project.
  */
-export const INVITATIONS_ENABLED = false
+export const INVITATIONS_ENABLED = true
