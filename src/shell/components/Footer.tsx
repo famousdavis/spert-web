@@ -8,7 +8,7 @@ import { TOS_URL, PRIVACY_URL } from '@/features/auth/lib/tos'
 
 export function Footer() {
   return (
-    <footer className="mt-16 pt-8 border-t-2 border-gray-100 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400 text-sm pb-6">
+    <footer className="mt-16 pt-8 pb-10 border-t-2 border-gray-100 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400 text-sm">
       <div>
         © {new Date().getFullYear()} William W. Davis, MSPM, PMP |{' '}
         <Link
