@@ -7,16 +7,31 @@
 import { useState, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useProjectStore, selectActiveProject, type ExportData } from '@/shared/state/project-store'
+import { useSettingsStore } from '@/shared/state/settings-store'
 import { useIsClient } from '@/shared/hooks'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { MergeImportDialog } from '@/shared/components/MergeImportDialog'
-import { isStoryMapExport, buildMergePlan, applyMergePlan, type StoryMapExportData, type MergePlan } from '@/shared/state/merge-import'
+import {
+  isStoryMapExport,
+  isProjectSubsetExport,
+  buildMergePlan,
+  applyMergePlan,
+  buildSubsetMergePlan,
+  applySubsetMerge,
+  type StoryMapExportData,
+  type ProjectSubsetExportData,
+  type MergePlan,
+  type SubsetMergePlan,
+} from '@/shared/state/merge-import'
 import { validateImportData } from '@/shared/state/import-validation'
 import { today } from '@/shared/lib/dates'
 import { useStorageMode } from '@/shared/hooks/useStorageMode'
 import { SharingSection } from '@/features/auth/components/SharingSection'
 import { ProjectList } from './ProjectList'
 import { ProjectForm } from './ProjectForm'
+import { exportSingleProject } from '../lib/export-project'
+import { getWorkspaceId, getStorageMode } from '@/shared/state/storage'
+import { auth } from '@/shared/firebase/config'
 import type { Project } from '@/shared/types'
 
 interface ProjectsTabProps {
@@ -35,6 +50,9 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const exportData = useProjectStore((state) => state.exportData)
   const importData = useProjectStore((state) => state.importData)
   const mergeImportData = useProjectStore((state) => state.mergeImportData)
+  const mergeProjectSubset = useProjectStore((state) => state.mergeProjectSubset)
+  const originRef = useProjectStore((state) => state._originRef)
+  const changeLog = useProjectStore((state) => state._changeLog)
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
@@ -43,6 +61,11 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     isOpen: boolean
     plan: MergePlan | null
     data: StoryMapExportData | null
+  }>({ isOpen: false, plan: null, data: null })
+  const [subsetMergeState, setSubsetMergeState] = useState<{
+    isOpen: boolean
+    plan: SubsetMergePlan | null
+    data: ProjectSubsetExportData | null
   }>({ isOpen: false, plan: null, data: null })
   const [replaceConfirm, setReplaceConfirm] = useState<{
     isOpen: boolean
@@ -87,6 +110,27 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     URL.revokeObjectURL(url)
     toast.success('Project data exported')
   }
+
+  const handleExportProject = useCallback((projectId: string) => {
+    try {
+      const settings = useSettingsStore.getState()
+      const storageRef =
+        (getStorageMode() === 'cloud' && auth?.currentUser?.uid) || getWorkspaceId()
+      exportSingleProject(projectId, {
+        projects,
+        sprints,
+        originRef: originRef || getWorkspaceId(),
+        storageRef,
+        changeLog,
+        exportedBy: settings.exportName || undefined,
+        exportedById: settings.exportId || undefined,
+      })
+      toast.success('Project exported')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Export failed: ${message}`)
+    }
+  }, [projects, sprints, originRef, changeLog])
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
@@ -133,6 +177,13 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown validation error'
         setImportError(`Import failed: ${message}`)
+        return
+      }
+
+      // Detect Forecaster per-project subset export and use additive merge flow
+      if (isProjectSubsetExport(data)) {
+        const plan = buildSubsetMergePlan(projects, sprints, data)
+        setSubsetMergeState({ isOpen: true, plan, data })
         return
       }
 
@@ -199,6 +250,34 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     setMergeState({ isOpen: false, plan: null, data: null })
   }, [])
 
+  const handleSubsetMergeConfirm = useCallback(() => {
+    if (!subsetMergeState.plan || !subsetMergeState.data) return
+    try {
+      const result = applySubsetMerge(projects, sprints, subsetMergeState.data)
+      mergeProjectSubset(result.projects, result.sprints)
+
+      const parts: string[] = []
+      if (subsetMergeState.plan.addedProjects > 0) {
+        parts.push(`${subsetMergeState.plan.addedProjects} added`)
+      }
+      if (subsetMergeState.plan.updatedProjects > 0) {
+        parts.push(`${subsetMergeState.plan.updatedProjects} updated`)
+      }
+      if (subsetMergeState.plan.addedSprints > 0) {
+        parts.push(`${subsetMergeState.plan.addedSprints} new sprint(s)`)
+      }
+      toast.success(`Imported: ${parts.length > 0 ? parts.join(', ') : 'no changes'}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setImportError(`Merge failed: ${message}`)
+    }
+    setSubsetMergeState({ isOpen: false, plan: null, data: null })
+  }, [subsetMergeState, projects, sprints, mergeProjectSubset])
+
+  const handleSubsetMergeCancel = useCallback(() => {
+    setSubsetMergeState({ isOpen: false, plan: null, data: null })
+  }, [])
+
   const handleReplaceConfirm = useCallback(() => {
     if (!replaceConfirm.data) return
     try {
@@ -221,31 +300,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Projects</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-          >
-            <span role="img" aria-label="export">📤</span> Export
-          </button>
-          <button
-            onClick={handleImportClick}
-            className="flex items-center gap-2 rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-          >
-            <span role="img" aria-label="import">📥</span> Import
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            name="projectImportFile"
-            accept=".json"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
-      </div>
+      <h2 className="text-xl font-semibold">Projects</h2>
 
       {importError && (
         <div
@@ -269,11 +324,37 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         onCancel={handleFormCancel}
       />
 
+      <div className="flex justify-end gap-2">
+        {projects.length > 0 && (
+          <button
+            onClick={handleExport}
+            className="rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+          >
+            Export All
+          </button>
+        )}
+        <button
+          onClick={handleImportClick}
+          className="rounded border border-spert-blue dark:border-blue-500 bg-white dark:bg-gray-800 px-4 py-2 text-[0.9rem] font-semibold text-spert-blue dark:text-blue-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+        >
+          Import
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          name="projectImportFile"
+          accept=".json"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
+
       <ProjectList
         projects={projects}
         activeProjectId={activeProject?.id}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
+        onExport={handleExportProject}
         onReorder={reorderProjects}
         onViewHistory={onViewHistory ?? (() => {})}
         onShare={setSharingProject}
@@ -323,6 +404,20 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         onConfirm={handleReplaceConfirm}
         onCancel={handleReplaceCancel}
         variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={subsetMergeState.isOpen}
+        title="Merge Project(s)"
+        message={
+          subsetMergeState.plan
+            ? `This will add ${subsetMergeState.plan.addedProjects} new project(s) and update ${subsetMergeState.plan.updatedProjects} existing project(s). ${subsetMergeState.plan.addedSprints} sprint(s) will be added; ${subsetMergeState.plan.skippedSprints} duplicate sprint(s) will be skipped. Existing projects not in this file are kept unchanged.`
+            : ''
+        }
+        confirmLabel="Merge"
+        cancelLabel="Cancel"
+        onConfirm={handleSubsetMergeConfirm}
+        onCancel={handleSubsetMergeCancel}
       />
     </div>
   )

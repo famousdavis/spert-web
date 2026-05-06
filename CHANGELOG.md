@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.27.0 - 2026-05-05
+
+### Added
+
+- **Per-tile project Export icon (download arrow, green hover)** on each row of the Projects tab. Single click downloads `spert-forecaster-{slug}-{date}.json` containing just that project + its sprints + relevant change-log entries. Files re-import additively: existing projects merge by ID-or-name, sprints with overlapping `sprintNumber` are skipped, unrelated workspace data is preserved.
+- **Settings → Export Projects section** lets you select any subset of projects (with select-all) and export them as one combined JSON file. Mirrors GanttApp's pattern but adapted to the Forecaster data model (no snapshot concept).
+- **Subset-import detection + additive merge flow.** New `_exportType: 'spert-forecaster-project-export'` is detected on Import; a confirmation dialog summarizes additions, updates, and skipped duplicates before merging.
+
+### Changed
+
+- **Projects tab Edit/Delete buttons replaced with pencil and trash icon buttons** — borderless, gray default, color (blue/red) on hover, matching the GanttApp pattern. New shared components: `PencilIconButton`, `TrashIconButton`, `ExportIconButton`.
+- **Export / Import buttons relocated** from the page header to a right-aligned toolbar above the project list, matching GanttApp. The "Export" button is now labeled **Export All** to clarify it bundles every project. Emoji icons removed.
+- **Footer pinned to the bottom of the viewport** when content is short — same pattern as SPERT Scheduler (`min-h-screen flex flex-col` on the root, `flex-1` on `<main>`). Long pages still scroll naturally with the footer below content.
+- **Export Attribution Name + Identifier inputs capped at `max-w-[400px]` and `maxLength={100}`** to match GanttApp. They no longer stretch the full width of the Settings panel.
+
+### Internal
+
+- New helper `src/features/projects/lib/export-project.ts` (slugify, build payload, single + multi export).
+- New `mergeProjectSubset` action on the project store; appends a `merge-import` change-log entry tagged with the subset source.
+- New tests: `export-project.test.ts` (slugify + payload builder), additional `merge-import.test.ts` cases (`isProjectSubsetExport`, `buildSubsetMergePlan`, `applySubsetMerge`).
+
 ## v0.26.1 - 2026-05-05
 
 ### Fixed

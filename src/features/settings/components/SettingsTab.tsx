@@ -10,6 +10,7 @@ import { useTheme, type Theme } from '@/shared/hooks/useTheme'
 import { MIN_PERCENTILE, MAX_PERCENTILE, SELECTABLE_PERCENTILES } from '@/features/forecast/constants'
 import { cn } from '@/lib/utils'
 import { StorageModeSection } from '@/features/auth/components/StorageModeSection'
+import { ExportProjectsSection } from './ExportProjectsSection'
 
 const sectionHeaderClass = 'text-lg font-semibold text-spert-blue mb-4'
 const labelClass = 'text-sm font-semibold text-spert-text-secondary dark:text-gray-300'
@@ -305,7 +306,8 @@ export function SettingsTab() {
               onChange={(e) => setExportName(e.target.value)}
               placeholder="e.g., Jane Smith"
               autoComplete="name"
-              className={`${selectClass} w-full mt-1`}
+              maxLength={100}
+              className={`${selectClass} w-full max-w-[400px] mt-1`}
             />
           </div>
           <div>
@@ -318,11 +320,15 @@ export function SettingsTab() {
               value={exportId}
               onChange={(e) => setExportId(e.target.value)}
               placeholder="e.g., student ID, email, or team name"
-              className={`${selectClass} w-full mt-1`}
+              maxLength={100}
+              className={`${selectClass} w-full max-w-[400px] mt-1`}
             />
           </div>
         </div>
       </section>
+
+      {/* Export Projects */}
+      <ExportProjectsSection />
     </div>
   )
 }
