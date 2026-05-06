@@ -120,9 +120,9 @@ export function AppShell() {
           {activeTab === 'about' && <ErrorBoundary><AboutTab /></ErrorBoundary>}
           {activeTab === 'settings' && <ErrorBoundary><SettingsTab /></ErrorBoundary>}
         </main>
-
-        <Footer />
       </div>
+
+      <Footer />
       <Toaster position="bottom-right" richColors />
       <KeyboardShortcutsHelp
         isOpen={isShortcutsHelpOpen}
