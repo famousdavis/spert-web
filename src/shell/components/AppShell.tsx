@@ -78,8 +78,8 @@ export function AppShell() {
   useKeyboardShortcuts(shortcuts)
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 p-4 sm:p-6 md:p-8 transition-colors">
-      <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors flex flex-col">
+      <div className="max-w-[1200px] w-full mx-auto px-2 sm:px-4 md:px-8 p-4 sm:p-6 md:p-8 flex-1 flex flex-col">
         <header className="mb-6 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -113,7 +113,7 @@ export function AppShell() {
 
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <main className="mt-8">
+        <main className="mt-8 flex-1">
           {activeTab === 'projects' && <ErrorBoundary><ProjectsTab onViewHistory={handleViewHistory} /></ErrorBoundary>}
           {activeTab === 'sprint-history' && <ErrorBoundary><SprintHistoryTab /></ErrorBoundary>}
           {activeTab === 'forecast' && <ErrorBoundary><ForecastTab /></ErrorBoundary>}

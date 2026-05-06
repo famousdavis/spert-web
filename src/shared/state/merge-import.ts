@@ -11,6 +11,10 @@ export interface StoryMapExportData extends ExportData {
   source: 'spert-story-map'
 }
 
+export interface ProjectSubsetExportData extends ExportData {
+  _exportType: 'spert-forecaster-project-export'
+}
+
 export interface MergeAction {
   type: 'update-existing' | 'add-new'
   importedProject: Project
@@ -36,6 +40,152 @@ export interface MergePlan {
 export function isStoryMapExport(data: unknown): data is StoryMapExportData {
   if (!data || typeof data !== 'object') return false
   return (data as Record<string, unknown>).source === 'spert-story-map'
+}
+
+/**
+ * Check whether parsed import data is a per-project (or multi-project) subset
+ * export produced by `exportSingleProject` / `exportSelectedProjects`. These
+ * files merge additively into the existing workspace rather than replacing it.
+ */
+export function isProjectSubsetExport(data: unknown): data is ProjectSubsetExportData {
+  if (!data || typeof data !== 'object') return false
+  return (data as Record<string, unknown>)._exportType === 'spert-forecaster-project-export'
+}
+
+// --- Subset merge ---
+
+export interface SubsetMergePlan {
+  addedProjects: number
+  updatedProjects: number
+  addedSprints: number
+  skippedSprints: number
+}
+
+/**
+ * Build a plan describing what will happen when a project-subset export is
+ * merged into existing state. Match by project ID first, then by case-
+ * insensitive name. Sprints match within a project by `sprintNumber`.
+ */
+export function buildSubsetMergePlan(
+  existingProjects: Project[],
+  existingSprints: Sprint[],
+  importData: ProjectSubsetExportData,
+): SubsetMergePlan {
+  let addedProjects = 0
+  let updatedProjects = 0
+  let addedSprints = 0
+  let skippedSprints = 0
+
+  for (const imported of importData.projects) {
+    const match =
+      existingProjects.find((p) => p.id === imported.id) ??
+      existingProjects.find((p) => normalise(p.name) === normalise(imported.name))
+
+    const targetId = match ? match.id : imported.id
+    if (match) updatedProjects++
+    else addedProjects++
+
+    const existingSprintNumbers = new Set(
+      existingSprints.filter((s) => s.projectId === targetId).map((s) => s.sprintNumber),
+    )
+
+    const importedSprints = importData.sprints.filter((s) => s.projectId === imported.id)
+    for (const s of importedSprints) {
+      if (existingSprintNumbers.has(s.sprintNumber)) skippedSprints++
+      else addedSprints++
+    }
+  }
+
+  return { addedProjects, updatedProjects, addedSprints, skippedSprints }
+}
+
+/**
+ * Apply a subset import: existing projects (matched by ID or case-insensitive
+ * name) are updated with imported fields (preserving existing milestones if
+ * incoming has none); new projects are appended with fresh IDs. Sprints are
+ * appended with fresh IDs, skipping any whose `sprintNumber` already exists
+ * for the target project.
+ */
+export function applySubsetMerge(
+  existingProjects: Project[],
+  existingSprints: Sprint[],
+  importData: ProjectSubsetExportData,
+): { projects: Project[]; sprints: Sprint[] } {
+  const projects = [...existingProjects]
+  const sprints = [...existingSprints]
+  const timestamp = now()
+
+  for (const imported of importData.projects) {
+    const matchIdx = projects.findIndex(
+      (p) => p.id === imported.id || normalise(p.name) === normalise(imported.name),
+    )
+
+    let targetId: string
+
+    if (matchIdx !== -1) {
+      const existing = projects[matchIdx]
+      targetId = existing.id
+      projects[matchIdx] = {
+        ...existing,
+        name: imported.name,
+        unitOfMeasure: imported.unitOfMeasure,
+        sprintCadenceWeeks: imported.sprintCadenceWeeks ?? existing.sprintCadenceWeeks,
+        firstSprintStartDate: imported.firstSprintStartDate ?? existing.firstSprintStartDate,
+        projectStartDate: imported.projectStartDate ?? existing.projectStartDate,
+        projectFinishDate: imported.projectFinishDate ?? existing.projectFinishDate,
+        productivityAdjustments:
+          imported.productivityAdjustments && imported.productivityAdjustments.length > 0
+            ? freshAdjustments(imported.productivityAdjustments)
+            : existing.productivityAdjustments,
+        milestones:
+          imported.milestones && imported.milestones.length > 0
+            ? freshMilestones(imported.milestones)
+            : existing.milestones,
+        updatedAt: timestamp,
+      }
+    } else {
+      targetId = generateId()
+      projects.push({
+        ...imported,
+        id: targetId,
+        productivityAdjustments: freshAdjustments(imported.productivityAdjustments),
+        milestones: freshMilestones(imported.milestones),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+    }
+
+    const existingSprintNumbers = new Set(
+      sprints.filter((s) => s.projectId === targetId).map((s) => s.sprintNumber),
+    )
+
+    const importedSprints = importData.sprints.filter((s) => s.projectId === imported.id)
+    for (const s of importedSprints) {
+      if (existingSprintNumbers.has(s.sprintNumber)) continue
+      sprints.push({
+        ...s,
+        id: generateId(),
+        projectId: targetId,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+    }
+  }
+
+  return { projects, sprints }
+}
+
+function freshAdjustments(
+  adjustments: Project['productivityAdjustments'],
+): Project['productivityAdjustments'] {
+  if (!adjustments) return []
+  const timestamp = now()
+  return adjustments.map((a) => ({
+    ...a,
+    id: generateId(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }))
 }
 
 // --- Plan building ---

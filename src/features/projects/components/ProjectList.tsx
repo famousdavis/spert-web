@@ -8,12 +8,16 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { Project } from '@/shared/types'
 import { formatDate } from '@/shared/lib/dates'
+import { PencilIconButton } from '@/shared/components/PencilIconButton'
+import { TrashIconButton } from '@/shared/components/TrashIconButton'
+import { ExportIconButton } from '@/shared/components/ExportIconButton'
 
 interface ProjectListProps {
   projects: Project[]
   activeProjectId?: string
   onEdit: (project: Project) => void
   onDelete: (id: string) => void
+  onExport: (id: string) => void
   onReorder: (projectIds: string[]) => void
   onViewHistory: (projectId: string) => void
   onShare?: (project: Project) => void
@@ -25,6 +29,7 @@ export function ProjectList({
   activeProjectId,
   onEdit,
   onDelete,
+  onExport,
   onReorder,
   onViewHistory,
   onShare,
@@ -154,18 +159,23 @@ export function ProjectList({
                   Share
                 </button>
               )}
-              <button
-                onClick={() => onEdit(project)}
-                className="px-4 py-2 bg-spert-bg-warning-light dark:bg-yellow-900/40 border border-spert-warning dark:border-yellow-600 rounded cursor-pointer text-[0.9rem] dark:text-yellow-200"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(project.id)}
-                className="px-4 py-2 bg-spert-bg-error-light dark:bg-red-900/40 border border-spert-error dark:border-red-600 rounded cursor-pointer text-[0.9rem] dark:text-red-200"
-              >
-                Delete
-              </button>
+              <div className="flex items-center gap-1 ml-1">
+                <ExportIconButton
+                  onClick={() => onExport(project.id)}
+                  ariaLabel={`Export ${project.name}`}
+                  title="Export project"
+                />
+                <PencilIconButton
+                  onClick={() => onEdit(project)}
+                  ariaLabel={`Edit ${project.name}`}
+                  title="Edit project"
+                />
+                <TrashIconButton
+                  onClick={() => onDelete(project.id)}
+                  ariaLabel={`Delete ${project.name}`}
+                  title="Delete project"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -5,9 +5,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   isStoryMapExport,
+  isProjectSubsetExport,
   buildMergePlan,
   applyMergePlan,
+  buildSubsetMergePlan,
+  applySubsetMerge,
   type StoryMapExportData,
+  type ProjectSubsetExportData,
 } from './merge-import'
 import type { Project, Sprint } from '@/shared/types'
 
@@ -570,5 +574,187 @@ describe('applyMergePlan', () => {
     // Milestones replaced with empty (import has none)
     const updated = result.projects.find((p) => p.id === 'ex-1')!
     expect(updated.milestones).toHaveLength(0)
+  })
+})
+
+// --- isProjectSubsetExport ---
+
+function makeSubsetExport(
+  projects: Project[],
+  sprints: Sprint[],
+): ProjectSubsetExportData {
+  return {
+    version: '0.27.0',
+    exportedAt: '2026-05-05T00:00:00.000Z',
+    _exportType: 'spert-forecaster-project-export',
+    projects,
+    sprints,
+  }
+}
+
+describe('isProjectSubsetExport', () => {
+  it('returns true for data with _exportType set correctly', () => {
+    expect(
+      isProjectSubsetExport({
+        _exportType: 'spert-forecaster-project-export',
+        version: '1',
+        exportedAt: '',
+        projects: [],
+        sprints: [],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns false for native Forecaster export (no _exportType)', () => {
+    expect(
+      isProjectSubsetExport({ version: '1', exportedAt: '', projects: [], sprints: [] }),
+    ).toBe(false)
+  })
+
+  it('returns false for Story Map export', () => {
+    expect(
+      isProjectSubsetExport({
+        source: 'spert-story-map',
+        version: '1',
+        exportedAt: '',
+        projects: [],
+        sprints: [],
+      }),
+    ).toBe(false)
+  })
+
+  it('returns false for null/undefined/non-object', () => {
+    expect(isProjectSubsetExport(null)).toBe(false)
+    expect(isProjectSubsetExport(undefined)).toBe(false)
+    expect(isProjectSubsetExport('string')).toBe(false)
+  })
+})
+
+// --- buildSubsetMergePlan ---
+
+describe('buildSubsetMergePlan', () => {
+  it('counts added vs updated projects', () => {
+    const existing = [makeProject({ id: 'ex-1', name: 'Alpha' })]
+    const importData = makeSubsetExport(
+      [
+        makeProject({ id: 'imp-1', name: 'Alpha' }),
+        makeProject({ id: 'imp-2', name: 'Beta' }),
+      ],
+      [],
+    )
+
+    const plan = buildSubsetMergePlan(existing, [], importData)
+    expect(plan.updatedProjects).toBe(1)
+    expect(plan.addedProjects).toBe(1)
+  })
+
+  it('skips sprints with overlapping sprintNumbers', () => {
+    const existing = [makeProject({ id: 'ex-1', name: 'Alpha' })]
+    const existingSprints = [
+      makeSprint({ projectId: 'ex-1', sprintNumber: 1 }),
+      makeSprint({ projectId: 'ex-1', sprintNumber: 2 }),
+    ]
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'imp-1', name: 'Alpha' })],
+      [
+        makeSprint({ projectId: 'imp-1', sprintNumber: 2 }),
+        makeSprint({ projectId: 'imp-1', sprintNumber: 3 }),
+      ],
+    )
+
+    const plan = buildSubsetMergePlan(existing, existingSprints, importData)
+    expect(plan.addedSprints).toBe(1)
+    expect(plan.skippedSprints).toBe(1)
+  })
+
+  it('matches by ID before name', () => {
+    const existing = [makeProject({ id: 'shared-id', name: 'Different Name' })]
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'shared-id', name: 'Other Name' })],
+      [],
+    )
+
+    const plan = buildSubsetMergePlan(existing, [], importData)
+    expect(plan.updatedProjects).toBe(1)
+    expect(plan.addedProjects).toBe(0)
+  })
+})
+
+// --- applySubsetMerge ---
+
+describe('applySubsetMerge', () => {
+  it('preserves unrelated existing projects', () => {
+    const existing = [
+      makeProject({ id: 'ex-keep', name: 'Keeper' }),
+      makeProject({ id: 'ex-update', name: 'Target' }),
+    ]
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'imp-1', name: 'Target' })],
+      [],
+    )
+
+    const result = applySubsetMerge(existing, [], importData)
+    expect(result.projects.find((p) => p.id === 'ex-keep')).toBeDefined()
+    expect(result.projects).toHaveLength(2)
+  })
+
+  it('appends new projects with fresh IDs', () => {
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'imp-1', name: 'Brand New' })],
+      [],
+    )
+
+    const result = applySubsetMerge([], [], importData)
+    expect(result.projects).toHaveLength(1)
+    expect(result.projects[0].name).toBe('Brand New')
+    // Fresh ID, not the imported one
+    expect(result.projects[0].id).not.toBe('imp-1')
+  })
+
+  it('skips overlapping sprintNumbers but appends new ones', () => {
+    const existing = [makeProject({ id: 'ex-1', name: 'Alpha' })]
+    const existingSprints = [makeSprint({ projectId: 'ex-1', sprintNumber: 1, doneValue: 5 })]
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'imp-1', name: 'Alpha' })],
+      [
+        makeSprint({ projectId: 'imp-1', sprintNumber: 1, doneValue: 99 }), // skipped
+        makeSprint({ projectId: 'imp-1', sprintNumber: 2, doneValue: 7 }),  // added
+      ],
+    )
+
+    const result = applySubsetMerge(existing, existingSprints, importData)
+    const targetSprints = result.sprints.filter((s) => s.projectId === 'ex-1')
+    expect(targetSprints).toHaveLength(2)
+    // Original sprint 1 retained (doneValue 5, not 99)
+    expect(targetSprints.find((s) => s.sprintNumber === 1)?.doneValue).toBe(5)
+    expect(targetSprints.find((s) => s.sprintNumber === 2)?.doneValue).toBe(7)
+  })
+
+  it('preserves existing milestones when import has none', () => {
+    const existing = [
+      makeProject({
+        id: 'ex-1',
+        name: 'Alpha',
+        milestones: [
+          {
+            id: 'm-1',
+            name: 'MVP',
+            backlogSize: 50,
+            color: '#ff0000',
+            createdAt: '',
+            updatedAt: '',
+          },
+        ],
+      }),
+    ]
+    const importData = makeSubsetExport(
+      [makeProject({ id: 'imp-1', name: 'Alpha' })], // no milestones
+      [],
+    )
+
+    const result = applySubsetMerge(existing, [], importData)
+    const updated = result.projects.find((p) => p.id === 'ex-1')!
+    expect(updated.milestones).toHaveLength(1)
+    expect(updated.milestones?.[0].name).toBe('MVP')
   })
 })

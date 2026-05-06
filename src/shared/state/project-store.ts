@@ -81,6 +81,7 @@ interface ProjectState {
   exportData: () => ExportData
   importData: (data: ExportData) => void
   mergeImportData: (projects: Project[], sprints: Sprint[]) => void
+  mergeProjectSubset: (projects: Project[], sprints: Sprint[]) => void
 
   // Cloud sync actions
   replaceProjectsFromCloud: (projects: Project[], sprints: Sprint[]) => void
@@ -430,6 +431,20 @@ export const useProjectStore = create<ProjectState>()(
           viewingProjectId: null,
           forecastInputs: {},
           burnUpConfigs: {},
+        }))
+        syncBus.emit({ type: 'project:import' })
+      },
+
+      mergeProjectSubset: (projects, sprints) => {
+        set((state) => ({
+          projects,
+          sprints,
+          _originRef: ensureOriginRef(state),
+          _changeLog: appendChangeLogEntry(state._changeLog, {
+            op: 'merge-import',
+            entity: 'dataset',
+            source: 'spert-forecaster-project-export',
+          }),
         }))
         syncBus.emit({ type: 'project:import' })
       },
