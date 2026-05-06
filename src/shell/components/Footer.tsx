@@ -8,53 +8,55 @@ import { TOS_URL, PRIVACY_URL } from '@/features/auth/lib/tos'
 
 export function Footer() {
   return (
-    <footer className="mt-16 pt-8 pb-10 border-t-2 border-gray-100 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400 text-sm">
-      <div>
-        © {new Date().getFullYear()} William W. Davis, MSPM, PMP |{' '}
-        <Link
-          href="/changelog"
-          className="text-blue-500 hover:text-blue-600 transition-colors"
-        >
-          Version {APP_VERSION}
-        </Link>
-        {' '}| Licensed under GNU GPL v3
-      </div>
-      <div className="mt-1">
-        <a
-          href="https://spertsuite.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-600 transition-colors"
-        >
-          SPERT<span className="text-gray-400 dark:text-gray-500 font-normal text-xs align-top">®</span> Suite
-        </a>
-        {' | '}
-        <a
-          href={TOS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-600 transition-colors"
-        >
-          Terms of Service
-        </a>
-        {' | '}
-        <a
-          href={PRIVACY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-600 transition-colors"
-        >
-          Privacy Policy
-        </a>
-        {' | '}
-        <a
-          href="https://github.com/famousdavis/spert-forecaster/blob/main/LICENSE"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:text-blue-600 transition-colors"
-        >
-          License
-        </a>
+    <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-3 text-sm text-gray-500 dark:text-gray-400">
+      <div className="mx-auto w-full max-w-7xl px-4 text-center">
+        <div>
+          &copy; {new Date().getFullYear()} William W. Davis, MSPM, PMP |{' '}
+          <Link
+            href="/changelog"
+            className="text-blue-600 hover:text-blue-700"
+          >
+            Version {APP_VERSION}
+          </Link>{' '}
+          | Licensed under GNU GPL v3
+        </div>
+        <div className="mt-1">
+          <a
+            href="https://spertsuite.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700"
+          >
+            SPERT® Suite
+          </a>
+          {' | '}
+          <a
+            href={TOS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700"
+          >
+            Terms of Service
+          </a>
+          {' | '}
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700"
+          >
+            Privacy Policy
+          </a>
+          {' | '}
+          <a
+            href="https://github.com/famousdavis/spert-forecaster/blob/main/LICENSE"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700"
+          >
+            License
+          </a>
+        </div>
       </div>
     </footer>
   )
