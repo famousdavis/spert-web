@@ -118,23 +118,52 @@ export function SharingSection({ projectId, projectName }: SharingSectionProps) 
   // --- Flag-ON (bulk-invite) handlers ---
 
   const handleBulkInvite = async () => {
-    const emails = parseBulkEmails(bulkEmails)
-    if (emails.length === 0) return
-    setIsLoading(true)
+    const { valid, invalid } = parseBulkEmails(bulkEmails)
+    if (valid.length === 0 && invalid.length === 0) return
+
     setSendError('')
     setInviteResult(null)
+
+    // Lesson 42 + 43: when ALL submitted tokens are invalid-format, do NOT call
+    // the CF and do NOT clear the textarea — surface the invalid chips and let
+    // the user fix and retry.
+    if (valid.length === 0) {
+      setInviteResult({
+        added: [],
+        invited: [],
+        failed: invalid.map((email) => ({ email, reason: 'invalid-format' })),
+      })
+      return
+    }
+
+    setIsLoading(true)
     try {
       const callable = getSendInvitationEmail()
       if (!callable) throw new Error('Cloud invitations not configured.')
       const res = await callable({
         appId: 'spertforecaster',
         modelId: projectId,
-        emails,
+        emails: valid,
         role,
         isVoting: false,
       })
-      setInviteResult(res.data)
-      setBulkEmails('')
+      // Merge client-side invalid-format failures into the CF result so the
+      // UI renders them alongside CF-side rejections (uniform red chips).
+      const merged: SendInvitationEmailResult = {
+        added: res.data.added,
+        invited: res.data.invited,
+        failed: [
+          ...invalid.map((email) => ({ email, reason: 'invalid-format' })),
+          ...res.data.failed,
+        ],
+      }
+      setInviteResult(merged)
+      // Lesson 43: clear the textarea only when at least one address landed
+      // (added or invited). If every valid address was CF-rejected, retain
+      // the textarea content so the user can correct and retry.
+      if (merged.added.length + merged.invited.length > 0) {
+        setBulkEmails('')
+      }
       await loadMembers()
     } catch (err) {
       setSendError(mapInvitationError(err, 'send'))
