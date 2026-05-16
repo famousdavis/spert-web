@@ -17,10 +17,19 @@ import { Milestones } from './Milestones'
 import { BurnUpChart } from './BurnUpChart'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
 import { useSettingsStore } from '@/shared/state/settings-store'
-import { useMemo } from 'react'
+import { useProjectStore } from '@/shared/state/project-store'
+import { useCallback, useMemo, useState } from 'react'
 import type { DistributionType } from '@/shared/types/burn-up'
+import { ProjectsEmptyState } from '@/shared/components/ProjectsEmptyState'
+import { loadSampleProject } from '@/features/projects/lib/sample-project'
+import type { TabId } from '@/shell/components/TabNavigation'
 
-export function ForecastTab() {
+interface ForecastTabProps {
+  /** Optional callback to switch tabs from inside the empty-state CTA. Wired by AppShell. */
+  onTabChange?: (tab: TabId) => void
+}
+
+export function ForecastTab({ onTabChange }: ForecastTabProps = {}) {
   const {
     isClient,
     projects,
@@ -97,6 +106,22 @@ export function ForecastTab() {
 
   const distributionsEnabled = useSettingsStore((s) => s.distributionsEnabled)
 
+  // Custom Percentile section is collapsed by default in v0.31.1 — one fewer wall of controls
+  // on first load. Inline pattern (no shared Collapsible component, no Radix) — matches the
+  // self-collapse pattern DistributionChart and HistogramChart already use.
+  const [isPercentileSelectorExpanded, setIsPercentileSelectorExpanded] = useState(false)
+
+  const setShouldFocusNewProjectForm = useProjectStore((s) => s.setShouldFocusNewProjectForm)
+
+  // Empty-state CTA: switch tabs and request focus on the new-project form when it mounts.
+  const handleCreateNewFromEmptyState = useCallback(() => {
+    setShouldFocusNewProjectForm(true)
+    onTabChange?.('projects')
+  }, [onTabChange, setShouldFocusNewProjectForm])
+  const handleLoadSample = useCallback(() => {
+    loadSampleProject()
+  }, [])
+
   // Filter chart input arrays based on Settings "Statistical methods to show".
   // Pass null for any distribution the user has disabled — the chart components silently drop
   // the corresponding <Line>/<Bar>, and mergeDistributions/buildHistogramBins skip null inputs.
@@ -121,11 +146,11 @@ export function ForecastTab() {
 
   if (projects.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border p-8 text-center">
-        <p className="text-muted-foreground">
-          No projects yet. Create a project first to run forecasts.
-        </p>
-      </div>
+      <ProjectsEmptyState
+        variant="forecast-needs-project"
+        onCreateNew={handleCreateNewFromEmptyState}
+        onLoadSample={handleLoadSample}
+      />
     )
   }
 
@@ -270,31 +295,57 @@ export function ForecastTab() {
 
       {hasResults && (
         <>
-          {/* Custom Percentile */}
-          <PercentileSelector
-            percentile={customPercentile}
-            truncatedNormalResult={customResults.truncatedNormal}
-            lognormalResult={customResults.lognormal}
-            gammaResult={customResults.gamma}
-            bootstrapResult={customResults.bootstrap}
-            triangularResult={customResults.triangular}
-            uniformResult={customResults.uniform}
-            percentile2={customPercentile2}
-            truncatedNormalResult2={customResults2.truncatedNormal}
-            lognormalResult2={customResults2.lognormal}
-            gammaResult2={customResults2.gamma}
-            bootstrapResult2={customResults2.bootstrap}
-            triangularResult2={customResults2.triangular}
-            uniformResult2={customResults2.uniform}
-            onPercentile2Change={handleCustomPercentile2Change}
-            forecastMode={forecastMode}
-            completedSprintCount={completedSprintCount}
-            onPercentileChange={handleCustomPercentileChange}
-            selectorRef={percentileSelectorRef}
-            milestones={milestones}
-            selectedMilestoneIndex={selectedMilestoneIndex}
-            onMilestoneIndexChange={handleMilestoneIndexChange}
-          />
+          {/* Custom Percentile — collapsed by default (v0.31.1). */}
+          <div className="rounded-lg border bg-card">
+            <button
+              type="button"
+              onClick={() => setIsPercentileSelectorExpanded(!isPercentileSelectorExpanded)}
+              className="w-full p-4 flex items-center gap-2 text-left hover:bg-muted/50 transition-colors"
+              aria-expanded={isPercentileSelectorExpanded}
+              aria-controls="custom-percentile-panel"
+            >
+              <span
+                className={cn(
+                  'inline-block text-[10px] text-muted-foreground transition-transform duration-200',
+                  isPercentileSelectorExpanded && 'rotate-90'
+                )}
+                aria-hidden="true"
+              >
+                ▶
+              </span>
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Explore a custom percentile
+              </h3>
+            </button>
+            {isPercentileSelectorExpanded && (
+              <div id="custom-percentile-panel" className="px-4 pb-4">
+                <PercentileSelector
+                  percentile={customPercentile}
+                  truncatedNormalResult={customResults.truncatedNormal}
+                  lognormalResult={customResults.lognormal}
+                  gammaResult={customResults.gamma}
+                  bootstrapResult={customResults.bootstrap}
+                  triangularResult={customResults.triangular}
+                  uniformResult={customResults.uniform}
+                  percentile2={customPercentile2}
+                  truncatedNormalResult2={customResults2.truncatedNormal}
+                  lognormalResult2={customResults2.lognormal}
+                  gammaResult2={customResults2.gamma}
+                  bootstrapResult2={customResults2.bootstrap}
+                  triangularResult2={customResults2.triangular}
+                  uniformResult2={customResults2.uniform}
+                  onPercentile2Change={handleCustomPercentile2Change}
+                  forecastMode={forecastMode}
+                  completedSprintCount={completedSprintCount}
+                  onPercentileChange={handleCustomPercentileChange}
+                  selectorRef={percentileSelectorRef}
+                  milestones={milestones}
+                  selectedMilestoneIndex={selectedMilestoneIndex}
+                  onMilestoneIndexChange={handleMilestoneIndexChange}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Burn-Up Chart */}
           <BurnUpChart
