@@ -89,7 +89,18 @@ export function ResultsTable({
   completedSprintCount: number
 }) {
   return (
-    <table className="w-full border-collapse">
+    // Fixed column widths so the table is left-anchored and doesn't stretch to fill the
+    // container when few distributions are selected. table-layout: fixed enforces the
+    // widths from <colgroup> regardless of cell content. Parent supplies overflow-x-auto
+    // so narrow viewports still scroll.
+    <table className="border-collapse" style={{ tableLayout: 'fixed' }}>
+      <colgroup>
+        <col style={{ width: '4rem' }} />
+        {columns.flatMap((col) => [
+          <col key={`${col.key}-sprint-col`} style={{ width: '4.5rem' }} />,
+          <col key={`${col.key}-date-col`} style={{ width: '7.5rem' }} />,
+        ])}
+      </colgroup>
       <thead>
         <tr className="border-b border-border">
           <th rowSpan={2} className="px-2 py-3 text-left text-sm font-medium text-muted-foreground align-bottom">Conf.</th>

@@ -277,9 +277,13 @@ export function useForecastState() {
   const debouncedEstimate = useDebounce(inputs.velocityEstimate, 400)
 
   useEffect(() => {
-    if (!autoRecalculate || !hasRunOnceRef.current) return
+    if (!autoRecalculate) return
     const canRun = !!debouncedBacklog && inputs.effectiveMean > 0
     if (!canRun) return
+    // Previously gated on hasRunOnceRef.current — required an initial manual click of
+    // "Run Forecast" before auto-recalc would fire. That made auto-recalc effectively
+    // opt-in twice (Settings + first click) and left trainees staring at an empty
+    // forecast despite valid inputs. canRun is the only correctness gate we need.
     runForecastRef.current()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
