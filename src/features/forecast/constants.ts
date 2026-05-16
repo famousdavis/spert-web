@@ -13,8 +13,11 @@ export const MAX_PERCENTILE = 99
 /** All selectable percentile values for the results table toggle chips */
 export const SELECTABLE_PERCENTILES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95] as const
 
-/** Default selected percentiles for new sessions */
-export const DEFAULT_SELECTED_PERCENTILES: readonly number[] = [10, 20, 50, 80, 90] as const
+/** Default selected percentiles for new sessions.
+ *  P10 (optimistic) / P50 (median) / P90 (conservative) — three pills surface the
+ *  forecast spread without overwhelming first-time users. They can add more in the
+ *  Forecast Results pill selector. */
+export const DEFAULT_SELECTED_PERCENTILES: readonly number[] = [10, 50, 90] as const
 
 // Minimum number of included sprints required for bootstrap simulation
 export const MIN_SPRINTS_FOR_BOOTSTRAP = 5

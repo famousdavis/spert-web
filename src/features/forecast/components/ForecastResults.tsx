@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import type { QuadResults, QuadSimulationData } from '../lib/monte-carlo'
 import type { MilestoneResults } from '../hooks/useForecastState'
 import type { Milestone, ForecastMode } from '@/shared/types'
+import type { MilestoneCompletionInfo } from '../lib/milestones'
 import { SELECTABLE_PERCENTILES, MIN_SPRINTS_FOR_BOOTSTRAP } from '../constants'
 import { ReportButton } from './ReportButton'
 import { CopyImageButton } from '@/shared/components/CopyImageButton'
@@ -18,6 +19,7 @@ import {
   buildDynamicPercentileRows,
   buildPercentileRows,
 } from './ResultsTable'
+import { useSettingsStore } from '@/shared/state/settings-store'
 
 interface ForecastResultsProps {
   results: QuadResults
@@ -27,7 +29,13 @@ interface ForecastResultsProps {
   onExport?: () => void
   milestones?: Milestone[]
   milestoneResultsState?: MilestoneResults | null
+  /** Cumulative remaining work to reach each milestone (1:1 with `milestones`). Used
+   *  for the "X cumulative" display next to the milestone name. */
   cumulativeThresholds?: number[]
+  /** Per-milestone completion status (user has zeroed backlogSize). Completed
+   *  milestones are filtered out of the per-milestone forecast tables — they
+   *  appear in the ForecastSummary breakdown past-tense instead. */
+  milestoneCompletionInfo?: MilestoneCompletionInfo[]
   unitOfMeasure?: string
   effectiveMean?: number
   effectiveStdDev?: number
@@ -140,6 +148,7 @@ export function ForecastResults({
   milestones = [],
   milestoneResultsState,
   cumulativeThresholds = [],
+  milestoneCompletionInfo = [],
   unitOfMeasure = '',
   effectiveMean,
   effectiveStdDev,
@@ -160,15 +169,21 @@ export function ForecastResults({
   summaryText,
 }: ForecastResultsProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const distributionsEnabled = useSettingsStore((s) => s.distributionsEnabled)
 
   const hasBootstrap = results.bootstrap !== null
   const modeContext = buildModeContext(forecastMode, effectiveMean, effectiveStdDev, velocityMean, velocityStdDev, selectedCV, volatilityMultiplier)
-  const columns = getDistributionColumns(forecastMode, hasBootstrap)
+  const columns = getDistributionColumns(forecastMode, hasBootstrap, distributionsEnabled)
+  // Per-milestone forecast tables are for UPCOMING milestones only. Completed
+  // milestones appear past-tense in ForecastSummary's breakdown above; rendering a
+  // future-tense forecast for an already-completed milestone here would duplicate
+  // and confuse.
   const visibleMilestones = useMemo(
     () => milestones
       .map((m, idx) => ({ milestone: m, originalIndex: idx }))
-      .filter(({ milestone: m }) => m.showOnChart !== false),
-    [milestones]
+      .filter(({ milestone: m }) => m.showOnChart !== false)
+      .filter(({ originalIndex }) => !milestoneCompletionInfo[originalIndex]?.completed),
+    [milestones, milestoneCompletionInfo]
   )
 
   const hasMilestones = visibleMilestones.length > 0 && milestoneResultsState && milestoneResultsState.milestoneResults.length > 0

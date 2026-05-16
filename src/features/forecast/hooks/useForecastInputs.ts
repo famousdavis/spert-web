@@ -48,6 +48,13 @@ export function useForecastInputs(calculatedStats: VelocityStats, includedSprint
 
   const hasMilestones = milestones.length > 0
 
+  // Cumulative "remaining work to reach milestone i" — the running sum of user-
+  // maintained backlogSize values. milestone.backlogSize is the work the user knows
+  // remains for that release; the user updates it as work progresses, as scope is
+  // added, or as scope is descoped. The simulation reads cumulativeThresholds[i] as
+  // "delivered-in-trial ≥ threshold" → "have we delivered enough to cross milestone i?"
+  // which is exactly what we want under this model. Shipped milestones (backlogSize=0)
+  // contribute no increment, so their cumulative equals the preceding milestone's.
   const cumulativeThresholds = useMemo(
     () =>
       milestones.reduce<number[]>((acc, m) => {

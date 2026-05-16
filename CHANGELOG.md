@@ -1,5 +1,107 @@
 # Changelog
 
+## v0.31.2 - 2026-05-16
+
+Consolidates the v0.31.0 + v0.31.1 work (rolled back from production on 2026-05-16)
+with the corrections that emerged from hands-on review. Net result: NCCI train-the-
+trainer trainees opening the Forecast tab on the sample project land on an
+internally consistent forecast that explains itself, rather than a forecast that
+looks correct but reads as broken.
+
+### Added
+
+- **"Load Sample Project" CTA on both empty states.** New users seed a runnable
+  example with one click — eight sprints of history with realistic ~42% velocity
+  variability ending at 460 remaining backlog; four ordered milestones (MVP Release
+  already completed, Beta / GA / v2 ahead) summing to that remainder; one
+  productivity adjustment ("Production Issues"). The seeded project lands on a
+  clean burn-up + plain-language hero so the demo writes itself. Idempotent against
+  double-clicks via name-guard.
+- **Custom Percentile section is collapsible** — defaults to collapsed under
+  *"Explore a custom percentile."*
+- **"Std Dev" / "Standard Deviation" relabeled to "Variability"** on the Forecast
+  form and Sprint History velocity stats, with an info-tooltip explaining the
+  stats meaning.
+- **History / Subjective mode tooltip** on the forecast-mode toggle.
+- **Settings → "Statistical methods to show."** A new section with one checkbox
+  per distribution (Truncated Normal, Lognormal, Gamma, Bootstrap, Triangular,
+  Uniform) plus plain-language descriptions. New installs default to Truncated
+  Normal only — the cleanest first-touch view. Re-enable any combination; at
+  least one must remain checked. Bootstrap is still gated by 5+ sprints of
+  history regardless of this setting. Setting round-trips through Firestore for
+  cloud-mode users.
+- **"Your forecast" hero callout.** The Forecast Summary panel leads with a
+  plain-language sentence — *"Based upon your forecast judgments, there is an
+  87% chance the project will finish by [date]."* — using the true cumulative
+  probability for the displayed sprint-end date so the percentage and date are
+  always internally consistent.
+- **Scope picker** in the forecast summary controls row. Choose "Entire Project"
+  or any not-yet-completed milestone; hero + summary sentence reflect the choice.
+  Completed milestones (backlogSize = 0) are filtered out of the picker.
+- **Per-milestone breakdown** under the summary text. Colored-dot list of each
+  charted milestone's forecast date. Completed milestones render italic
+  (*"MVP Release: completed"*) so the boundary between done and ahead is
+  eye-scannable.
+- **Burn-up chart legend** is now ordered Scope → Done → forecast lines in
+  ascending percentile (matching their left-to-right position on the chart),
+  rather than Recharts' default alphabetical sort.
+- **Distribution dropdown info-tooltip** in the summary controls row, pointing
+  users to Settings for enabling additional distributions.
+
+### Changed
+
+- **Auto-simulation runs on first valid input** — the Forecast tab no longer
+  requires a manual "Run Forecast" click before auto-recalculate kicks in.
+- **Default selected percentile pills shrunk** from `[P10, P20, P50, P80, P90]`
+  to `[P10, P50, P90]`. The full picker still offers `[P5, P10, P15, P20, P25,
+  P30, P35, P40, P45, P50, P55, P60, P65, P70, P75, P80, P85, P90, P95]`.
+- **Custom-percentile dropdown extended downward to P10–P40** for optimistic
+  forecasting; was P50–P95 only.
+- **Forecast Results table** no longer stretches with few distributions selected
+  — fixed per-column widths leave the table left-anchored with trailing space.
+- **Summary sentence uses "at least" framing**
+  (*"there is at least an 80% chance that..."*) — true under sprint-quantization
+  round-up and reads congruently with the hero's true-CDF percentage.
+- **Indefinite article computed by pronunciation**: "an 80%" / "a 90%" /
+  "a 50%" / "an 87%" via a small grammar helper.
+
+### Internal
+
+- **shadcn `tooltip` component** installed (Radix-backed); `HelpTooltip` wrapper
+  renders ⓘ info chips with content sized to `max-w-[14rem]` for compact reads.
+  `TooltipProvider` wraps `AppShell`.
+- **Monte Carlo helper** `cumulativeProbabilityAtSprint(sortedSimData, sprints)`
+  returns the true cumulative probability at a given sprint count — powers the
+  hero's headline percentage.
+- **Grammar helper** `indefiniteArticle(n)` at
+  [src/shared/lib/grammar.ts](src/shared/lib/grammar.ts).
+- **Milestones lib** at
+  [src/features/forecast/lib/milestones.ts](src/features/forecast/lib/milestones.ts)
+  exports `computeCumulativeScope` and `computeMilestoneCompletionInfo`.
+  Completion is detected from `backlogSize === 0` only — no auto-derivation
+  from sprint history. Milestone scope can change independently of sprint
+  delivery (descopes, additions); the user is the source of truth on what
+  remains. Release-history (when milestones actually completed) is owned by
+  GanttApp, which this tool feeds into.
+- **Burn-up legend payload** built explicitly via
+  [burn-up-legend.ts](src/features/forecast/lib/burn-up-legend.ts) with
+  `itemSorter={null}` on `<Legend>` to opt out of Recharts 3.x's default
+  alphabetical sort.
+- **`getVisibleDistributions` chokepoint** gained an `enabledDistributions`
+  parameter so all three call sites (`ForecastSummary`, `PercentileSelector`,
+  `ResultsTable` via `ForecastResults`) pass through the Settings value. The
+  Bootstrap-OR-Uniform mutual exclusion is enforced here (max 5 visible
+  distributions ever).
+- **State-fallback `useEffect`s in `ForecastSummary` and `BurnUpConfigUI`** when
+  the user disables the currently-selected distribution via Settings. Both
+  depend on a `useMemo`'d availability set with explicit reference-stability
+  comments.
+- **Sample-project seeder** at
+  [src/features/projects/lib/sample-project.ts](src/features/projects/lib/sample-project.ts)
+  uses `useProjectStore.getState()` (not hooks); all sprint dates flow through
+  `calculateSprintStartDate` / `calculateSprintFinishDate` so finish dates
+  always land on business days.
+
 ## v0.30.2 - 2026-05-15
 
 ### Changed

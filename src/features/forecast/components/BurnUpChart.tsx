@@ -28,6 +28,15 @@ interface BurnUpChartProps {
   fontSize?: ChartFontSize
   onFontSizeChange?: (size: ChartFontSize) => void
   milestones?: Milestone[]
+  /**
+   * Cumulative remaining work to reach each milestone from current state (1:1 with
+   * `milestones`). For a not-yet-completed milestone, the reference line is drawn
+   * at y = totalDone + cumulativeThresholds[idx] — the chart-space scope position
+   * where the team will be when they reach that milestone. Completed milestones
+   * (backlogSize=0) are skipped: their reference line would land at totalDone,
+   * exactly where the done line already sits, which is visually noisy and conveys
+   * no information.
+   */
   cumulativeThresholds?: number[]
   forecastStartDate?: string
   resolvedSprintDates?: Map<number, { startDate: string; finishDate: string }>
@@ -55,28 +64,28 @@ export function BurnUpChart({
 
   const hasBootstrap = isBootstrapAvailable(simulationData)
 
-  // Compute total done for milestone reference line positioning
+  // Total work delivered, used to anchor milestone reference lines in chart space.
   const totalDone = useMemo(
     () => sprints.reduce((sum, s) => sum + s.doneValue, 0),
     [sprints]
   )
 
-  // Scope line uses the user-entered backlog directly — milestones are independent reference lines
-
-  // Milestone reference lines on Y-axis — show all visible milestones
+  // Milestone reference lines on the work-units axis. Skip completed milestones
+  // (backlogSize === 0): their line would render at totalDone (right on top of the
+  // done line) and the user already knows completed milestones are done — drawing
+  // them adds visual noise without information.
   const milestoneRefLines = useMemo(() => {
     if (milestones.length === 0 || cumulativeThresholds.length === 0) return []
     return milestones
-      .filter((m) => m.showOnChart !== false)
-      .map((m) => {
-        const idx = milestones.indexOf(m)
-        return {
-          id: m.id,
-          name: m.name,
-          color: m.color,
-          yValue: totalDone + cumulativeThresholds[idx],
-        }
-      })
+      .map((m, idx) => ({ milestone: m, idx }))
+      .filter(({ milestone: m }) => m.showOnChart !== false)
+      .filter(({ milestone: m }) => m.backlogSize > 0)
+      .map(({ milestone: m, idx }) => ({
+        id: m.id,
+        name: m.name,
+        color: m.color,
+        yValue: totalDone + cumulativeThresholds[idx],
+      }))
   }, [milestones, cumulativeThresholds, totalDone])
 
   const chartData = useMemo(

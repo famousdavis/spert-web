@@ -29,6 +29,7 @@ import { generateForecastCsv, downloadCsv, generateFilename } from '../lib/expor
 import { safeParseNumber } from '@/shared/lib/validation'
 import { MIN_SPRINTS_FOR_HISTORY, DEFAULT_SELECTED_PERCENTILES } from '../constants'
 import type { ForecastMode } from '@/shared/types'
+import { computeMilestoneCompletionInfo } from '../lib/milestones'
 
 /** Per-milestone QuadResults and QuadSimulationData */
 export interface MilestoneResults {
@@ -119,6 +120,15 @@ export function useForecastState() {
   const productivityAdjustments = useMemo(
     () => selectedProject?.productivityAdjustments ?? [],
     [selectedProject?.productivityAdjustments]
+  )
+
+  // Per-milestone completion status (user has zeroed backlogSize), derived once at
+  // this level so both ForecastSummary (breakdown past-tense rendering, Scope-picker
+  // filter) and ForecastResults (per-milestone forecast-table filter) share the same
+  // source of truth without duplication.
+  const milestoneCompletionInfo = useMemo(
+    () => computeMilestoneCompletionInfo(inputs.milestones),
+    [inputs.milestones]
   )
 
   // Track previous project to clear results on change
@@ -277,9 +287,13 @@ export function useForecastState() {
   const debouncedEstimate = useDebounce(inputs.velocityEstimate, 400)
 
   useEffect(() => {
-    if (!autoRecalculate || !hasRunOnceRef.current) return
+    if (!autoRecalculate) return
     const canRun = !!debouncedBacklog && inputs.effectiveMean > 0
     if (!canRun) return
+    // Previously gated on hasRunOnceRef.current — required an initial manual click of
+    // "Run Forecast" before auto-recalc would fire. That made auto-recalc effectively
+    // opt-in twice (Settings + first click) and left trainees staring at an empty
+    // forecast despite valid inputs. canRun is the only correctness gate we need.
     runForecastRef.current()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -423,6 +437,7 @@ export function useForecastState() {
 
     // Sprint data (from useSprintData)
     projectSprints: sprintData.projectSprints,
+    includedSprints: sprintData.includedSprints,
     completedSprintCount: sprintData.completedSprintCount,
     forecastStartDate: sprintData.forecastStartDate,
     resolvedSprintDates: sprintData.resolvedSprintDates,
@@ -432,6 +447,7 @@ export function useForecastState() {
     milestones: inputs.milestones,
     hasMilestones: inputs.hasMilestones,
     cumulativeThresholds: inputs.cumulativeThresholds,
+    milestoneCompletionInfo,
 
     // Forecast mode
     forecastMode: effectiveForecastMode,
