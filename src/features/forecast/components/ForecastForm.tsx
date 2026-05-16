@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { HelpTooltip } from '@/shared/components/HelpTooltip'
 import type { ScopeChangeStats } from '../lib/statistics'
 import type { Sprint, ForecastMode } from '@/shared/types'
 import { VelocitySparkline } from './VelocitySparkline'
@@ -212,10 +213,11 @@ export function ForecastForm({
           </p>
         </div>
 
-        {/* Velocity Std Dev */}
+        {/* Velocity Variability (a.k.a. standard deviation) */}
         <div className="flex-[0_0_120px]">
           <label htmlFor="velocityStdDev" className={labelClass}>
-            Std Dev
+            Variability
+            <HelpTooltip content="Standard deviation — how much velocity varies sprint to sprint." />
           </label>
           <input
             id="velocityStdDev"
