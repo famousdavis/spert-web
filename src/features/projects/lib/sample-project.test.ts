@@ -84,17 +84,21 @@ describe('loadSampleProject', () => {
     expect(includedSprints).toHaveLength(8)
 
     // Step 3: getLastSprintBacklog picks the largest sprintNumber with a defined
-    // backlogAtSprintEnd. Final sprint in the sequence carries the 200 we promise.
+    // backlogAtSprintEnd. Final sprint in the sequence carries the 460 we promise.
     const backlog = getLastSprintBacklog(includedSprints)
-    expect(backlog).toBe(200)
+    expect(backlog).toBe(460)
   })
 
-  it('seeds one milestone and one productivity adjustment', () => {
+  it('seeds four ordered milestones and one productivity adjustment', () => {
     loadSampleProject()
     const sample = useProjectStore.getState().projects[0]
-    expect(sample.milestones).toHaveLength(1)
-    expect(sample.milestones?.[0].name).toBe('MVP Release')
-    expect(sample.milestones?.[0].backlogSize).toBe(100)
+
+    expect(sample.milestones).toHaveLength(4)
+    // Order matters: milestones[0] ships first. Cumulative scope: 150 / 350 / 600 / 800.
+    expect(sample.milestones?.[0]).toMatchObject({ name: 'MVP Release', backlogSize: 150, color: '#10b981' })
+    expect(sample.milestones?.[1]).toMatchObject({ name: 'Beta Release', backlogSize: 200, color: '#3b82f6' })
+    expect(sample.milestones?.[2]).toMatchObject({ name: 'GA Release', backlogSize: 250, color: '#f59e0b' })
+    expect(sample.milestones?.[3]).toMatchObject({ name: 'v2 Release', backlogSize: 200, color: '#8b5cf6' })
 
     expect(sample.productivityAdjustments).toHaveLength(1)
     expect(sample.productivityAdjustments?.[0].name).toBe('Production Issues')

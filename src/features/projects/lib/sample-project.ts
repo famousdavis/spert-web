@@ -42,10 +42,12 @@ export const SAMPLE_PROJECT_NAME = 'Sample: Mobile App Launch'
 // catch-up surge, normal, late push.
 const SAMPLE_VELOCITIES = [25, 50, 18, 55, 22, 62, 48, 60] as const
 
-// Declining backlog: starts at 540 (sum of velocities + final backlog), ends at 200.
-// The final entry (200) is what the Forecast tab pre-fills as remainingBacklog via the
-// auto-derivation in useForecastInputs.ts:63-66.
-const SAMPLE_BACKLOG_AT_SPRINT_END = [515, 465, 447, 392, 370, 308, 260, 200] as const
+// Declining backlog: starts at 800 (sum of velocities + final backlog), ends at 460.
+// 340 / 800 = 42.5% done after 8 sprints — the team is still well short of project
+// completion, leaving room for multiple downstream milestones to be visible in the
+// forecast. The final entry (460) is what the Forecast tab pre-fills as
+// remainingBacklog via the auto-derivation in useForecastInputs.ts:63-66.
+const SAMPLE_BACKLOG_AT_SPRINT_END = [775, 725, 707, 652, 630, 568, 520, 460] as const
 
 const SPRINT_CADENCE_WEEKS = 2 as const
 const SPRINT_COUNT = 8
@@ -108,12 +110,32 @@ export function loadSampleProject(): void {
     })
   }
 
-  // One milestone and one productivity adjustment to illustrate the features. Both are
-  // optional — could be dropped if seeder surface becomes a concern.
+  // Four ordered milestones (incremental backlog sizes — cumulative = 150 / 350 / 600 / 800).
+  // Sizes range 150–250 (≈3.5–6 sprints at mean velocity ~42.5), giving each milestone
+  // a meaningful window for the trainee to visualize. Colors mirror DEFAULT_MILESTONE_COLORS
+  // in order (emerald, blue, amber, purple) so the seeded milestones look the same as
+  // milestones a user would add manually one by one.
+  // After 8 sprints (340 done), MVP is already shipped, Beta is just over the horizon,
+  // GA sits mid-forecast, and v2 anchors the project finish.
   useProjectStore.getState().addMilestone(newProjectId, {
     name: 'MVP Release',
-    backlogSize: 100,
-    color: '#3b82f6',
+    backlogSize: 150,
+    color: '#10b981', // emerald
+  })
+  useProjectStore.getState().addMilestone(newProjectId, {
+    name: 'Beta Release',
+    backlogSize: 200,
+    color: '#3b82f6', // blue
+  })
+  useProjectStore.getState().addMilestone(newProjectId, {
+    name: 'GA Release',
+    backlogSize: 250,
+    color: '#f59e0b', // amber
+  })
+  useProjectStore.getState().addMilestone(newProjectId, {
+    name: 'v2 Release',
+    backlogSize: 200,
+    color: '#8b5cf6', // purple
   })
 
   // Productivity adjustment: a five-day "Production Issues" window 10 weeks into the
@@ -129,5 +151,5 @@ export function loadSampleProject(): void {
     enabled: true,
   })
 
-  toast.success(`Loaded "${SAMPLE_PROJECT_NAME}" — eight sprints, one milestone, one productivity adjustment.`)
+  toast.success(`Loaded "${SAMPLE_PROJECT_NAME}" — eight sprints, four milestones, one productivity adjustment.`)
 }
