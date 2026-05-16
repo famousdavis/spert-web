@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.31.1 - 2026-05-16
+
+### Added
+
+- **"Load Sample Project" CTA on both empty states.** New users can now seed a runnable example with one click — eight sprints of history (variable velocity ending at 200 remaining), one milestone ("MVP Release"), and one productivity adjustment ("Holiday Week"). The seeded project lands on a clean burn-up + plain-language hero sentence so the demo writes itself. The CTA appears as the right-hand button on a twin-button empty-state ("Create New Project" + "Load Sample Project") that shows on both the Projects tab (Welcome variant) and the Forecast tab ("You'll need a project to forecast"). The sample is idempotent against double-clicks via name-guard; if a project named "Sample: Mobile App Launch" already exists, the seeder silently no-ops with a friendly toast.
+- **Custom Percentile section is now collapsible.** The custom-percentile sliders + result cards on the Forecast tab default to collapsed under the label *"Explore a custom percentile."* Click once to expand; functionality unchanged. One fewer wall of controls on first load.
+- **Jargon relabel: "Std Dev" / "Standard Deviation" → "Variability."** The Forecast form and the Sprint History velocity stats card now read "Variability" with an info-tooltip explaining the stats meaning: *"Standard deviation — how much velocity varies sprint to sprint."*
+- **History / Subjective mode tooltip.** The forecast-mode toggle now has an info-tooltip: *"History uses your sprint data; Subjective uses your judgment."*
+
+### Internal
+
+- **shadcn `tooltip` component installed** (first Radix-backed component in the codebase). Imports the unified `radix-ui` package; named exports `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider`. New `HelpTooltip` wrapper renders an ⓘ info chip with Radix tooltip content. `TooltipProvider` wraps the entire `AppShell` render tree — without it, Radix throws "TooltipProvider is missing" at runtime.
+- **Sample project seeder** as a plain module function using `useProjectStore.getState()` (not hooks). All sprint dates computed via the shared `calculateSprintStartDate` / `calculateSprintFinishDate` helpers — never hand-rolled — so every finish date lands on a business day. The "200 pre-fill backlog" promise is locked by a contract test that mirrors the full auto-derivation chain (project sprint filter → `includedInForecast` filter → `getLastSprintBacklog`).
+- **Tab-switch focus handoff.** `useProjectStore` gains a session-only `shouldFocusNewProjectForm` flag (not in `partialize`, no cloud sync). `ProjectForm` now uses `forwardRef` + `useImperativeHandle` to expose a `focusNameInput()` method. The Forecast empty-state "Create New Project" CTA sets the flag and switches tabs; ProjectsTab's mount effect reads the flag, focuses the name field via the ref, and immediately resets the flag.
+
 ## v0.31.0 - 2026-05-16
 
 ### Added
