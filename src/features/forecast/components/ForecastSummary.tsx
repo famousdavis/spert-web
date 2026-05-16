@@ -311,11 +311,12 @@ export function ForecastSummary({
 
   if (!selectedResult) return null
 
-  // Hero lead: plain-language summary of the forecast. Dynamic against selectedPercentile.
-  // Mode-aware phrasing — history mode references team pace, subjective references estimates.
-  const heroLead = forecastMode === 'subjective'
-    ? `Based on your estimates,`
-    : `Based on your team's pace,`
+  // Hero lead: plain-language summary of the forecast. Mode-agnostic — "forecast judgments"
+  // covers the full set of inputs (project scope, included sprint history, velocity overrides,
+  // subjective estimates, productivity adjustments, scope-growth assumptions) without
+  // privileging one mode's vocabulary. The mode-specific source line is still rendered as a
+  // small italic note under the lower-section summary.
+  const heroLead = `Based upon your forecast judgments,`
 
   // Headline percent shown in the hero is the *true* CDF at the displayed date, not the
   // user's selected percentile. Falls back to selected percentile if the helper couldn't
