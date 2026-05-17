@@ -334,68 +334,74 @@ export function DeadlineProbabilityPanel({
 
           {narrativeCase === 'case1' && effectiveScope === PROJECT_SCOPE && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              There is{' '}
-              <strong>
-                {indefiniteArticle(selectedProbability!)} {selectedProbability!}%
-              </strong>{' '}
+              There is {indefiniteArticle(selectedProbability!)}{' '}
+              <strong className="text-spert-blue">{selectedProbability!}%</strong>{' '}
               probability that <strong>{displayName}</strong> will finish the{' '}
               {backlogForScope.toLocaleString()} {unitOfMeasure} backlog by{' '}
-              <strong>{formatDateLong(sprintAtDate!.sprintFinishDate)}</strong> (Sprint{' '}
-              {absoluteSprint}).
+              <strong className="text-spert-blue">
+                {formatDateLong(sprintAtDate!.sprintFinishDate)}
+              </strong>{' '}
+              (Sprint {absoluteSprint}).
             </p>
           )}
 
           {narrativeCase === 'case2' && effectiveScope === PROJECT_SCOPE && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              There is{' '}
-              <strong>
-                {indefiniteArticle(selectedProbability!)} {selectedProbability!}%
-              </strong>{' '}
+              There is {indefiniteArticle(selectedProbability!)}{' '}
+              <strong className="text-spert-blue">{selectedProbability!}%</strong>{' '}
               probability that <strong>{displayName}</strong> will finish the{' '}
               {backlogForScope.toLocaleString()} {unitOfMeasure} backlog by{' '}
-              <strong>{formatDateLong(sprintAtDate!.sprintFinishDate)}</strong> (Sprint{' '}
-              {absoluteSprint}), which is before your{' '}
-              <strong>{formatDateLong(targetDate)}</strong> target.
+              <strong className="text-spert-blue">
+                {formatDateLong(sprintAtDate!.sprintFinishDate)}
+              </strong>{' '}
+              (Sprint {absoluteSprint}), which is before your{' '}
+              <strong className="text-spert-blue">{formatDateLong(targetDate)}</strong>{' '}
+              target.
             </p>
           )}
 
           {narrativeCase === 'case1' && effectiveScope !== PROJECT_SCOPE && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              There is{' '}
-              <strong>
-                {indefiniteArticle(selectedProbability!)} {selectedProbability!}%
-              </strong>{' '}
+              There is {indefiniteArticle(selectedProbability!)}{' '}
+              <strong className="text-spert-blue">{selectedProbability!}%</strong>{' '}
               probability that <strong>{milestoneName}</strong> will be reached by{' '}
-              <strong>{formatDateLong(sprintAtDate!.sprintFinishDate)}</strong> (Sprint{' '}
-              {absoluteSprint}).
+              <strong className="text-spert-blue">
+                {formatDateLong(sprintAtDate!.sprintFinishDate)}
+              </strong>{' '}
+              (Sprint {absoluteSprint}).
             </p>
           )}
 
           {narrativeCase === 'case2' && effectiveScope !== PROJECT_SCOPE && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              There is{' '}
-              <strong>
-                {indefiniteArticle(selectedProbability!)} {selectedProbability!}%
-              </strong>{' '}
+              There is {indefiniteArticle(selectedProbability!)}{' '}
+              <strong className="text-spert-blue">{selectedProbability!}%</strong>{' '}
               probability that <strong>{milestoneName}</strong> will be reached by{' '}
-              <strong>{formatDateLong(sprintAtDate!.sprintFinishDate)}</strong> (Sprint{' '}
-              {absoluteSprint}), which is before your{' '}
-              <strong>{formatDateLong(targetDate)}</strong> target.
+              <strong className="text-spert-blue">
+                {formatDateLong(sprintAtDate!.sprintFinishDate)}
+              </strong>{' '}
+              (Sprint {absoluteSprint}), which is before your{' '}
+              <strong className="text-spert-blue">{formatDateLong(targetDate)}</strong>{' '}
+              target.
             </p>
           )}
 
           {narrativeCase === 'case3' && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              Your <strong>{formatDateLong(targetDate)}</strong> target falls before the
-              forecast window begins. Probability: <strong>0%</strong>.
+              Your{' '}
+              <strong className="text-spert-blue">{formatDateLong(targetDate)}</strong> target
+              falls before the forecast window begins. Probability:{' '}
+              <strong className="text-spert-blue">0%</strong>.
             </p>
           )}
 
           {narrativeCase === 'case4' && (
             <p aria-live="polite" className="text-sm text-spert-text dark:text-gray-100 leading-relaxed">
-              Your <strong>{formatDateLong(targetDate)}</strong> target falls within Sprint{' '}
-              {firstForecastAbsoluteSprint} (the first forecast sprint), before any sprint can
-              complete. Probability: <strong>0%</strong>.
+              Your{' '}
+              <strong className="text-spert-blue">{formatDateLong(targetDate)}</strong> target
+              falls within Sprint {firstForecastAbsoluteSprint} (the first forecast sprint),
+              before any sprint can complete. Probability:{' '}
+              <strong className="text-spert-blue">0%</strong>.
             </p>
           )}
 

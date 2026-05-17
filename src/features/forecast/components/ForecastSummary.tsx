@@ -353,7 +353,7 @@ export function ForecastSummary({
           {heroLead} there is {heroArticle}{' '}
           <strong className="text-spert-blue">{heroPercent}%</strong> chance{' '}
           {effectiveMilestone
-            ? <>{effectiveMilestone.name} will be reached by{' '}</>
+            ? <><strong>{effectiveMilestone.name}</strong> will be reached by{' '}</>
             : <>the project will finish by{' '}</>}
           <strong className="text-spert-blue">{heroDate}</strong>.
         </p>
