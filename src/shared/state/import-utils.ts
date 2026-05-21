@@ -5,9 +5,9 @@
 import type { Project, Sprint } from '@/shared/types'
 import type { ExportData } from './import-validation'
 
-// Must match the private MAX_STRING_LENGTH in import-validation.ts. Defined
-// locally to avoid exposing it from that module.
-const MAX_STRING_LENGTH = 200
+// Must match the private MAX_STRING_LENGTH in import-validation.ts. Exported
+// for the clone path (project-store.ts) so both copy paths share one constant.
+export const MAX_STRING_LENGTH = 200
 
 // --- Import file type guards ---
 // Moved from merge-import.ts in v0.30.0 (that file deleted).
@@ -112,6 +112,50 @@ export interface ApplySmartImportArgs {
 
 export function normalizeProjectName(name: string): string {
   return name.trim().toLowerCase()
+}
+
+// nextCopyName — finds the lowest-available "X - Copy (N)" name and registers
+// it in the tracking set in one operation.
+//
+// Truncates baseName FIRST so the full candidate (base + suffix) never exceeds
+// maxLength. Uses ' - Copy (XXXXXXXX)' (18 chars) as the overhead constant —
+// this covers both the numeric suffix path (max " - Copy (99)" = 12 chars) and
+// the 8-char UUID fallback path (" - Copy (XXXXXXXX)" = exactly 18 chars), so
+// UUID-fallback candidates fit without post-construction truncation.
+//
+// Pass Number.MAX_SAFE_INTEGER for maxLength when truncation is undesirable
+// (e.g. cloneProject, which operates on already-trusted in-memory names).
+//
+// MUTATES the provided set: the returned name is added to existingNames before
+// returning, so callers in a loop are intra-batch-collision-safe by default.
+// Pass `new Set(state.projects.map((p) => p.name))` if you don't want the
+// caller's set mutated.
+//
+// Spec deviation: replaces the old ' (2)' unconditional suffix from
+// IMPORT-SPEC-REFERENCE.md line 408. See docs/SPEC_DEVIATIONS.md SD-1.
+export function nextCopyName(
+  baseName: string,
+  existingNames: Set<string>,
+  maxLength: number,
+): string {
+  const SUFFIX_OVERHEAD = ' - Copy (XXXXXXXX)'.length // 18; covers numeric and UUID paths
+  const maxBase =
+    maxLength === Number.MAX_SAFE_INTEGER
+      ? baseName.trimEnd().length
+      : maxLength - SUFFIX_OVERHEAD
+  const truncatedBase = baseName.trimEnd().slice(0, maxBase)
+  let suffix = 1
+  let candidate = `${truncatedBase} - Copy (${suffix})`
+  while (existingNames.has(candidate) && suffix < 99) {
+    suffix++
+    candidate = `${truncatedBase} - Copy (${suffix})`
+  }
+  if (existingNames.has(candidate)) {
+    // UUID fallback — sized exactly by SUFFIX_OVERHEAD; no slice needed
+    candidate = `${truncatedBase} - Copy (${crypto.randomUUID().slice(0, 8)})`
+  }
+  existingNames.add(candidate)
+  return candidate
 }
 
 // --- classifyImportData ---
@@ -266,17 +310,20 @@ export function applyImportDecisions(
   }
 
   // PASS 3a: Copies.
-  const COPY_SUFFIX = ' (2)'
+  // occupiedNames is seeded from post-Pass-2 mergedProjects so the collision-walk
+  // accounts for surviving existing projects and all replaced slot winners.
+  // nextCopyName mutates occupiedNames to prevent intra-batch collisions.
+  const occupiedNames = new Set(mergedProjects.map((p) => p.name))
   let copied = 0
   for (const p of incoming.projects) {
     if (resolvedOutcome(p.id) !== 'copy') continue
     const ts = timestamp()
     const newId = generateId()
-    const truncated = p.name.trimEnd().slice(0, MAX_STRING_LENGTH - COPY_SUFFIX.length)
+    const copyName = nextCopyName(p.name, occupiedNames, MAX_STRING_LENGTH)
     const copyProject: Project = {
       ...p,
       id: newId,
-      name: truncated + COPY_SUFFIX,
+      name: copyName,
       updatedAt: ts,
       milestones: p.milestones?.map((m) => ({ ...m, id: generateId(), updatedAt: ts })) ?? [],
       productivityAdjustments:

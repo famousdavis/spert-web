@@ -244,6 +244,7 @@ export function ImportPreviewSection({
             type="button"
             onClick={onConfirm}
             disabled={applying}
+            aria-busy={applying}
             className="px-4 py-2 text-sm font-medium rounded text-white bg-spert-blue hover:bg-spert-blue-dark transition-colors disabled:opacity-50"
           >
             {applying ? 'Importing...' : 'Apply import'}

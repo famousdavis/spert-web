@@ -42,6 +42,7 @@ function resetStore() {
     burnUpConfigs: {},
     _originRef: '',
     _changeLog: [],
+    cloudDataLoaded: false,
   })
 }
 
@@ -323,6 +324,10 @@ describe('useImportState — storage-mode guard behavior (C29)', () => {
 
   it('legacy import into empty workspace in CLOUD mode shows preview (fast path 2 suppressed)', async () => {
     hoisted.mode = 'cloud'
+    // cloudDataLoaded must be true to clear the v0.34.0 hydration-race guard
+    // (pitfall #88) — otherwise handleFileChange short-circuits with the
+    // "Cloud projects still loading" banner before reaching the FileReader.
+    useProjectStore.setState({ cloudDataLoaded: true })
     const { result } = renderHook(() => useImportState())
     const file = new File(
       [JSON.stringify({ version: '0.30.0', exportedAt: '2026-05-14', projects: [{ id: 'a', name: 'A', unitOfMeasure: 'pts', createdAt: 't', updatedAt: 't' }], sprints: [] })],
@@ -435,6 +440,9 @@ describe('useImportState — cloud mode fast-path suppression (C2)', () => {
 
   it('cloud mode + zero-conflict project-export → preview shown (fast path 1 suppressed)', async () => {
     hoisted.mode = 'cloud'
+    // cloudDataLoaded must be true to clear the v0.34.0 hydration-race guard
+    // (pitfall #88) — see the matching legacy-import test above.
+    useProjectStore.setState({ cloudDataLoaded: true })
     const { result } = renderHook(() => useImportState())
     await act(async () => {
       result.current.handleFileChange({
@@ -532,5 +540,48 @@ describe('useImportState — stale-data guard (hook level)', () => {
     })
     expect(result.current.importBanner?.kind).toBe('error')
     expect(result.current.importBanner?.text).toMatch(/workspace changed/i)
+  })
+
+  // All-skip regression guard (pitfall #71): every decision is 'skip' — banner
+  // must surface the skip count, not silently dismiss.
+  it('all-skip decisions surface skip count in banner, not silent dismiss', async () => {
+    hoisted.mode = 'local'
+    useProjectStore.setState({ projects: [makeProject({ id: 'A', name: 'A' })] })
+    const { result } = renderHook(() => useImportState())
+    const inc = makeProject({ id: 'A', name: 'A' })
+    act(() => {
+      result.current.showPreview({
+        imported: {
+          exportType: 'spert-forecaster-project-export',
+          projects: [inc],
+          sprints: [],
+        },
+        conflicts: [
+          { type: 'id', incomingProject: inc, existingProject: makeProject({ id: 'A' }) },
+        ],
+        decisions: new Map<string, ConflictAction>([['A', 'skip']]),
+        mode: 'merge',
+      })
+    })
+    await act(async () => {
+      result.current.handleConfirmMerge()
+    })
+    expect(result.current.importBanner?.kind).toBe('success')
+    expect(result.current.importBanner?.text).toMatch(/1 skipped/)
+  })
+})
+
+describe('useImportState — cloudDataLoaded exposure', () => {
+  it('exposes cloudDataLoaded: false when store reports not yet hydrated', () => {
+    hoisted.mode = 'cloud'
+    useProjectStore.setState({ cloudDataLoaded: false })
+    const { result } = renderHook(() => useImportState())
+    expect(result.current.cloudDataLoaded).toBe(false)
+  })
+  it('exposes cloudDataLoaded: true after hydration', () => {
+    hoisted.mode = 'cloud'
+    useProjectStore.setState({ cloudDataLoaded: true })
+    const { result } = renderHook(() => useImportState())
+    expect(result.current.cloudDataLoaded).toBe(true)
   })
 })

@@ -59,7 +59,10 @@ function processProjectDocs(
 export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
   const isActive = mode === 'cloud' && !!user
   const userRef = useRef(user)
-  // eslint-disable-next-line react-hooks/refs -- intentional latest-value ref write during render; userRef is only consumed inside sync bus effect callbacks, never during render itself. Moving to useEffect would introduce a stale-ref window between render commit and effect run.
+  // Intentional latest-value ref write during render. userRef is only consumed
+  // inside sync-bus effect callbacks, never during render itself. Moving to
+  // useEffect would introduce a stale-ref window between render commit and
+  // effect run.
   userRef.current = user
 
   // Track Firestore doc metadata for proper saves (owner/members)
@@ -109,6 +112,15 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
       } catch (err) {
         console.error('Initial cloud load failed:', err)
         toast.error('Failed to load your projects from the cloud.')
+      } finally {
+        // Pitfall #88: "Attempted, done" — fires on success, throw, and
+        // data-loss-guard bypass. !cancelled: if setup() is suspended at an
+        // await when the cleanup runs, the next microtask resumes setup() and
+        // hits this finally — by then `cancelled` is already true and the
+        // signal is suppressed, so cleanup's false wins.
+        if (!cancelled) {
+          useProjectStore.getState().setCloudDataLoaded(true)
+        }
       }
 
       if (cancelled) return
@@ -170,6 +182,39 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
 
           const state = useProjectStore.getState()
           const importedIds = new Set(state.projects.map((p) => p.id))
+          const { replacedIdMap } = event
+
+          // Pre-seed docMetaRef for name-conflict winner IDs so projectToFirestoreDoc
+          // receives the old doc's owner/members instead of defaulting to the current
+          // user with empty members (which would destroy prior sharing — pitfall #7).
+          //
+          // Owner guard: only pre-seed when currentUser IS the owner of the existing
+          // doc. Non-owner editors cannot write a Firestore doc with
+          // owner !== request.auth.uid. For non-owners the pre-seed is skipped: the
+          // new winnerId doc is created with owner: currentUser.uid (allowed), but
+          // the old existingId delete fails (rejected). After the next snapshot,
+          // both docs appear — the toast in the delete loop below explains this.
+          // TODO (v0.35.0): detect non-owned conflicts at preview time and disable
+          // 'replace' for those rows. Requires exposing ownership metadata through
+          // the Zustand store.
+          //
+          // Order rationale: pre-seed BEFORE the delete loop. The delete loop
+          // iterates docMetaRef.current.keys() after the pre-seed has called
+          // set(winnerId, oldDoc), so winnerId appears in keys() — but
+          // importedIds.has(winnerId) is true (the winner is in the post-import
+          // store), so it's not deleted. Reversing the order would call
+          // docMetaRef.current.delete(existingId) before the pre-seed could read
+          // oldDoc = docMetaRef.current.get(existingId).
+          for (const [existingId, winnerId] of replacedIdMap) {
+            const oldDoc = docMetaRef.current.get(existingId)
+            if (
+              oldDoc &&
+              oldDoc.owner === currentUser.uid &&
+              !docMetaRef.current.has(winnerId)
+            ) {
+              docMetaRef.current.set(winnerId, oldDoc)
+            }
+          }
 
           // Delete old cloud projects not present in the import
           for (const oldId of docMetaRef.current.keys()) {
@@ -177,7 +222,14 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
               docMetaRef.current.delete(oldId)
               deleteProject(oldId).catch((err) => {
                 console.error('Cloud delete failed:', err)
-                toast.error('Failed to clean up cloud data during import.')
+                // Non-owner editors cannot delete projects they don't own. The
+                // replacement create succeeded, so the user now sees both the
+                // old and new project with the same name. Inform them so they
+                // can clean up manually.
+                toast.error(
+                  'Could not remove the original project from your cloud workspace — ' +
+                  'you may see a duplicate. Delete it manually if needed.'
+                )
               })
             }
           }
@@ -188,7 +240,7 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
               project,
               state.sprints,
               currentUser.uid,
-              docMetaRef.current.get(project.id),
+              docMetaRef.current.get(project.id), // pre-seeded winnerId carries old owner/members
               state._originRef || getWorkspaceId(),
               state._changeLog
             )
@@ -227,7 +279,12 @@ export function useCloudSync(user: User | null, mode: 'local' | 'cloud') {
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
+      // Set cancelled = true FIRST. If setup() is suspended at an await, the
+      // next microtask resumes and hits the finally — !cancelled is already
+      // false so setCloudDataLoaded(true) is suppressed and cleanup's false
+      // wins (pitfall #88).
       cancelled = true
+      useProjectStore.getState().setCloudDataLoaded(false)
       unsubscribeSnapshot?.()
       unsubscribeSyncBus?.()
       window.removeEventListener('beforeunload', handleBeforeUnload)
