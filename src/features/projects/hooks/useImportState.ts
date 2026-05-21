@@ -5,6 +5,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useProjectStore } from '@/shared/state/project-store'
 import { getStorageMode } from '@/shared/state/storage'
 import { validateImportData, type ExportData } from '@/shared/state/import-validation'
@@ -40,6 +41,11 @@ export function useImportState() {
   // stale-closure risk.
   const importDataAndSelectFirstAction = useProjectStore((s) => s.importDataAndSelectFirst)
   const applySmartImportAction = useProjectStore((s) => s.applySmartImport)
+  // Pitfall #88: reactive subscription to the cloud hydration signal. Drives
+  // the Import-button disable and the "Loading your cloud projects" hint in
+  // ProjectsTab. The store getState() check in handleFileChange handles the
+  // event-callback case where a reactive subscription isn't appropriate.
+  const cloudDataLoaded = useProjectStore((s) => s.cloudDataLoaded)
 
   const [importPreview, setImportPreview] = useState<ImportPreviewState | null>(null)
   const [importBanner, setImportBanner] = useState<ImportBannerState | null>(null)
@@ -93,7 +99,11 @@ export function useImportState() {
       decisions: Map<string, ConflictAction>,
       originalConflicts: ImportConflict[],
     ) => {
-      setApplying(true)
+      // C-FS1 (pitfall #86): flushSync forces React to commit setApplying(true)
+      // to the DOM before the synchronous applySmartImportAction() runs. Without
+      // this, React 18 batches setApplying(true)→...→setApplying(false) inside
+      // one tick and the "Importing..." label / aria-busy never paints.
+      flushSync(() => setApplying(true))
       try {
         // C10: Read directly from store.
         const { projects: currentProjects } = useProjectStore.getState()
@@ -150,7 +160,8 @@ export function useImportState() {
 
   const applyReplaceAll = useCallback(
     async (imported: LegacyImportData) => {
-      setApplying(true)
+      // C-FS1 (pitfall #86): see applyMergeDecisions above.
+      flushSync(() => setApplying(true))
       try {
         importDataAndSelectFirstAction(imported._originalExportData, imported.projects[0]?.id)
         const n = imported.projects.length
@@ -177,8 +188,24 @@ export function useImportState() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-      if (readerPendingRef.current) return // C9
+      if (readerPendingRef.current) return // C9: race guard
+      // Fix for Pitfall #88 hydration race: reject file picks until cloud data
+      // is loaded. The Import button (disabled={isCloudPending}) is the primary
+      // gate. This guard covers programmatic triggers, future drag-and-drop, etc.
+      // Uses getState() + getStorageMode() (same pattern as the existing fast-path
+      // guards) because this is an event callback, not a render function.
+      if (getStorageMode() === 'cloud' && !useProjectStore.getState().cloudDataLoaded) {
+        showBanner({
+          kind: 'error',
+          text: 'Cloud projects are still loading — please try again in a moment.',
+        })
+        return
+      }
       readerPendingRef.current = true
+      // Clear stale banner now that the user has passed the race guard.
+      // Placed after the race guard (not before) so a double-click that loses
+      // the race leaves the current banner intact — correct UX.
+      setImportBanner(null)
       // C6: setApplying handled by each terminal path (showBanner / showPreview /
       // apply...). DO NOT wrap in try/finally — would reset before async work.
       setApplying(true)
@@ -277,8 +304,18 @@ export function useImportState() {
 
   const handleConfirmMerge = useCallback(() => {
     if (!importPreview) return
+    // Belt-and-suspenders: the disabled Import button is the primary gate.
+    // This guard handles the edge case where the preview was opened in local
+    // mode and the user switched to cloud before confirming.
+    if (getStorageMode() === 'cloud' && !useProjectStore.getState().cloudDataLoaded) {
+      showBanner({
+        kind: 'error',
+        text: 'Cloud projects are still loading — please try again in a moment.',
+      })
+      return
+    }
     void applyMergeDecisions(importPreview.imported, importPreview.decisions, importPreview.conflicts)
-  }, [importPreview, applyMergeDecisions])
+  }, [importPreview, applyMergeDecisions, showBanner])
 
   const handleImportCancel = useCallback(() => {
     clearImportFlow()
@@ -332,5 +369,6 @@ export function useImportState() {
     onModeChange,
     onDecisionChange,
     computeDefaultDecisions,
+    cloudDataLoaded,
   }
 }

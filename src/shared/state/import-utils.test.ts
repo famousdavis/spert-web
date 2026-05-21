@@ -11,6 +11,7 @@ import {
   detectImportConflicts,
   conflictsEqual,
   applyImportDecisions,
+  nextCopyName,
   type ParsedImportData,
   type ImportConflict,
   type ConflictAction,
@@ -457,11 +458,11 @@ describe('applyImportDecisions', () => {
       expect(copy.id).not.toBe(inc.id)
     })
 
-    it('appends " (2)" suffix to copied project name', () => {
+    it('appends " - Copy (1)" suffix to copied project name', () => {
       const { inc, existing, conflicts, incoming, decisions } = setupCopy()
       const { mergedProjects } = applyImportDecisions(existing, [], incoming, decisions, conflicts)
       const copy = mergedProjects.find((p) => p.id !== existing[0].id)!
-      expect(copy.name).toBe(inc.name + ' (2)')
+      expect(copy.name).toBe(inc.name + ' - Copy (1)')
     })
 
     it('truncates long names to fit MAX_STRING_LENGTH including suffix', () => {
@@ -479,7 +480,7 @@ describe('applyImportDecisions', () => {
       )
       const copy = mergedProjects.find((p) => p.id !== existing[0].id)!
       expect(copy.name.length).toBeLessThanOrEqual(200)
-      expect(copy.name.endsWith(' (2)')).toBe(true)
+      expect(copy.name.endsWith(' - Copy (1)')).toBe(true)
     })
 
     it('regenerates milestone IDs on copy', () => {
@@ -791,7 +792,7 @@ describe('applyImportDecisions', () => {
       expect(mergedProjects[1].id).toBe('b-new-id')
       expect(mergedProjects[2].id).toBe('c-existing')
       // copy is appended after pass-2 array
-      const copyProject = mergedProjects.find((p) => p.name.endsWith(' (2)'))!
+      const copyProject = mergedProjects.find((p) => p.name.endsWith(' - Copy (1)'))!
       expect(copyProject).toBeDefined()
       expect(mergedProjects.find((p) => p.id === 'e-inc')).toBeDefined()
 
@@ -810,5 +811,71 @@ describe('applyImportDecisions', () => {
       expect(result.replacedIdMap.get('b-existing')).toBe('b-new-id')
       expect(result.replacedExistingIds.has('b-existing')).toBe(true)
     })
+  })
+})
+
+describe('nextCopyName', () => {
+  it('returns "X - Copy (1)" when the name set is empty', () => {
+    expect(nextCopyName('Alpha', new Set(), 200)).toBe('Alpha - Copy (1)')
+  })
+  it('walks to (2) when (1) is already taken', () => {
+    expect(nextCopyName('Alpha', new Set(['Alpha - Copy (1)']), 200)).toBe(
+      'Alpha - Copy (2)',
+    )
+  })
+  it('walks to (3) when (1) and (2) are taken', () => {
+    const taken = new Set(['Alpha - Copy (1)', 'Alpha - Copy (2)'])
+    expect(nextCopyName('Alpha', taken, 200)).toBe('Alpha - Copy (3)')
+  })
+  it('truncates long base names so the full candidate never exceeds maxLength', () => {
+    const longName = 'A'.repeat(195)
+    const result = nextCopyName(longName, new Set(), 200)
+    expect(result.length).toBeLessThanOrEqual(200)
+    expect(result).toContain(' - Copy (1)')
+  })
+  it('does not truncate when maxLength is Number.MAX_SAFE_INTEGER (clone path)', () => {
+    const longName = 'A'.repeat(250)
+    const result = nextCopyName(longName, new Set(), Number.MAX_SAFE_INTEGER)
+    expect(result).toBe('A'.repeat(250) + ' - Copy (1)')
+  })
+  it('mutates the existingNames set so loop callers are collision-safe', () => {
+    const names = new Set<string>()
+    const first = nextCopyName('Alpha', names, 200)
+    const second = nextCopyName('Alpha', names, 200)
+    expect(first).toBe('Alpha - Copy (1)')
+    expect(second).toBe('Alpha - Copy (2)')
+    expect(names.has(first)).toBe(true)
+    expect(names.has(second)).toBe(true)
+  })
+})
+
+describe('applyImportDecisions — copy path intra-batch collision guard', () => {
+  it('two copies of the same source project receive distinct names', () => {
+    const p1 = makeProject({ id: 'i-1', name: 'Gamma' })
+    const p2 = makeProject({ id: 'i-2', name: 'Gamma' })
+    const existing = makeProject({ id: 'e-1', name: 'Gamma' })
+    const incoming: ParsedImportData = {
+      exportType: 'spert-forecaster-project-export',
+      projects: [p1, p2],
+      sprints: [],
+    }
+    const conflicts: ImportConflict[] = [
+      { type: 'name', incomingProject: p1, existingProject: existing },
+      { type: 'name', incomingProject: p2, existingProject: existing },
+    ]
+    const decisions = new Map<string, ConflictAction>([
+      ['i-1', 'copy'],
+      ['i-2', 'copy'],
+    ])
+    const { mergedProjects, result } = applyImportDecisions(
+      [existing],
+      [],
+      incoming,
+      decisions,
+      conflicts,
+    )
+    const names = mergedProjects.map((p) => p.name)
+    expect(new Set(names).size).toBe(names.length)
+    expect(result.copied).toBe(2)
   })
 })

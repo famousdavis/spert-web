@@ -60,6 +60,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     cancelReplaceAllConfirm,
     handleConfirmReplaceAll,
     dismissBanner,
+    cloudDataLoaded,
   } = useImportState()
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
@@ -71,6 +72,9 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
   const shouldFocusNewProjectForm = useProjectStore((s) => s.shouldFocusNewProjectForm)
   const setShouldFocusNewProjectForm = useProjectStore((s) => s.setShouldFocusNewProjectForm)
   const { mode } = useStorageMode()
+  // Pitfall #88: gate the Import button on cloud-data hydration so users can't
+  // pick a file before Firestore's initial load has populated state.projects.
+  const isCloudPending = mode === 'cloud' && !cloudDataLoaded
   const { user } = useAuth()
   const [sharingProject, setSharingProject] = useState<Project | null>(null)
   const [ownedProjectIds, setOwnedProjectIds] = useState<Set<string>>(new Set())
@@ -268,6 +272,16 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Projects</h2>
 
+      {isCloudPending && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="text-sm text-spert-text-muted dark:text-gray-400"
+        >
+          Loading your cloud projects — import will be available shortly.
+        </p>
+      )}
+
       {importBanner && (
         <div
           role={importBanner.kind === 'error' ? 'alert' : 'status'}
@@ -371,7 +385,7 @@ export function ProjectsTab({ onViewHistory }: ProjectsTabProps) {
         <button
           type="button"
           onClick={handleImportClick}
-          disabled={applying}
+          disabled={applying || isCloudPending}
           aria-label="Import projects from JSON"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-transparent bg-transparent text-gray-500 text-[0.9rem] font-medium cursor-pointer transition-all duration-[120ms] hover:text-[#0070f3] hover:bg-blue-50 dark:hover:bg-blue-500/15 hover:border-[#0070f3] focus:outline-none focus:text-[#0070f3] focus:bg-blue-50 dark:focus:bg-blue-500/15 focus:border-[#0070f3] disabled:opacity-50 disabled:cursor-not-allowed"
         >

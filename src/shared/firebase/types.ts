@@ -145,7 +145,14 @@ export interface ResendInviteResult {
 export type SyncEvent =
   | { type: 'project:save'; projectId: string }
   | { type: 'project:delete'; projectId: string }
-  | { type: 'project:import' }
+  | {
+      type: 'project:import'
+      // existingId → winner.id for name-conflict replaces only.
+      // Empty Map for replace-all and zero-name-conflict imports.
+      // Used by useCloudSync to pre-seed docMetaRef so projectToFirestoreDoc
+      // can preserve owner/members on name-conflict replaces (pitfall #7).
+      replacedIdMap: Map<string, string>
+    }
   | { type: 'settings:save' }
 
 // --- Collection Names ---

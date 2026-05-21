@@ -16,6 +16,7 @@ import {
   applyImportDecisions,
   conflictsEqual,
   detectImportConflicts,
+  nextCopyName,
   type ApplySmartImportArgs,
   type SmartImportOutcome,
 } from './import-utils'
@@ -51,6 +52,15 @@ interface ProjectState {
 
   // Cloud sync flag (transient, not persisted)
   _isCloudUpdate: boolean
+
+  // Cloud data hydration signal (transient, not persisted).
+  // Set true after the initial loadProjects() attempt completes in useCloudSync —
+  // regardless of outcome: success, Firestore error, or data-loss-guard bypass.
+  // "Attempted, done" — not "succeeded". Prevents import from running against
+  // stale local data during the post-sign-in hydration window (pitfall #88).
+  // Reset to false on cloud deactivate / sign-out.
+  cloudDataLoaded: boolean
+  setCloudDataLoaded: (value: boolean) => void
 
   // Project actions
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
@@ -149,6 +159,9 @@ export const useProjectStore = create<ProjectState>()(
       _originRef: '' as string,
       _changeLog: [] as ChangeLogEntry[],
       _isCloudUpdate: false,
+      cloudDataLoaded: false,
+
+      setCloudDataLoaded: (value) => set({ cloudDataLoaded: value }),
 
       addProject: (projectData) => {
         const id = generateId()
@@ -177,18 +190,12 @@ export const useProjectStore = create<ProjectState>()(
         const source = state.projects.find((p) => p.id === sourceId)
         if (!source) return null
 
-        // Find a non-colliding name following GanttApp's "X - Copy (N)" pattern.
-        // Cap at 99 to match GanttApp; fall back to an 8-char UUID slice on extreme collision.
+        // Both the import copy path and the clone path now share the same
+        // "X - Copy (N)" naming convention via nextCopyName. Number.MAX_SAFE_INTEGER
+        // skips truncation — clone operates on already-trusted in-memory names.
+        // Trailing whitespace is trimmed (minor improvement over the prior inline walker).
         const existingNames = new Set(state.projects.map((p) => p.name))
-        let suffix = 1
-        let newName = `${source.name} - Copy (${suffix})`
-        while (existingNames.has(newName) && suffix < 99) {
-          suffix++
-          newName = `${source.name} - Copy (${suffix})`
-        }
-        if (existingNames.has(newName)) {
-          newName = `${source.name} - Copy (${crypto.randomUUID().slice(0, 8)})`
-        }
+        const newName = nextCopyName(source.name, existingNames, Number.MAX_SAFE_INTEGER)
 
         const newProjectId = generateId()
         const nowTime = now()
@@ -496,7 +503,10 @@ export const useProjectStore = create<ProjectState>()(
           forecastInputs: {},
           burnUpConfigs: {},
         }))
-        syncBus.emit({ type: 'project:import' })
+        // Replace-All discards old owner/members (the user explicitly chose to
+        // wipe the workspace). No name-conflict replaces occur in this path —
+        // replacedIdMap is empty.
+        syncBus.emit({ type: 'project:import', replacedIdMap: new Map() })
       },
 
       applySmartImport: ({ incoming, decisions, freshConflicts, source }) => {
@@ -519,7 +529,10 @@ export const useProjectStore = create<ProjectState>()(
         })()
 
         // outcome starts as failure; set to success only inside set() if no drift.
-        let outcome: SmartImportOutcome = { ok: false, reason: 'workspace-changed' }
+        // Cast is intentional — TypeScript narrows the let-initializer's literal
+        // type to { ok: false } and cannot see the closure reassignment below,
+        // which would prevent .result access in the success branch.
+        let outcome = { ok: false, reason: 'workspace-changed' } as SmartImportOutcome
         set((state) => {
           // C28/H1: Re-detect conflicts against state.projects AT WRITE TIME.
           // Closes the concurrent-delete drift window between the hook's
@@ -591,9 +604,13 @@ export const useProjectStore = create<ProjectState>()(
           }
         })
         // C28: syncBus only fires on success. A no-op set() should not trigger
-        // cloud sync of unchanged data.
+        // cloud sync of unchanged data. replacedIdMap powers owner/members
+        // preservation on name-conflict replaces in cloud mode (pitfall #7).
         if (outcome.ok) {
-          syncBus.emit({ type: 'project:import' })
+          syncBus.emit({
+            type: 'project:import',
+            replacedIdMap: outcome.result.replacedIdMap,
+          })
         }
         return outcome
       },
@@ -626,6 +643,7 @@ export const useProjectStore = create<ProjectState>()(
           forecastInputs: {},
           burnUpConfigs: {},
           _changeLog: [],
+          cloudDataLoaded: false,
         })
       },
 
